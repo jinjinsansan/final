@@ -87,12 +87,12 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 | 名前 | メールアドレス |
 |------|----------------|
-| 仁カウンセラー | jin@namisapo.com |
-| AOIカウンセラー | aoi@namisapo.com |
-| あさみカウンセラー | asami@namisapo.com |
-| SHUカウンセラー | shu@namisapo.com |
-| ゆーちゃカウンセラー | yucha@namisapo.com |
-| sammyカウンセラー | sammy@namisapo.com |
+| 心理カウンセラー仁 | jin@namisapo.com |
+| 心理カウンセラーAOI | aoi@namisapo.com |
+| 心理カウンセラーあさみ | asami@namisapo.com |
+| 心理カウンセラーSHU | shu@namisapo.com |
+| 心理カウンセラーゆーちゃ | yucha@namisapo.com |
+| 心理カウンセラーSammy | sammy@namisapo.com |
 
 **共通パスワード**: `counselor123`
 

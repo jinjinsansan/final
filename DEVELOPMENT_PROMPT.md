@@ -51,12 +51,12 @@
 ## 👥 カウンセラーアカウント
 | メールアドレス | パスワード |
 |----------------|------------|
-| jin@namisapo.com | counselor123 |
-| aoi@namisapo.com | counselor123 |
-| asami@namisapo.com | counselor123 |
-| shu@namisapo.com | counselor123 |
-| yucha@namisapo.com | counselor123 |
-| sammy@namisapo.com | counselor123 |
+| jin@namisapo.com (心理カウンセラー仁) | counselor123 |
+| aoi@namisapo.com (心理カウンセラーAOI) | counselor123 |
+| asami@namisapo.com (心理カウンセラーあさみ) | counselor123 |
+| shu@namisapo.com (心理カウンセラーSHU) | counselor123 |
+| yucha@namisapo.com (心理カウンセラーゆーちゃ) | counselor123 |
+| sammy@namisapo.com (心理カウンセラーSammy) | counselor123 |
 
 ## 🔧 環境変数設定
 ```env

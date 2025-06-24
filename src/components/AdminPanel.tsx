@@ -52,12 +52,12 @@ const AdminPanel: React.FC = () => {
 
   const counselors = [
     '未割り当て',
-    '仁カウンセラー',
-    'AOIカウンセラー',
-    'あさみカウンセラー',
-    'SHUカウンセラー',
-    'ゆーちゃカウンセラー',
-    'sammyカウンセラー'
+    '心理カウンセラー仁',
+    '心理カウンセラーAOI',
+    '心理カウンセラーあさみ',
+    '心理カウンセラーSHU',
+    '心理カウンセラーゆーちゃ',
+    '心理カウンセラーSammy'
   ];
 
   const urgencyLevels = [
@@ -72,13 +72,30 @@ const AdminPanel: React.FC = () => {
     // ログイン中のカウンセラー名を取得
     const counselorName = localStorage.getItem('current_counselor');
     if (counselorName) {
-      setCurrentCounselor(counselorName);
+      // 古い形式のカウンセラー名を新しい形式に変換
+      const newFormatName = convertCounselorNameFormat(counselorName);
+      setCurrentCounselor(newFormatName);
+      localStorage.setItem('current_counselor', newFormatName);
     } else {
       // デフォルトのカウンセラー名を設定（デモ用）
-      setCurrentCounselor('仁カウンセラー');
-      localStorage.setItem('current_counselor', '仁カウンセラー');
+      setCurrentCounselor('心理カウンセラー仁');
+      localStorage.setItem('current_counselor', '心理カウンセラー仁');
     }
   }, []);
+
+  // カウンセラー名の形式を変換する関数
+  const convertCounselorNameFormat = (oldName: string): string => {
+    const nameMap: { [key: string]: string } = {
+      '仁カウンセラー': '心理カウンセラー仁',
+      'AOIカウンセラー': '心理カウンセラーAOI',
+      'あさみカウンセラー': '心理カウンセラーあさみ',
+      'SHUカウンセラー': '心理カウンセラーSHU',
+      'ゆーちゃカウンセラー': '心理カウンセラーゆーちゃ',
+      'sammyカウンセラー': '心理カウンセラーSammy'
+    };
+    
+    return nameMap[oldName] || oldName;
+  };
 
   useEffect(() => {
     filterEntries();
@@ -952,7 +969,7 @@ const AdminPanel: React.FC = () => {
                           {memoVisibleToUser && (
                             <div className="mt-2 bg-blue-50 rounded-lg p-2 border border-blue-200">
                               <p className="text-xs text-blue-700">
-                                表示時のカウンセラー名: <span className="font-jp-bold">{currentCounselor || '未設定'}</span>
+                                表示時のカウンセラー名: <span className="font-jp-bold">{currentCounselor || '心理カウンセラー'}</span>
                               </p>
                             </div>
                           )}

@@ -193,12 +193,12 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 | 名前 | メールアドレス | パスワード |
 |------|----------------|------------|
-| 仁カウンセラー | jin@namisapo.com | counselor123 |
-| AOIカウンセラー | aoi@namisapo.com | counselor123 |
-| あさみカウンセラー | asami@namisapo.com | counselor123 |
-| SHUカウンセラー | shu@namisapo.com | counselor123 |
-| ゆーちゃカウンセラー | yucha@namisapo.com | counselor123 |
-| sammyカウンセラー | sammy@namisapo.com | counselor123 |
+| 心理カウンセラー仁 | jin@namisapo.com | counselor123 |
+| 心理カウンセラーAOI | aoi@namisapo.com | counselor123 |
+| 心理カウンセラーあさみ | asami@namisapo.com | counselor123 |
+| 心理カウンセラーSHU | shu@namisapo.com | counselor123 |
+| 心理カウンセラーゆーちゃ | yucha@namisapo.com | counselor123 |
+| 心理カウンセラーSammy | sammy@namisapo.com | counselor123 |
 
 ## 📁 重要なファイル構成
 

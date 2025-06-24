@@ -56,7 +56,7 @@ const CounselorManagement: React.FC = () => {
       const mockCounselors: Counselor[] = [
         {
           id: '1',
-          name: '仁カウンセラー',
+          name: '心理カウンセラー仁',
           email: 'jin@namisapo.com',
           phone: '090-1234-5678',
           specialization: '無価値感・自己肯定感',
@@ -68,7 +68,7 @@ const CounselorManagement: React.FC = () => {
         },
         {
           id: '2',
-          name: 'AOIカウンセラー',
+          name: '心理カウンセラーAOI',
           email: 'aoi@namisapo.com',
           phone: '090-2345-6789',
           specialization: '恐怖・不安障害',
@@ -80,7 +80,7 @@ const CounselorManagement: React.FC = () => {
         },
         {
           id: '3',
-          name: 'あさみカウンセラー',
+          name: '心理カウンセラーあさみ',
           email: 'asami@namisapo.com',
           phone: '090-3456-7890',
           specialization: '悲しみ・喪失感',
@@ -92,7 +92,7 @@ const CounselorManagement: React.FC = () => {
         },
         {
           id: '4',
-          name: 'SHUカウンセラー',
+          name: '心理カウンセラーSHU',
           email: 'shu@namisapo.com',
           phone: '090-4567-8901',
           specialization: '怒り・感情制御',
@@ -104,7 +104,7 @@ const CounselorManagement: React.FC = () => {
         },
         {
           id: '5',
-          name: 'ゆーちゃカウンセラー',
+          name: '心理カウンセラーゆーちゃ',
           email: 'yucha@namisapo.com',
           phone: '090-5678-9012',
           specialization: '寂しさ・対人関係',
@@ -116,7 +116,7 @@ const CounselorManagement: React.FC = () => {
         },
         {
           id: '6',
-          name: 'sammyカウンセラー',
+          name: '心理カウンセラーSammy',
           email: 'sammy@namisapo.com',
           phone: '090-6789-0123',
           specialization: '罪悪感・恥',

@@ -380,12 +380,12 @@ const App: React.FC = () => {
 
   // カウンセラーアカウント情報
   const counselorAccounts = [
-    { name: '仁カウンセラー', email: 'jin@namisapo.com' },
-    { name: 'AOIカウンセラー', email: 'aoi@namisapo.com' },
-    { name: 'あさみカウンセラー', email: 'asami@namisapo.com' },
-    { name: 'SHUカウンセラー', email: 'shu@namisapo.com' },
-    { name: 'ゆーちゃカウンセラー', email: 'yucha@namisapo.com' },
-    { name: 'sammyカウンセラー', email: 'sammy@namisapo.com' }
+    { name: '心理カウンセラー仁', email: 'jin@namisapo.com' },
+    { name: '心理カウンセラーAOI', email: 'aoi@namisapo.com' },
+    { name: '心理カウンセラーあさみ', email: 'asami@namisapo.com' },
+    { name: '心理カウンセラーSHU', email: 'shu@namisapo.com' },
+    { name: '心理カウンセラーゆーちゃ', email: 'yucha@namisapo.com' },
+    { name: '心理カウンセラーSammy', email: 'sammy@namisapo.com' }
   ];
 
   // カウンセラーログイン処理
