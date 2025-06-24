@@ -389,7 +389,7 @@ const DeviceAuthRegistration: React.FC<DeviceAuthRegistrationProps> = ({
                     type="text"
                     value={question.answer}
                     onChange={(e) => handleSecurityQuestionChange(index, 'answer', e.target.value)}
-                    className={`w-full px-3 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-jp-normal transition-all duration-200 ${
+                    className={`w-full px-3 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 font-jp-normal transition-all duration-200 ${
                       errors[`answer_${index}`] ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-blue-500'
                     }`}
                     placeholder={SECURITY_QUESTIONS.find(q => q.id === question.id)?.placeholder || '回答を入力'}
