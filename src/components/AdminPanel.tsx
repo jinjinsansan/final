@@ -199,6 +199,11 @@ const AdminPanel: React.FC = () => {
   };
 
   const handleSaveMemo = (entryId: string) => {
+    if (!memoText.trim()) {
+      alert('メモを入力してください');
+      return;
+    }
+    
     // ローカルストレージを更新
     const localEntries = localStorage.getItem('journalEntries');
     if (localEntries) {
@@ -206,6 +211,11 @@ const AdminPanel: React.FC = () => {
       const updatedEntries = parsedEntries.map((entry: any) =>
         entry.id === entryId
           ? { 
+              ...entry, 
+              counselor_memo: memoText,
+              is_visible_to_user: memoVisibleToUser,
+              counselor_name: currentCounselor
+            }
               ...entry, 
               counselor_memo: memoText,
               is_visible_to_user: memoVisibleToUser,
@@ -225,17 +235,27 @@ const AdminPanel: React.FC = () => {
             is_visible_to_user: memoVisibleToUser,
             counselor_name: currentCounselor
           }
+            ...entry, 
+            counselor_memo: memoText,
+            is_visible_to_user: memoVisibleToUser,
+            counselor_name: currentCounselor
+          }
         : entry
     ));
 
     setEditingMemo(null);
     setMemoText('');
     setMemoVisibleToUser(false);
+    
+    // 保存成功メッセージ
+    alert(memoVisibleToUser ? 'メモを保存し、ユーザーに表示します' : 'メモを保存しました');
+    setMemoVisibleToUser(false);
   };
 
   const handleCancelMemo = () => {
     setEditingMemo(null);
     setMemoText('');
+    setMemoVisibleToUser(false);
   };
 
   const generateCalendar = (date: Date) => {
