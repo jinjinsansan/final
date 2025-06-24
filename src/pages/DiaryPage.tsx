@@ -190,6 +190,8 @@ const DiaryPage: React.FC = () => {
       if (savedInitialScores) {
         try {
           const initialScores = JSON.parse(savedInitialScores);
+          if (initialScores.selfEsteemScore && initialScores.worthlessnessScore) {
+            setWorthlessnessScores({
               yesterdaySelfEsteem: initialScores.selfEsteemScore,
               yesterdayWorthlessness: initialScores.worthlessnessScore,
               todaySelfEsteem: initialScores.selfEsteemScore,
