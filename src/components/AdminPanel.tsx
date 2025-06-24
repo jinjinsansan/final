@@ -56,7 +56,8 @@ const AdminPanel: React.FC = () => {
     'AOIカウンセラー',
     'あさみカウンセラー',
     'SHUカウンセラー',
-    'ゆーちゃカウンセラー'
+    'ゆーちゃカウンセラー',
+    'sammyカウンセラー'
   ];
 
   const urgencyLevels = [
@@ -67,6 +68,16 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     loadEntries();
+    
+    // ログイン中のカウンセラー名を取得
+    const counselorName = localStorage.getItem('current_counselor');
+    if (counselorName) {
+      setCurrentCounselor(counselorName);
+    } else {
+      // デフォルトのカウンセラー名を設定（デモ用）
+      setCurrentCounselor('仁カウンセラー');
+      localStorage.setItem('current_counselor', '仁カウンセラー');
+    }
   }, []);
 
   useEffect(() => {

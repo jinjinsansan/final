@@ -709,21 +709,7 @@ const DiarySearchPage: React.FC = () => {
                       </p>
                     </div>
                   </div>
-
-                  {/* カウンセラーコメント表示（表示設定がtrueの場合のみ） */}
-                  {entry.is_visible_to_user && entry.counselor_memo && (
-                    <div className="mt-3 bg-blue-50 rounded-lg p-3 border border-blue-200">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-xs font-jp-medium text-blue-700">
-                          {entry.counselor_name || 'カウンセラー'}からのコメント
-                        </span>
-                      </div>
-                      <p className="text-blue-800 text-sm font-jp-normal leading-relaxed">
-                        {entry.counselor_memo}
-                      </p>
-                    </div>
-                  )}
-                
+                  
                   {/* カウンセラーコメント表示（表示設定がtrueの場合のみ） */}
                   {entry.is_visible_to_user && entry.counselor_memo && (
                     <div className="mt-3 bg-blue-50 rounded-lg p-3 border border-blue-200">
@@ -827,7 +813,7 @@ const DiarySearchPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-                  
+              
               {/* カウンセラーコメント表示（表示設定がtrueの場合のみ） */}
               {entry.is_visible_to_user && entry.counselor_memo && (
                 <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
