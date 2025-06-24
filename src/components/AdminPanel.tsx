@@ -21,6 +21,8 @@ interface JournalEntry {
   };
   assigned_counselor?: string;
   urgency_level?: 'high' | 'medium' | 'low';
+  is_visible_to_user?: boolean;
+  counselor_name?: string;
   counselor_memo?: string;
 }
 
@@ -40,6 +42,7 @@ const AdminPanel: React.FC = () => {
   const [assigningEntry, setAssigningEntry] = useState<JournalEntry | null>(null);
   const [editingMemo, setEditingMemo] = useState<string | null>(null);
   const [memoText, setMemoText] = useState('');
+  const [memoVisibleToUser, setMemoVisibleToUser] = useState(false);
   const [activeTab, setActiveTab] = useState<'diary' | 'search' | 'counselor' | 'maintenance' | 'device-auth' | 'security'>('diary');
 
   const emotions = [
@@ -189,6 +192,10 @@ const AdminPanel: React.FC = () => {
   const handleEditMemo = (entryId: string, currentMemo: string) => {
     setEditingMemo(entryId);
     setMemoText(currentMemo);
+    
+    // 現在のメモの表示設定を取得
+    const entry = entries.find(e => e.id === entryId);
+    setMemoVisibleToUser(entry?.is_visible_to_user || false);
   };
 
   const handleSaveMemo = (entryId: string) => {
@@ -198,7 +205,12 @@ const AdminPanel: React.FC = () => {
       const parsedEntries = JSON.parse(localEntries);
       const updatedEntries = parsedEntries.map((entry: any) =>
         entry.id === entryId
-          ? { ...entry, counselor_memo: memoText }
+          ? { 
+              ...entry, 
+              counselor_memo: memoText,
+              is_visible_to_user: memoVisibleToUser,
+              counselor_name: currentCounselor
+            }
           : entry
       );
       localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
@@ -207,12 +219,18 @@ const AdminPanel: React.FC = () => {
     // 状態を更新
     setEntries(prev => prev.map(entry =>
       entry.id === entryId
-        ? { ...entry, counselor_memo: memoText }
+        ? { 
+            ...entry, 
+            counselor_memo: memoText,
+            is_visible_to_user: memoVisibleToUser,
+            counselor_name: currentCounselor
+          }
         : entry
     ));
 
     setEditingMemo(null);
     setMemoText('');
+    setMemoVisibleToUser(false);
   };
 
   const handleCancelMemo = () => {
@@ -860,14 +878,28 @@ const AdminPanel: React.FC = () => {
                       
                       {editingMemo === entry.id ? (
                         <div className="space-y-2">
-                          <textarea
-                            value={memoText}
-                            onChange={(e) => setMemoText(e.target.value)}
-                            placeholder="カウンセラーメモを入力してください（1行程度）"
-                            className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal text-sm resize-none"
-                            rows={2}
-                            maxLength={200}
-                          />
+                          <div className="space-y-2">
+                            <textarea
+                              value={memoText}
+                              onChange={(e) => setMemoText(e.target.value)}
+                              placeholder="カウンセラーメモを入力してください（1行程度）"
+                              className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal text-sm resize-none"
+                              rows={2}
+                              maxLength={200}
+                            />
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`visible-to-user-${entry.id}`}
+                                checked={memoVisibleToUser}
+                                onChange={(e) => setMemoVisibleToUser(e.target.checked)}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              <label htmlFor={`visible-to-user-${entry.id}`} className="text-xs text-blue-800 font-jp-medium">
+                                ユーザーにコメントとして表示する
+                              </label>
+                            </div>
+                          </div>
                           <div className="flex justify-end space-x-2">
                             <button
                               onClick={handleCancelMemo}
@@ -886,7 +918,12 @@ const AdminPanel: React.FC = () => {
                         </div>
                       ) : (
                         <p className="text-blue-800 text-sm font-jp-normal leading-relaxed">
-                          {entry.counselor_memo || 'メモがありません'}
+                          {entry.counselor_memo || 'メモがありません'} 
+                          {entry.is_visible_to_user && (
+                            <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs font-jp-medium">
+                              ユーザー表示
+                            </span>
+                          )}
                         </p>
                       )}
                     </div>
