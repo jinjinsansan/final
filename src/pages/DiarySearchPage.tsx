@@ -828,19 +828,19 @@ const DiarySearchPage: React.FC = () => {
                 </div>
               </div>
                   
-                  {/* カウンセラーコメント表示（表示設定がtrueの場合のみ） */}
-                  {entry.is_visible_to_user && entry.counselor_memo && (
-                    <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-sm font-jp-medium text-blue-700">
-                          {entry.counselor_name || 'カウンセラー'}からのコメント
-                        </span>
-                      </div>
-                      <p className="text-blue-800 text-sm font-jp-normal leading-relaxed">
-                        {entry.counselor_memo}
-                      </p>
-                    </div>
-                  )}
+              {/* カウンセラーコメント表示（表示設定がtrueの場合のみ） */}
+              {entry.is_visible_to_user && entry.counselor_memo && (
+                <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className="text-sm font-jp-medium text-blue-700">
+                      {entry.counselor_name || 'カウンセラー'}からのコメント
+                    </span>
+                  </div>
+                  <p className="text-blue-800 text-sm font-jp-normal leading-relaxed">
+                    {entry.counselor_memo}
+                  </p>
+                </div>
+              )}
 
               {entry.emotion === '無価値感' && (
                 <div className="flex flex-wrap gap-2 sm:gap-6 text-sm bg-gray-50 rounded-lg p-3">
