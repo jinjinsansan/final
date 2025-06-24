@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { getCurrentUser } from '../lib/deviceAuth';
 
