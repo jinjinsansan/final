@@ -422,10 +422,20 @@ const AdminPanel: React.FC = () => {
               <div>
                 <label className="block text-sm font-jp-medium text-gray-700 mb-2">
                   カウンセラーメモ
+                  {selectedEntry.is_visible_to_user && (
+                    <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">
+                      ユーザー表示
+                    </span>
+                  )}
                 </label>
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                   <p className="text-gray-900 font-jp-normal leading-relaxed">
                     {selectedEntry.counselor_memo || 'メモがありません'}
+                    {selectedEntry.is_visible_to_user && selectedEntry.counselor_name && (
+                      <span className="block mt-2 text-xs text-blue-600 font-jp-medium">
+                        コメント作成者: {selectedEntry.counselor_name}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
