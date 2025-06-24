@@ -452,7 +452,7 @@ const App: React.FC = () => {
   const getWorthlessnessData = () => {
     // 最初にやることページで保存されたスコアを取得
     const savedInitialScores = localStorage.getItem('initialScores');
-    let initialData = [];
+    let initialData: { date: string; selfEsteem: number; worthlessness: number }[] = [];
     
     if (savedInitialScores) {
       const initialScores = JSON.parse(savedInitialScores);
@@ -463,8 +463,12 @@ const App: React.FC = () => {
         
         initialData.push({
           date: measurementDate,
-          selfEsteem: parseInt(initialScores.selfEsteemScore),
-          worthlessness: parseInt(initialScores.worthlessnessScore)
+          selfEsteem: typeof initialScores.selfEsteemScore === 'string' 
+            ? parseInt(initialScores.selfEsteemScore) 
+            : initialScores.selfEsteemScore,
+          worthlessness: typeof initialScores.worthlessnessScore === 'string' 
+            ? parseInt(initialScores.worthlessnessScore) 
+            : initialScores.worthlessnessScore
         });
       }
     }
@@ -480,13 +484,12 @@ const App: React.FC = () => {
 
     // 初期データと日記データを結合し、日付順でソート
     const allData = [...initialData, ...worthlessnessEntries]
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(-10); // 最新10件
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return allData;
   };
 
-  const renderWorthlessnessChart = (data: any[], period: string) => {
+  const renderWorthlessnessChart = (data: { date: string; selfEsteem: number; worthlessness: number }[], period: string) => {
     if (data.length === 0) {
       return (
         <div className="text-center py-8">
@@ -498,19 +501,19 @@ const App: React.FC = () => {
     const maxValue = 100;
     const chartWidth = 600;
     const chartHeight = 300;
-    const padding = 40;
+    const padding = { top: 40, right: 40, bottom: 40, left: 40 };
 
-    const xStep = (chartWidth - padding * 2) / Math.max(data.length - 1, 1);
-    const yScale = (chartHeight - padding * 2) / maxValue;
+    const xStep = (chartWidth - padding.left - padding.right) / Math.max(data.length - 1, 1);
+    const yScale = (chartHeight - padding.top - padding.bottom) / maxValue;
 
     const selfEsteemPoints = data.map((item, index) => ({
-      x: padding + index * xStep,
-      y: chartHeight - padding - item.selfEsteem * yScale
+      x: padding.left + index * xStep,
+      y: chartHeight - padding.bottom - item.selfEsteem * yScale
     }));
 
     const worthlessnessPoints = data.map((item, index) => ({
-      x: padding + index * xStep,
-      y: chartHeight - padding - item.worthlessness * yScale
+      x: padding.left + index * xStep,
+      y: chartHeight - padding.bottom - item.worthlessness * yScale
     }));
 
     const createPath = (points: any[]) => {
@@ -526,16 +529,16 @@ const App: React.FC = () => {
           {[0, 25, 50, 75, 100].map(value => (
             <g key={value}>
               <line
-                x1={padding}
-                y1={chartHeight - padding - value * yScale}
-                x2={chartWidth - padding}
-                y2={chartHeight - padding - value * yScale}
+                x1={padding.left}
+                y1={chartHeight - padding.bottom - value * yScale}
+                x2={chartWidth - padding.right}
+                y2={chartHeight - padding.bottom - value * yScale}
                 stroke="#e5e7eb"
                 strokeWidth="1"
               />
               <text
-                x={padding - 10}
-                y={chartHeight - padding - value * yScale + 5}
+                x={padding.left - 10}
+                y={chartHeight - padding.bottom - value * yScale + 5}
                 fontSize="12"
                 fill="#6b7280"
                 textAnchor="end"
@@ -596,7 +599,7 @@ const App: React.FC = () => {
           {data.map((item, index) => (
             <text
               key={index}
-              x={padding + index * xStep}
+              x={padding.left + index * xStep}
               y={chartHeight - 10}
               fontSize="10"
               fill="#6b7280"
@@ -847,9 +850,19 @@ const App: React.FC = () => {
       case 'worthlessness-trend':
         const worthlessnessData = getWorthlessnessData();
         const filteredData = emotionPeriod === 'week' 
-          ? worthlessnessData.slice(-7)
+          ? worthlessnessData.filter(item => {
+              const date = new Date(item.date);
+              const weekAgo = new Date();
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              return date >= weekAgo;
+            })
           : emotionPeriod === 'month'
-          ? worthlessnessData.slice(-30)
+          ? worthlessnessData.filter(item => {
+              const date = new Date(item.date);
+              const monthAgo = new Date();
+              monthAgo.setMonth(monthAgo.getMonth() - 1);
+              return date >= monthAgo;
+            })
           : worthlessnessData;
 
         const emotionFrequency = getEmotionFrequency();
