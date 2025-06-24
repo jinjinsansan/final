@@ -8,17 +8,17 @@ const DiaryPage: React.FC = () => {
     date: new Date().toISOString().split('T')[0],
     event: '',
     emotion: '',
-    selfEsteemScore: 0,
-    worthlessnessScore: 0,
+    selfEsteemScore: 50,
+    worthlessnessScore: 50,
     realization: ''
   });
 
   // 無価値感スコア用の状態
   const [worthlessnessScores, setWorthlessnessScores] = useState({
-    yesterdaySelfEsteem: '',
-    yesterdayWorthlessness: '',
-    todaySelfEsteem: '',
-    todayWorthlessness: ''
+    yesterdaySelfEsteem: '50',
+    yesterdayWorthlessness: '50',
+    todaySelfEsteem: '50',
+    todayWorthlessness: '50'
   });
 
   // 初期スコアを読み込み
@@ -31,16 +31,16 @@ const DiaryPage: React.FC = () => {
           // 初期値として設定
           setFormData(prev => ({
             ...prev,
-            selfEsteemScore: parseInt(initialScores.selfEsteemScore),
-            worthlessnessScore: parseInt(initialScores.worthlessnessScore)
+            selfEsteemScore: parseInt(initialScores.selfEsteemScore) || 50,
+            worthlessnessScore: parseInt(initialScores.worthlessnessScore) || 50
           }));
           
           // 無価値感スコアの状態も更新
           setWorthlessnessScores({
-            yesterdaySelfEsteem: parseInt(initialScores.selfEsteemScore),
-            yesterdayWorthlessness: parseInt(initialScores.worthlessnessScore),
-            todaySelfEsteem: parseInt(initialScores.selfEsteemScore),
-            todayWorthlessness: parseInt(initialScores.worthlessnessScore)
+            yesterdaySelfEsteem: String(initialScores.selfEsteemScore),
+            yesterdayWorthlessness: String(initialScores.worthlessnessScore),
+            todaySelfEsteem: String(initialScores.selfEsteemScore),
+            todayWorthlessness: String(initialScores.worthlessnessScore)
           });
         }
       } catch (error) {
@@ -131,8 +131,8 @@ const DiaryPage: React.FC = () => {
     
     // 無価値感を選んだ場合、スコアのバリデーション
     if (formData.emotion === '無価値感') {
-      const selfEsteemScore = parseInt(worthlessnessScores.todaySelfEsteem as any) || 0;
-      const worthlessnessScore = parseInt(worthlessnessScores.todayWorthlessness as any) || 0;
+      const selfEsteemScore = parseInt(worthlessnessScores.todaySelfEsteem) || 0;
+      const worthlessnessScore = parseInt(worthlessnessScores.todayWorthlessness) || 0;
       
       if (selfEsteemScore > 100) {
         alert('自己肯定感スコアは100以下で入力してください。');
@@ -154,10 +154,10 @@ const DiaryPage: React.FC = () => {
 
       // 無価値感を選んだ場合のスコアを設定
       const finalSelfEsteemScore = formData.emotion === '無価値感' 
-        ? (parseInt(worthlessnessScores.todaySelfEsteem as any) || 0) 
+        ? (parseInt(worthlessnessScores.todaySelfEsteem) || 50) 
         : formData.selfEsteemScore;
       const finalWorthlessnessScore = formData.emotion === '無価値感' 
-        ? (parseInt(worthlessnessScores.todayWorthlessness as any) || 0) 
+        ? (parseInt(worthlessnessScores.todayWorthlessness) || 50) 
         : formData.worthlessnessScore;
       
       const newEntry = {
@@ -180,8 +180,8 @@ const DiaryPage: React.FC = () => {
         date: new Date().toISOString().split('T')[0],
         event: '',
         emotion: '', 
-        selfEsteemScore: 0, 
-        worthlessnessScore: 0,
+        selfEsteemScore: 50, 
+        worthlessnessScore: 50,
         realization: ''
       });
       
@@ -192,29 +192,29 @@ const DiaryPage: React.FC = () => {
           const initialScores = JSON.parse(savedInitialScores);
           if (initialScores.selfEsteemScore && initialScores.worthlessnessScore) {
             setWorthlessnessScores({
-              yesterdaySelfEsteem: initialScores.selfEsteemScore,
-              yesterdayWorthlessness: initialScores.worthlessnessScore,
-              todaySelfEsteem: initialScores.selfEsteemScore,
-              todayWorthlessness: initialScores.worthlessnessScore
+              yesterdaySelfEsteem: String(initialScores.selfEsteemScore),
+              yesterdayWorthlessness: String(initialScores.worthlessnessScore),
+              todaySelfEsteem: String(initialScores.selfEsteemScore),
+              todayWorthlessness: String(initialScores.worthlessnessScore)
             });
           }
         } catch (error) {
           console.error('初期スコアの再読み込みエラー:', error);
           // エラー時はデフォルト値に戻す
           setWorthlessnessScores({
-            yesterdaySelfEsteem: '',
-            yesterdayWorthlessness: '',
-            todaySelfEsteem: '',
-            todayWorthlessness: ''
+            yesterdaySelfEsteem: '50',
+            yesterdayWorthlessness: '50',
+            todaySelfEsteem: '50',
+            todayWorthlessness: '50'
           });
         }
       } else {
         // 初期スコアがない場合はデフォルト値に戻す
         setWorthlessnessScores({
-          yesterdaySelfEsteem: '',
-          yesterdayWorthlessness: '',
-          todaySelfEsteem: '',
-          todayWorthlessness: ''
+          yesterdaySelfEsteem: '50',
+          yesterdayWorthlessness: '50',
+          todaySelfEsteem: '50',
+          todayWorthlessness: '50'
         });
       }
       
@@ -561,14 +561,14 @@ const DiaryPage: React.FC = () => {
                     <label className="block text-xs font-jp-medium text-gray-600 mb-1">
                       自己肯定感
                     </label>
-                    <input 
+                    <input
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       value={worthlessnessScores.yesterdaySelfEsteem}
                       onChange={(e) => handleSelfEsteemChange('yesterdaySelfEsteem', e.target.value)}
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal" 
-                      placeholder="数値を入力"
+                      placeholder=""
                     /> 
                   </div>
                   <div>
@@ -582,7 +582,7 @@ const DiaryPage: React.FC = () => {
                       value={worthlessnessScores.yesterdayWorthlessness}
                       onChange={(e) => handleWorthlessnessChange('yesterdayWorthlessness', e.target.value)}
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal" 
-                      placeholder="数値を入力"
+                      placeholder=""
                     />
                   </div>
                 </div>
@@ -606,7 +606,7 @@ const DiaryPage: React.FC = () => {
                       value={worthlessnessScores.todaySelfEsteem}
                       onChange={(e) => handleSelfEsteemChange('todaySelfEsteem', e.target.value)}
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal" 
-                      placeholder="数値を入力"
+                      placeholder=""
                     />
                   </div>
                   <div>
@@ -620,7 +620,7 @@ const DiaryPage: React.FC = () => {
                       value={worthlessnessScores.todayWorthlessness}
                       onChange={(e) => handleWorthlessnessChange('todayWorthlessness', e.target.value)}
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal" 
-                      placeholder="数値を入力"
+                      placeholder=""
                     />
                   </div>
                 </div>
