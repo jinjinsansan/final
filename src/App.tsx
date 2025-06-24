@@ -469,6 +469,10 @@ const App: React.FC = () => {
           worthlessness: typeof initialScores.worthlessnessScore === 'string' 
             ? parseInt(initialScores.worthlessnessScore) 
             : initialScores.worthlessnessScore
+            : initialScores.selfEsteemScore,
+          worthlessness: typeof initialScores.worthlessnessScore === 'string' 
+            ? parseInt(initialScores.worthlessnessScore) 
+            : initialScores.worthlessnessScore
         });
       }
     }
@@ -485,7 +489,6 @@ const App: React.FC = () => {
     // 初期データと日記データを結合し、日付順でソート
     const allData = [...initialData, ...worthlessnessEntries]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
     return allData;
   };
 
@@ -856,8 +859,18 @@ const App: React.FC = () => {
               weekAgo.setDate(weekAgo.getDate() - 7);
               return date >= weekAgo;
             })
+              const date = new Date(item.date);
+              const weekAgo = new Date();
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              return date >= weekAgo;
+            })
           : emotionPeriod === 'month'
           ? worthlessnessData.filter(item => {
+              const date = new Date(item.date);
+              const monthAgo = new Date();
+              monthAgo.setMonth(monthAgo.getMonth() - 1);
+              return date >= monthAgo;
+            })
               const date = new Date(item.date);
               const monthAgo = new Date();
               monthAgo.setMonth(monthAgo.getMonth() - 1);
