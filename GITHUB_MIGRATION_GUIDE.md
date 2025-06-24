@@ -53,17 +53,17 @@ GitHub リポジトリには `.env` ファイルは含まれていません。
 
 1. `.env.example` をコピーして `.env` を作成
 2. Supabase の設定値を入力
-3. 必要に応じて LINE 認証の設定を追加
+3. 必要に応じてメンテナンスモードの設定を追加
 
 ```env
 # Supabase設定（必須）
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# LINE認証設定（オプション）
-VITE_LINE_CHANNEL_ID=your_line_channel_id
-VITE_LINE_CHANNEL_SECRET=your_line_channel_secret
-VITE_LINE_REDIRECT_URI=your_redirect_uri
+# メンテナンスモード設定（オプション）
+VITE_MAINTENANCE_MODE=false
+VITE_MAINTENANCE_MESSAGE=システムメンテナンス中です
+VITE_MAINTENANCE_END_TIME=2025-01-22T10:00:00Z
 ```
 
 ### 4. README.md の更新
@@ -83,6 +83,8 @@ VITE_LINE_REDIRECT_URI=your_redirect_uri
 - カウンセラー管理画面
 - 自動同期機能
 - 同意履歴管理
+- デバイス認証システム
+- カウンセラーコメント機能
 
 ## 🚀 技術スタック
 
@@ -93,12 +95,12 @@ VITE_LINE_REDIRECT_URI=your_redirect_uri
 
 ## 📦 セットアップ
 
-\`\`\`bash
+```bash
 npm install
 cp .env.example .env
 # .env ファイルを編集
 npm run dev
-\`\`\`
+```
 
 ## 📄 ライセンス
 
