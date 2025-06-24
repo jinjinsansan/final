@@ -46,7 +46,15 @@ const FirstSteps: React.FC = () => {
   // 保存処理
   const handleSave = () => {
     if (scores.selfEsteemScore && scores.worthlessnessScore && scores.measurementMonth && scores.measurementDay) {
-      localStorage.setItem('initialScores', JSON.stringify(scores));
+      // 保存前に値を数値型に変換して確実に計算が正しくなるようにする
+      const numericScores = {
+        selfEsteemScore: parseInt(scores.selfEsteemScore),
+        worthlessnessScore: parseInt(scores.worthlessnessScore),
+        measurementMonth: scores.measurementMonth,
+        measurementDay: scores.measurementDay
+      };
+      
+      localStorage.setItem('initialScores', JSON.stringify(numericScores));
       setIsSaved(true);
       setIsEditing(false);
       alert('スコアを保存しました！');
