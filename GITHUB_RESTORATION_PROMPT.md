@@ -1,44 +1,22 @@
-# かんじょうにっき - GitHub連携後の開発継続プロンプト
+# かんじょうにっき - GitHub連携後の復元プロンプト
 
-## 🚀 プロジェクト復元手順
+## 🎯 このプロンプトの使用方法
+このプロンプトを新しいBoltチャットで使用することで、GitHubリポジトリから完全な状態でプロジェクトを復元できます。
 
-### 1. GitHubからのクローン後の初期設定
-```bash
-# 依存関係のインストール
-npm install
+---
 
-# 環境変数ファイルの作成
-cp .env.example .env
-# .envファイルを編集してSupabaseとLINE認証の設定を追加
+## 📋 プロジェクト復元指示
 
-# 開発サーバーの起動
-npm run dev
-```
+以下の内容で「かんじょうにっき」プロジェクトを完全に復元してください：
 
-## 📋 現在の開発状況（2025年1月21日時点）
+### 🚀 基本情報
+- **プロジェクト名**: かんじょうにっき（感情日記アプリ）
+- **開発者**: 一般社団法人NAMIDAサポート協会
+- **技術スタック**: React + TypeScript + Vite + Tailwind CSS + Supabase
+- **最終更新**: 2025年1月24日
+- **デプロイURL**: https://apl.namisapo2.love
 
-### ✅ 完成済み機能
-- **感情日記システム**: 作成・編集・削除・検索機能
-- **無価値感推移グラフ**: データ可視化とSNSシェア
-- **カウンセラー管理画面**: 
-  - 日記管理・高度検索・カレンダー検索
-  - カウンセラーメモ機能
-  - 担当者割り当て・緊急度管理
-- **🆕 自動同期システム**: ローカル↔Supabase自動同期
-- **🆕 同意履歴管理**: プライバシーポリシー同意の完全追跡
-- **🆕 LINE認証対応**: セキュアな認証システム（環境変数で制御）
-- **🆕 デバイス認証システム**: PIN番号認証、秘密の質問、セキュリティダッシュボード
-- **メンテナンスモード**: システム保守時の適切な案内
-- **レスポンシブデザイン**: 全デバイス対応
-
-### 🔧 技術スタック
-- React + TypeScript + Vite
-- Tailwind CSS
-- Supabase (PostgreSQL)
-- LINE認証 + カスタム認証
-- Netlify (デプロイ)
-
-## ⚠️ 重要な制約事項
+### ⚠️ 重要な制約事項（必須遵守）
 ```
 # Bolt への指示
 - pages ディレクトリ以外は変更しないこと
@@ -47,15 +25,184 @@ npm run dev
 - supabase/migrations/ 内のファイルは変更しないこと
 ```
 
+### 📦 必要な依存関係
+```json
+{
+  "dependencies": {
+    "lucide-react": "^0.344.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.18",
+    "eslint": "^9.9.1",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.11",
+    "globals": "^15.9.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.3.0",
+    "vite": "^5.4.2"
+  }
+}
+```
+
+### 🔧 環境変数設定
+`.env.example`ファイルを作成し、以下の内容を設定：
+```env
+# Supabase設定
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# メンテナンスモード設定（オプション）
+VITE_MAINTENANCE_MODE=false
+VITE_MAINTENANCE_MESSAGE=システムメンテナンス中です
+VITE_MAINTENANCE_END_TIME=2025-01-22T10:00:00Z
+```
+
+## 🌟 実装済み機能一覧
+
+### ✅ ユーザー向け機能
+1. **感情日記システム**
+   - 8種類のネガティブ感情（恐怖、悲しみ、怒り、悔しい、無価値感、罪悪感、寂しさ、恥ずかしさ）
+   - 出来事と気づきの記録
+   - 無価値感選択時の自己肯定感・無価値感スコア入力
+   - 日記の作成・編集・削除機能
+
+2. **無価値感推移グラフ**
+   - 自己肯定感と無価値感の推移をグラフで可視化
+   - 期間フィルター（1週間・1ヶ月・全期間）
+   - SNSシェア機能
+   - 感情の出現頻度表示
+
+3. **高度な検索機能**
+   - キーワード検索（出来事・気づき）
+   - 感情別フィルター
+   - 日付範囲検索
+   - 直近5日分の日記表示
+
+4. **カウンセラーコメント表示**
+   - カウンセラーからのフィードバック表示
+   - カウンセラー名の表示
+   - 検索画面でのコメント表示
+
+5. **レスポンシブデザイン**
+   - 全デバイス対応（PC・タブレット・スマートフォン）
+   - 日本語フォント最適化（Noto Sans JP）
+
+### ✅ 管理者向け機能
+1. **カウンセラー管理画面**
+   - 日記一覧・詳細表示
+   - 高度な検索・フィルター機能
+   - カレンダー検索機能
+   - カウンセラーメモ機能
+   - 担当者割り当て機能
+   - 緊急度管理（高・中・低）
+   - 統計ダッシュボード
+
+2. **カウンセラーコメント機能**
+   - ユーザーに表示/非表示の切り替え
+   - カウンセラー名の表示
+   - メモ編集機能
+
+3. **カウンセラー管理**
+   - カウンセラーアカウント管理
+   - 担当案件表示
+   - 統計情報表示
+
+4. **メンテナンスモード**
+   - システム保守時の適切な案内
+   - 進捗表示機能
+   - 環境変数による制御
+
+### 🆕 新機能（2025年1月24日実装）
+1. **自動同期システム**
+   - アプリ起動時の自動ユーザー作成・確認
+   - 5分間隔でのローカルデータ自動同期
+   - 手動同期オプション
+   - エラーハンドリングと状態表示
+
+2. **同意履歴管理**
+   - プライバシーポリシー同意の完全追跡
+   - 法的要件に対応した履歴保存
+   - CSV出力機能
+   - 管理画面での一覧・検索機能
+
+3. **デバイス認証システム**
+   - デバイスフィンガープリント生成・照合
+   - PIN番号認証（6桁）
+   - 秘密の質問による復旧機能
+   - アカウントロック機能（5回失敗で24時間ロック）
+   - セキュリティイベントログ
+   - デバイス認証管理画面
+   - セキュリティダッシュボード
+
 ## 🗄️ データベース構成
-- **users**: ユーザー情報
-- **diary_entries**: 日記エントリー
-- **counselors**: カウンセラー情報
-- **chat_rooms**: チャットルーム
-- **messages**: メッセージ
-- **consent_histories**: 同意履歴（新規追加）
+
+### Supabaseテーブル
+1. **users**: ユーザー情報
+   - id (uuid, primary key)
+   - line_username (text, unique)
+   - created_at (timestamp)
+
+2. **diary_entries**: 日記エントリー
+   - id (uuid, primary key)
+   - user_id (uuid, foreign key)
+   - date (date)
+   - emotion (text)
+   - event (text)
+   - realization (text)
+   - self_esteem_score (integer)
+   - worthlessness_score (integer)
+   - created_at (timestamp)
+   - counselor_memo (text)
+   - is_visible_to_user (boolean)
+   - counselor_name (text)
+
+3. **counselors**: カウンセラー情報
+   - id (uuid, primary key)
+   - name (text)
+   - email (text, unique)
+   - is_active (boolean)
+   - created_at (timestamp)
+
+4. **chat_rooms**: チャットルーム
+   - id (uuid, primary key)
+   - user_id (uuid, foreign key)
+   - counselor_id (uuid, foreign key)
+   - status (text)
+   - created_at (timestamp)
+
+5. **messages**: メッセージ
+   - id (uuid, primary key)
+   - chat_room_id (uuid, foreign key)
+   - sender_id (uuid, foreign key)
+   - counselor_id (uuid, foreign key)
+   - content (text)
+   - is_counselor (boolean)
+   - created_at (timestamp)
+
+6. **consent_histories**: 同意履歴
+   - id (uuid, primary key)
+   - line_username (text)
+   - consent_given (boolean)
+   - consent_date (timestamp)
+   - ip_address (text)
+   - user_agent (text)
+   - created_at (timestamp)
+
+### データベースマイグレーション
+`supabase/migrations/`ディレクトリ内のSQLファイルがすべてのテーブル作成とRLS設定を含みます。
 
 ## 👥 カウンセラーアカウント
+以下のアカウントでカウンセラーログインが可能：
+
 | 名前 | メールアドレス | パスワード |
 |------|----------------|------------|
 | 心理カウンセラー仁 | jin@namisapo.com | counselor123 |
@@ -65,74 +212,46 @@ npm run dev
 | 心理カウンセラーゆーちゃ | yucha@namisapo.com | counselor123 |
 | 心理カウンセラーSammy | sammy@namisapo.com | counselor123 |
 
-## 🔧 環境変数設定
-```env
-# Supabase設定（必須）
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# LINE認証設定（オプション）
-# LINE認証は削除済み
-
-# メンテナンスモード設定（オプション）
-VITE_MAINTENANCE_MODE=false
-VITE_MAINTENANCE_MESSAGE=システムメンテナンス中です
-VITE_MAINTENANCE_END_TIME=2025-01-22T10:00:00Z
-```
-
-## 🆕 新機能の詳細
-
-### 自動同期システム
-- **場所**: `src/hooks/useAutoSync.ts`, `src/components/AutoSyncSettings.tsx`
-- **機能**: 
-  - アプリ起動時の自動ユーザー作成・確認
-  - 5分間隔でのローカルデータ自動同期
-  - 手動同期オプション
-  - エラーハンドリングと状態表示
-- **使用方法**: `src/App.tsx`で`useAutoSync()`フックを呼び出し済み
-
-### 同意履歴管理
-- **場所**: `src/components/ConsentHistoryManagement.tsx`
-- **機能**:
-  - プライバシーポリシー同意の完全追跡
-  - 法的要件に対応した履歴保存
-  - CSV出力機能
-  - 管理画面での一覧・検索機能
-- **データ**: `consent_histories`テーブルとローカルストレージ
-
-### LINE認証システム
-- **削除済み**: デバイス認証システムを使用
-
 ## 📁 重要なファイル構成
 
-### 新規追加されたファイル
+### 新規追加されたファイル（2025年1月24日）
 ```
 src/
 ├── hooks/
 │   └── useAutoSync.ts              # 自動同期フック
 ├── components/
 │   ├── AutoSyncSettings.tsx       # 自動同期設定UI
-│   └── ConsentHistoryManagement.tsx # 同意履歴管理UI
+│   ├── ConsentHistoryManagement.tsx # 同意履歴管理UI
+│   ├── DeviceAuthLogin.tsx        # デバイス認証ログイン画面
+│   ├── DeviceAuthRegistration.tsx # デバイス認証登録画面
+│   ├── DeviceAuthManagement.tsx   # デバイス認証管理画面
+│   └── SecurityDashboard.tsx      # セキュリティダッシュボード
+└── lib/
+    └── deviceAuth.ts               # デバイス認証システム
 ```
 
 ### 主要な変更があったファイル
 ```
 src/
 ├── App.tsx                         # 自動同期フック追加、UI改善
-├── lib/supabase.ts                 # 同意履歴サービス追加
+├── lib/supabase.ts                 # 同意履歴サービス追加、本番環境対応
 ├── hooks/useSupabase.ts            # 自動同期対応
 ├── components/
-│   ├── DataMigration.tsx           # 自動同期タブ追加
-│   └── PrivacyConsent.tsx          # 同意履歴記録機能追加
+│   ├── AdminPanel.tsx              # カウンセラーコメント機能追加
+│   ├── DataMigration.tsx           # 自動同期タブ追加、統計表示
+│   ├── PrivacyConsent.tsx          # 同意履歴記録機能追加
+│   ├── AdminPanel.tsx              # デバイス認証・セキュリティタブ追加
 ├── hooks/useMaintenanceStatus.ts   # パフォーマンス改善
-└── lib/deviceAuth.ts               # デバイス認証システム
+├── pages/
+│   ├── DiaryPage.tsx               # スコア入力改善
+│   └── DiarySearchPage.tsx         # カウンセラーコメント表示
 ```
 
-## 🎯 開発継続時の注意点
+## 🎯 重要な実装ポイント
 
-### 1. 自動同期機能
-- `useAutoSync`フックは既に`App.tsx`で呼び出し済み
-- ユーザーがアプリを開くと自動的にSupabaseユーザーが作成される
+### 1. 自動同期システム
+- `useAutoSync`フックが`App.tsx`で実装済み
+- アプリ起動時に自動的にSupabaseユーザーが作成される
 - 5分間隔で自動同期が実行される
 - 手動での操作は基本的に不要
 
@@ -141,65 +260,65 @@ src/
 - 管理画面の「カウンセラー」タブから履歴を確認可能
 - CSV出力機能で法的要件に対応
 
-### 3. LINE認証
-- 削除済み（デバイス認証システムを使用）
+### 3. デバイス認証システム
+- 実装済みだが、現在は従来のユーザー名入力方式を使用
+- 管理画面の「デバイス認証」と「セキュリティ」タブで機能確認可能
+- PIN番号認証、秘密の質問、アカウントロック機能を含む
 
-## 🔄 データフロー
+### 4. カウンセラーコメント機能
+- カウンセラーメモをユーザーに表示する機能
+- 管理画面でメモ入力時に「ユーザーに表示」チェックボックスで制御
+- 表示時にはカウンセラー名も表示される
+- ユーザーの日記検索画面でコメントが表示される
 
-### 自動同期フロー
-1. アプリ起動 → `useAutoSync`フック実行
-2. Supabase接続確認 → ユーザー存在確認
-3. ユーザー未存在の場合 → 自動作成
-4. ローカルデータ存在確認 → 自動同期実行
-5. 5分間隔で定期同期実行
-
-### 同意履歴フロー
-1. プライバシーポリシー表示 → ユーザー同意/拒否
-2. 同意履歴をローカルストレージに記録
-3. 自動同期により Supabase に同期
-4. 管理画面で履歴確認・CSV出力
+### 5. データフロー
+```
+アプリ起動 → useAutoSync実行 → Supabase接続確認 → ユーザー存在確認
+→ ユーザー未存在の場合は自動作成 → ローカルデータ確認 → 自動同期実行
+→ 5分間隔で定期同期実行
+```
 
 ## 🚀 デプロイ設定
 
 ### Netlify設定
 - **ビルドコマンド**: `npm run build`
 - **公開ディレクトリ**: `dist`
-- **環境変数**: 上記の環境変数を設定
 - **リダイレクト**: `netlify.toml`で設定済み
 
-### 環境変数の優先度
-1. Netlify環境変数（本番）
-2. `.env`ファイル（開発）
-3. `.env.example`（テンプレート）
+### 必要なファイル
+```
+netlify.toml:
+[build]
+  publish = "dist"
+  command = "npm run build"
 
-## 🔍 トラブルシューティング
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 
-### よくある問題
-1. **Supabase接続エラー**: 環境変数の確認
-2. **自動同期が動作しない**: ブラウザのコンソールでエラー確認
-3. **カウンセラーログインできない**: パスワード`counselor123`を確認
-4. **LINE認証エラー**: 環境変数とリダイレクトURIを確認
+[build.environment]
+  NODE_VERSION = "18"
+```
 
-### デバッグ方法
-- 開発環境では詳細なログが出力される
-- `localStorage`の内容を確認
-- Supabaseダッシュボードでデータ確認
+## 🔍 テストデータ
+アプリには20日分のテストデータが自動生成される機能が実装されています。初回起動時に自動的に生成されます。
 
 ## 📞 サポート情報
-
 - **開発者**: 一般社団法人NAMIDAサポート協会
 - **メール**: info@namisapo.com
-- **技術スタック**: React + TypeScript + Supabase
-- **デプロイ**: Netlify
+- **受付時間**: 平日 9:00-17:00
 
 ---
 
-## 🎯 次回開発時の推奨アクション
+## 🎯 復元後の確認事項
 
 1. **環境確認**: `npm run dev`でローカル環境が正常に動作することを確認
 2. **Supabase接続**: 環境変数を設定してSupabase接続を確認
 3. **自動同期テスト**: 新しいユーザーでアプリを開いて自動同期をテスト
 4. **機能テスト**: 日記作成、検索、管理画面の動作確認
-5. **新機能開発**: 既存の制約事項を守りながら新機能を追加
+5. **カウンセラーログイン**: 管理画面へのアクセス確認
+6. **デバイス認証**: 管理画面の「デバイス認証」「セキュリティ」タブの確認
+7. **カウンセラーコメント**: コメント表示機能の確認
 
-このプロンプトを使用することで、GitHub連携後に完全な状態でプロジェクトを復元し、開発を継続できます。
+このプロンプトを使用することで、GitHubリポジトリから完全な状態でプロジェクトを復元し、すべての機能が正常に動作する状態にできます。
