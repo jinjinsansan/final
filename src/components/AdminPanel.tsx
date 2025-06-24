@@ -900,9 +900,16 @@ const AdminPanel: React.FC = () => {
                         <div className="flex items-center space-x-2">
                           <MessageSquare className="w-4 h-4 text-blue-600" />
                           <span className="text-sm font-jp-medium text-blue-900">カウンセラーメモ</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
                           {entry.is_visible_to_user && (
                             <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full border border-green-200">
                               ユーザーに表示
+                            </span>
+                          )}
+                          {entry.is_visible_to_user && entry.counselor_name && (
+                            <span className="text-xs text-gray-600">
+                              {entry.counselor_name}
                             </span>
                           )}
                         </div>
@@ -941,6 +948,14 @@ const AdminPanel: React.FC = () => {
                               ユーザーにコメントとして表示する
                             </label>
                           </div>
+                          
+                          {memoVisibleToUser && (
+                            <div className="mt-2 bg-blue-50 rounded-lg p-2 border border-blue-200">
+                              <p className="text-xs text-blue-700">
+                                表示時のカウンセラー名: <span className="font-jp-bold">{currentCounselor || '未設定'}</span>
+                              </p>
+                            </div>
+                          )}
                           
                           <div className="flex justify-end space-x-2">
                             <button
