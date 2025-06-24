@@ -435,7 +435,9 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
             {/* 日付範囲とユーザー検索 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-jp-medium text-gray-700 mb-2">開始日</label>
+                <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                  開始日
+                </label>
                 <input
                   type="date"
                   value={filters.dateRange.start}
@@ -448,7 +450,9 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-jp-medium text-gray-700 mb-2">終了日</label>
+                <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                  終了日
+                </label>
                 <input
                   type="date"
                   value={filters.dateRange.end}
@@ -461,7 +465,9 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-jp-medium text-gray-700 mb-2">ユーザー検索</label>
+                <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                  ユーザー検索
+                </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
@@ -676,13 +682,13 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                   <div>
                     <h4 className="font-jp-semibold text-gray-700 mb-1 text-sm">出来事</h4>
-                    <p className="text-gray-600 text-sm font-jp-normal leading-relaxed line-clamp-2">
+                    <p className="text-gray-600 text-sm font-jp-normal leading-relaxed line-clamp-2 break-words">
                       {entry.event.length > 100 ? `${entry.event.substring(0, 100)}...` : entry.event}
                     </p>
                   </div>
                   <div>
                     <h4 className="font-jp-semibold text-gray-700 mb-1 text-sm">気づき</h4>
-                    <p className="text-gray-600 text-sm font-jp-normal leading-relaxed line-clamp-2">
+                    <p className="text-gray-600 text-sm font-jp-normal leading-relaxed line-clamp-2 break-words">
                       {entry.realization.length > 100 ? `${entry.realization.substring(0, 100)}...` : entry.realization}
                     </p>
                   </div>
