@@ -43,7 +43,7 @@ const AdminPanel: React.FC = () => {
   const [editingMemo, setEditingMemo] = useState<string | null>(null);
   const [memoText, setMemoText] = useState('');
   const [memoVisibleToUser, setMemoVisibleToUser] = useState(false);
-  const [activeTab, setActiveTab] = useState<'diary' | 'search' | 'counselor' | 'maintenance' | 'device-auth' | 'security'>('diary');
+  const [activeTab, setActiveTab] = useState<'diary' | 'search' | 'counselor' | 'maintenance' | 'device-auth' | 'security'>('diary'); 
 
   const emotions = [
     '恐怖', '悲しみ', '怒り', '悔しい', '無価値感', '罪悪感', '寂しさ', '恥ずかしさ'
@@ -891,7 +891,7 @@ const AdminPanel: React.FC = () => {
                           <div className="space-y-2">
                             <textarea
                               value={memoText}
-                              onChange={(e) => setMemoText(e.target.value)}
+                              onChange={(e) => setMemoText(e.target.value)} 
                               placeholder="カウンセラーメモを入力してください（1行程度）"
                               className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal text-sm resize-none"
                               rows={2}
@@ -918,7 +918,7 @@ const AdminPanel: React.FC = () => {
                               キャンセル
                             </button>
                             <button
-                              onClick={() => handleSaveMemo(entry.id)}
+                              onClick={() => handleSaveMemo(entry.id)} 
                               className="flex items-center space-x-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-jp-medium transition-colors"
                             >
                               <Save className="w-3 h-3" />
