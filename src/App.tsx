@@ -107,192 +107,8 @@ const App: React.FC = () => {
 
   // テストデータ生成関数
   const generateTestData = () => {
-    const testEntries = [
-      // 既存のデータ（10件）
-      {
-        id: 'test-1',
-        date: '2025-01-21',
-        emotion: '無価値感',
-        event: '会議で自分の意見が採用されなかった。みんなの前で否定された気がして、自分は価値のない人間だと感じた。',
-        realization: '他人の評価で自分の価値を決めてしまっていた。一つの意見が通らなかっただけで、自分全体を否定する必要はない。',
-        selfEsteemScore: 25,
-        worthlessnessScore: 75
-      },
-      {
-        id: 'test-2',
-        date: '2025-01-20',
-        emotion: '悲しみ',
-        event: '友人との約束をドタキャンされた。楽しみにしていたのに、一人で過ごすことになった。',
-        realization: '相手にも事情があったかもしれない。一人の時間も大切にできるようになりたい。',
-        selfEsteemScore: 40,
-        worthlessnessScore: 60
-      },
-      {
-        id: 'test-3',
-        date: '2025-01-19',
-        emotion: '怒り',
-        event: '電車で席を譲らない人を見てイライラした。マナーの悪さに腹が立った。',
-        realization: '他人をコントロールしようとしていた。自分ができることをすればいい。',
-        selfEsteemScore: 45,
-        worthlessnessScore: 55
-      },
-      {
-        id: 'test-4',
-        date: '2025-01-18',
-        emotion: '恐怖',
-        event: '新しいプロジェクトを任された。失敗したらどうしようと不安で眠れなかった。',
-        realization: '完璧を求めすぎていた。失敗も学びの一つだと考えよう。',
-        selfEsteemScore: 35,
-        worthlessnessScore: 65
-      },
-      {
-        id: 'test-5',
-        date: '2025-01-17',
-        emotion: '罪悪感',
-        event: '母親に強く当たってしまった。後で謝ったが、申し訳ない気持ちが残っている。',
-        realization: 'ストレスが溜まっていた。感情をコントロールする方法を学びたい。',
-        selfEsteemScore: 30,
-        worthlessnessScore: 70
-      },
-      {
-        id: 'test-6',
-        date: '2025-01-16',
-        emotion: '寂しさ',
-        event: '一人で夕食を食べながら、誰かと一緒にいたいと思った。',
-        realization: '一人の時間も価値がある。自分との対話を大切にしよう。',
-        selfEsteemScore: 38,
-        worthlessnessScore: 62
-      },
-      {
-        id: 'test-7',
-        date: '2025-01-15',
-        emotion: '恥ずかしさ',
-        event: 'プレゼンで言葉に詰まってしまった。みんなに見られて恥ずかしかった。',
-        realization: '完璧でなくても大丈夫。人間らしさも魅力の一つ。',
-        selfEsteemScore: 42,
-        worthlessnessScore: 58
-      },
-      {
-        id: 'test-8',
-        date: '2025-01-14',
-        emotion: '悔しさ',
-        event: '同期が昇進した。自分も頑張っているのに認められない。',
-        realization: '他人と比較していた。自分のペースで成長していこう。',
-        selfEsteemScore: 33,
-        worthlessnessScore: 67
-      },
-      {
-        id: 'test-9',
-        date: '2025-01-13',
-        emotion: '無価値感',
-        event: 'SNSで他人の充実した生活を見て、自分は何もできていないと感じた。',
-        realization: 'SNSは一部分しか見えない。自分の小さな成長も認めよう。',
-        selfEsteemScore: 28,
-        worthlessnessScore: 72
-      },
-      {
-        id: 'test-10',
-        date: '2025-01-12',
-        emotion: '悲しみ',
-        event: 'ペットが病気になった。大切な存在を失うかもしれない不安。',
-        realization: '今この瞬間を大切にしよう。愛情を注げることに感謝。',
-        selfEsteemScore: 36,
-        worthlessnessScore: 64
-      },
-      // 追加のテストデータ（10件）
-      {
-        id: 'test-11',
-        date: '2025-01-11',
-        emotion: '恐怖',
-        event: '夜道を一人で歩いていたら、後ろから足音が聞こえてきて怖くなった。心臓がバクバクして、急いで明るい場所に向かった。',
-        realization: '過度に心配しすぎていた。安全な場所を選んで歩けば大丈夫。',
-        selfEsteemScore: 45,
-        worthlessnessScore: 55
-      },
-      {
-        id: 'test-12',
-        date: '2025-01-10',
-        emotion: '怒り',
-        event: '電車で席を譲らない若者を見てイライラした。お年寄りが立っているのに気づかないふりをしていた。',
-        realization: '他人の行動をコントロールしようとしていた。自分ができることをすればいい。',
-        selfEsteemScore: 50,
-        worthlessnessScore: 50
-      },
-      {
-        id: 'test-13',
-        date: '2025-01-09',
-        emotion: '無価値感',
-        event: '同僚が昇進した話を聞いて、自分だけが取り残されている気がした。何をやってもダメな人間だと思った。',
-        realization: '他人と比較することで自分を苦しめていた。自分のペースで成長していけばいい。',
-        selfEsteemScore: 20,
-        worthlessnessScore: 80
-      },
-      {
-        id: 'test-14',
-        date: '2025-01-08',
-        emotion: '寂しさ',
-        event: '友人たちが集まっているSNSの投稿を見て、自分だけ誘われていないことに気づいた。一人でいることが辛い。',
-        realization: '全ての集まりに参加する必要はない。一人の時間も大切にしよう。',
-        selfEsteemScore: 35,
-        worthlessnessScore: 65
-      },
-      {
-        id: 'test-15',
-        date: '2025-01-07',
-        emotion: '罪悪感',
-        event: '忙しくて実家に電話をかけるのを忘れていた。母から心配の電話がきて、申し訳ない気持ちになった。',
-        realization: '完璧でなくても大丈夫。今度から定期的に連絡を取るようにしよう。',
-        selfEsteemScore: 40,
-        worthlessnessScore: 60
-      },
-      {
-        id: 'test-16',
-        date: '2025-01-06',
-        emotion: '恥ずかしさ',
-        event: '会議で間違った発言をしてしまい、みんなに訂正された。顔が真っ赤になって恥ずかしかった。',
-        realization: '間違いは誰にでもある。学習の機会として捉えよう。',
-        selfEsteemScore: 43,
-        worthlessnessScore: 57
-      },
-      {
-        id: 'test-17',
-        date: '2025-01-05',
-        emotion: '悔しさ',
-        event: 'ゲームで負け続けて悔しい。練習しているのに上達しない自分にイライラする。',
-        realization: '結果だけでなく、過程も大切。楽しむことを忘れていた。',
-        selfEsteemScore: 48,
-        worthlessnessScore: 52
-      },
-      {
-        id: 'test-18',
-        date: '2025-01-04',
-        emotion: '無価値感',
-        event: '新年の目標を立てたが、もう挫折しそう。毎年同じことの繰り返しで、自分には変われないと思った。',
-        realization: '完璧を求めすぎていた。小さな変化も成長の証。',
-        selfEsteemScore: 25,
-        worthlessnessScore: 75
-      },
-      {
-        id: 'test-19',
-        date: '2025-01-03',
-        emotion: '悲しみ',
-        event: '正月休みが終わって、また日常に戻ることが悲しい。楽しい時間はあっという間に過ぎてしまう。',
-        realization: '楽しい時間があったからこそ、それを大切に思える。次の楽しみを見つけよう。',
-        selfEsteemScore: 42,
-        worthlessnessScore: 58
-      },
-      {
-        id: 'test-20',
-        date: '2025-01-02',
-        emotion: '恐怖',
-        event: '新年早々、健康診断の結果が気になって眠れない。悪い結果だったらどうしようと不安になった。',
-        realization: 'まだ結果も出ていないのに心配しすぎていた。今できることに集中しよう。',
-        selfEsteemScore: 38,
-        worthlessnessScore: 62
-      }
-    ];
-
-    return testEntries;
+    // 空の配列を返す（テストデータなし）
+    return [];
   };
 
   const loadEntries = async () => {
@@ -305,17 +121,17 @@ const App: React.FC = () => {
       if (savedEntries) {
         const parsedEntries = JSON.parse(savedEntries);
         setEntries(parsedEntries);
-        console.log('既存のデータを読み込みました');
+        console.log('既存のデータを読み込みました:', parsedEntries.length, '件');
       } else {
         // 初回の場合、テストデータを生成
         const testData = generateTestData();
         setEntries(testData);
         localStorage.setItem('journalEntries', JSON.stringify(testData));
-        console.log('テストデータを生成しました');
+        console.log('空のデータ配列を生成しました');
       }
     } catch (error) {
       console.error('データ読み込みエラー:', error);
-      // エラーの場合もテストデータを使用
+      // エラーの場合も空の配列を使用
       const testData = generateTestData();
       setEntries(testData);
       localStorage.setItem('journalEntries', JSON.stringify(testData));
