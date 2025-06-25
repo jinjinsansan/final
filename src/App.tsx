@@ -156,10 +156,16 @@ const App: React.FC = () => {
   const handleDeviceAuthSuccess = (lineUsername: string) => {
     localStorage.setItem('line-username', lineUsername);
     setLineUsername(lineUsername);
-    // Supabaseユーザーを初期化
-    if (isConnected) {
-      initializeUser(lineUsername);
+    
+    try {
+      // Supabaseユーザーを初期化
+      if (isConnected) {
+        initializeUser(lineUsername);
+      }
+    } catch (error) {
+      console.error('ユーザー初期化エラー:', error);
     }
+    
     setCurrentPage('how-to');
     setAuthState('none');
   }
@@ -167,7 +173,7 @@ const App: React.FC = () => {
   const handleStartApp = () => {
     const consentGiven = localStorage.getItem('privacyConsentGiven');
     
-    if (consentGiven === 'true') {
+    if (consentGiven === 'true' && localStorage.getItem('line-username')) {
       // 既存ユーザーは認証状態をチェック
       if (isAuthenticated()) {
         // 認証済みの場合は使い方ページへ
@@ -903,7 +909,7 @@ const App: React.FC = () => {
                     { key: 'diary', label: '日記', icon: Plus },
                     { key: 'search', label: '検索', icon: Search },
                     { key: 'worthlessness-trend', label: '推移', icon: TrendingUp },
-                    ...(isAdmin ? [{ key: 'admin', label: '管理', icon: Settings }] : [])
+                    ...(isAdmin ? [{ key: 'admin', label: '管理', icon: Settings }] : [{ key: 'data-migration', label: 'データ管理', icon: Database }])
                   ].map(({ key, label, icon: Icon }) => (
                     <button
                       key={key}
