@@ -614,6 +614,7 @@ const App: React.FC = () => {
     if (authState === 'login') {
       return (
         <React.Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+        <React.Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
           <DeviceAuthLogin 
             onLoginSuccess={handleDeviceAuthSuccess}
             onRegister={() => setAuthState('register')}
@@ -621,13 +622,18 @@ const App: React.FC = () => {
           />
         </React.Suspense>
       );
+      );
     }
 
     if (authState === 'register') {
-      return <React.Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}><DeviceAuthRegistration 
-        onRegistrationComplete={handleDeviceAuthSuccess}
-        onBack={() => setCurrentPage('home')}
-      /></React.Suspense>;
+      return (
+        <React.Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+          <DeviceAuthRegistration 
+            onRegistrationComplete={handleDeviceAuthSuccess}
+            onBack={() => setCurrentPage('home')}
+          />
+        </React.Suspense>
+      );
     }
 
     if (currentPage === 'home') {
@@ -718,9 +724,9 @@ const App: React.FC = () => {
           <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
           <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
           <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
-        </div>;
+        </div>
       case 'data-migration':
-        return <DataMigration />;
+        return <DataMigration />
       case 'worthlessness-trend':
         const worthlessnessData = getWorthlessnessData();
         
@@ -863,7 +869,7 @@ const App: React.FC = () => {
           </div>
         );
       default:
-        return <HowTo />;
+        return <HowTo />
     }
   };
 
