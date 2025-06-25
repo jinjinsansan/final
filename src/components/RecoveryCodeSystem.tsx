@@ -55,7 +55,7 @@ const RecoveryCodeSystem: React.FC = () => {
       const jsonStr = JSON.stringify(codeBase);
       const compressedCode = btoa(jsonStr);
       
-      // 20文字ごとにハイフンを挿入して読みやすくする
+      // 5文字ごとにハイフンを挿入して読みやすくする
       const formattedCode = compressedCode.match(/.{1,5}/g)?.join('-') || compressedCode;
       
       setRecoveryCode(formattedCode);
