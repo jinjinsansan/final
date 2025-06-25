@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Search, TrendingUp, Plus, Edit3, Trash2, ChevronLeft, ChevronRight, Menu, X, BookOpen, Play, ArrowRight, Home, Heart, Share2, Shield, Settings, MessageCircle, RefreshCw } from 'lucide-react';
+import { Calendar, Search, TrendingUp, Plus, Edit3, Trash2, ChevronLeft, ChevronRight, Menu, X, BookOpen, Play, ArrowRight, Home, Heart, Share2, Shield, Settings, MessageCircle, RefreshCw, Database, AlertTriangle } from 'lucide-react';
 import PrivacyConsent from './components/PrivacyConsent';
 import MaintenanceMode from './components/MaintenanceMode';
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
@@ -50,6 +50,7 @@ const App: React.FC = () => {
     email: '',
     password: ''
   });
+  const [showUserDataManagement, setShowUserDataManagement] = useState(false);
   const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
   const [authState, setAuthState] = useState<'none' | 'login' | 'register'>('none');
   const [showUserDataManagement, setShowUserDataManagement] = useState(false);
@@ -706,8 +707,20 @@ const App: React.FC = () => {
             <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
           </div>
         );
+          <div className="text-center py-12">
+            <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+            <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
+            <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
+          </div>
+        );
       case 'data-migration':
         return isAdmin ? <DataMigration /> : (
+          <div className="text-center py-12">
+            <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+            <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
+            <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
+          </div>
+        );
           <div className="text-center py-12">
             <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
             <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
@@ -989,6 +1002,7 @@ const App: React.FC = () => {
                     { key: 'diary', label: '日記', icon: Plus },
                     { key: 'search', label: '日記検索', icon: Search },
                     { key: 'worthlessness-trend', label: '無価値感推移', icon: TrendingUp },
+                    { key: 'user-data-management', label: 'データ管理', icon: Database },
                     { key: 'user-data-management', label: 'データ管理', icon: Database },
                     { key: 'user-data-management', label: 'データ管理', icon: Database },
                     ...(isAdmin ? [
