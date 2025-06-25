@@ -92,7 +92,12 @@ VITE_MAINTENANCE_END_TIME=2025-01-22T10:00:00Z
    - カウンセラー名の表示
    - 検索画面でのコメント表示
 
-5. **レスポンシブデザイン**
+5. **データバックアップ・復元**
+   - ローカルデータのJSONバックアップ
+   - バックアップファイルからの復元
+   - 端末変更時のデータ移行サポート
+
+6. **レスポンシブデザイン**
    - 全デバイス対応（PC・タブレット・スマートフォン）
    - 日本語フォント最適化（Noto Sans JP）
 
@@ -142,6 +147,11 @@ VITE_MAINTENANCE_END_TIME=2025-01-22T10:00:00Z
    - セキュリティイベントログ
    - デバイス認証管理画面
    - セキュリティダッシュボード
+
+4. **データバックアップ・復元機能**
+   - ローカルデータのJSONバックアップ
+   - バックアップファイルからの復元
+   - 端末変更時のデータ移行サポート
 
 ## 🗄️ データベース構成
 
@@ -220,12 +230,14 @@ src/
 ├── hooks/
 │   └── useAutoSync.ts              # 自動同期フック
 ├── components/
-│   ├── AutoSyncSettings.tsx       # 自動同期設定UI
+│   ├── AutoSyncSettings.tsx        # 自動同期設定UI
 │   ├── ConsentHistoryManagement.tsx # 同意履歴管理UI
-│   ├── DeviceAuthLogin.tsx        # デバイス認証ログイン画面
-│   ├── DeviceAuthRegistration.tsx # デバイス認証登録画面
-│   ├── DeviceAuthManagement.tsx   # デバイス認証管理画面
-│   └── SecurityDashboard.tsx      # セキュリティダッシュボード
+│   ├── DataBackupRecovery.tsx      # データバックアップ・復元
+│   ├── UserDataManagement.tsx      # ユーザーデータ管理
+│   ├── DeviceAuthLogin.tsx         # デバイス認証ログイン画面
+│   ├── DeviceAuthRegistration.tsx  # デバイス認証登録画面
+│   ├── DeviceAuthManagement.tsx    # デバイス認証管理画面
+│   └── SecurityDashboard.tsx       # セキュリティダッシュボード
 └── lib/
     └── deviceAuth.ts               # デバイス認証システム
 ```
@@ -233,18 +245,18 @@ src/
 ### 主要な変更があったファイル
 ```
 src/
-├── App.tsx                         # 自動同期フック追加、UI改善
+├── App.tsx                         # 自動同期フック追加、UI改善、データ管理メニュー追加
 ├── lib/supabase.ts                 # 同意履歴サービス追加、本番環境対応
 ├── hooks/useSupabase.ts            # 自動同期対応
 ├── components/
 │   ├── AdminPanel.tsx              # カウンセラーコメント機能追加
 │   ├── DataMigration.tsx           # 自動同期タブ追加、統計表示
 │   ├── PrivacyConsent.tsx          # 同意履歴記録機能追加
-│   ├── AdminPanel.tsx              # デバイス認証・セキュリティタブ追加
 ├── hooks/useMaintenanceStatus.ts   # パフォーマンス改善
 ├── pages/
 │   ├── DiaryPage.tsx               # スコア入力改善
-│   └── DiarySearchPage.tsx         # カウンセラーコメント表示
+│   ├── DiarySearchPage.tsx         # カウンセラーコメント表示
+│   └── Support.tsx                 # 機能説明の更新
 ```
 
 ## 🎯 重要な実装ポイント
@@ -271,7 +283,12 @@ src/
 - 表示時にはカウンセラー名も表示される
 - ユーザーの日記検索画面でコメントが表示される
 
-### 5. データフロー
+### 5. データバックアップ・復元機能
+- ユーザーはデータ管理画面からバックアップを作成可能
+- バックアップファイルからデータを復元可能
+- 端末変更時のデータ移行に活用
+
+### 6. データフロー
 ```
 アプリ起動 → useAutoSync実行 → Supabase接続確認 → ユーザー存在確認
 → ユーザー未存在の場合は自動作成 → ローカルデータ確認 → 自動同期実行
@@ -320,5 +337,6 @@ netlify.toml:
 5. **カウンセラーログイン**: 管理画面へのアクセス確認
 6. **デバイス認証**: 管理画面の「デバイス認証」「セキュリティ」タブの確認
 7. **カウンセラーコメント**: コメント表示機能の確認
+8. **データバックアップ**: バックアップ作成と復元機能の確認
 
 このプロンプトを使用することで、GitHubリポジトリから完全な状態でプロジェクトを復元し、すべての機能が正常に動作する状態にできます。
