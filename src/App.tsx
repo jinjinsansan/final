@@ -976,7 +976,7 @@ const App: React.FC = () => {
                   
                   {/* お問い合わせ */}
                   <a
-                    href="https://lin.ee/VXZVGnx"
+                    href="https://lin.ee/OYN8msX"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsMobileMenuOpen(false)}
