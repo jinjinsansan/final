@@ -17,6 +17,7 @@ import { useSupabase } from './hooks/useSupabase';
 import { useAutoSync } from './hooks/useAutoSync';
 import DeviceAuthLogin from './components/DeviceAuthLogin';
 import DeviceAuthRegistration from './components/DeviceAuthRegistration';
+import UserDataManagement from './components/UserDataManagement';
 import { isAuthenticated, getCurrentUser, logoutUser } from './lib/deviceAuth';
 
 interface JournalEntry {
@@ -51,6 +52,7 @@ const App: React.FC = () => {
   });
   const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
   const [authState, setAuthState] = useState<'none' | 'login' | 'register'>('none');
+  const [showUserDataManagement, setShowUserDataManagement] = useState(false);
 
   const [dataLoading, setDataLoading] = useState(true);
   const { isMaintenanceMode, config: maintenanceConfig, loading: maintenanceLoading } = useMaintenanceStatus();
@@ -712,6 +714,8 @@ const App: React.FC = () => {
             <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
           </div>
         );
+      case 'user-data-management':
+        return <UserDataManagement />;
       case 'worthlessness-trend':
         const worthlessnessData = getWorthlessnessData();
         
@@ -985,6 +989,8 @@ const App: React.FC = () => {
                     { key: 'diary', label: '日記', icon: Plus },
                     { key: 'search', label: '日記検索', icon: Search },
                     { key: 'worthlessness-trend', label: '無価値感推移', icon: TrendingUp },
+                    { key: 'user-data-management', label: 'データ管理', icon: Database },
+                    { key: 'user-data-management', label: 'データ管理', icon: Database },
                     ...(isAdmin ? [
                       { key: 'admin', label: '管理画面', icon: Settings },
                       { key: 'data-migration', label: 'データ管理', icon: Settings }
