@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Calendar, Filter, X, Eye, Edit3, Trash2, Save, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getCurrentUser } from '../lib/deviceAuth';
+import { getCurrentUser } from '../lib/deviceAuth'; 
+
+// 日本時間を取得する関数
+const getJapaneseDate = (): Date => {
+  // 日本時間（UTC+9）を取得
+  const now = new Date();
+  // 日本時間のオフセット（ミリ秒）
+  const japanOffset = 9 * 60 * 60 * 1000;
+  // UTCミリ秒 + 日本時間オフセット
+  const japanTime = new Date(now.getTime() + japanOffset);
+  return japanTime;
+};
 
 interface JournalEntry {
   id: string;
@@ -18,7 +29,7 @@ interface JournalEntry {
 const DiarySearchPage: React.FC = () => {
   const currentUser = getCurrentUser();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [searchType, setSearchType] = useState<'date' | 'keyword' | 'emotion'>('keyword');
+    date: getJapaneseDate().toISOString().split('T')[0],
   const [searchValue, setSearchValue] = useState('');
   const [selectedEmotion, setSelectedEmotion] = useState('');
   const [dateRange, setDateRange] = useState({
@@ -40,6 +51,10 @@ const DiarySearchPage: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [syncing, setSyncing] = useState(false);
+
+  // 現在の日本時間
+  const today = getJapaneseDate();
+  const todayString = today.toISOString().split('T')[0];
 
   const emotions = [
     '恐怖', '悲しみ', '怒り', '悔しい', '無価値感', '罪悪感', '寂しさ', '恥ずかしさ'
@@ -331,18 +346,22 @@ const DiarySearchPage: React.FC = () => {
                     <div className="grid grid-cols-7 gap-1">
                       {generateCalendar(calendarDate).days.map((day, index) => {
                         const isCurrentMonth = day.getMonth() === calendarDate.getMonth();
-                        const isSelected = day.toISOString().split('T')[0] === editFormData.date;
-                        const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
+                        const dayString = day.toISOString().split('T')[0];
+                        const isSelected = dayString === formData.date;
+                        const isToday = dayString === todayString;
+                        const isFuture = day > today;
                         
                         return (
                           <button
                             key={index}
                             onClick={() => handleDateSelect(day)}
+                            disabled={isFuture}
                             className={`
                               w-8 h-8 text-xs font-jp-normal rounded transition-colors
                               ${isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}
                               ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}
                               ${isToday && !isSelected ? 'bg-blue-100 text-blue-600' : ''}
+                              ${isFuture ? 'opacity-30 cursor-not-allowed' : ''}
                             `}
                           >
                             {day.getDate()}
@@ -355,10 +374,24 @@ const DiarySearchPage: React.FC = () => {
                     <div className="mt-4 text-center">
                       <button
                         onClick={() => setShowCalendar(false)}
-                        className="text-sm text-gray-500 hover:text-gray-700 font-jp-normal"
+                        className="text-sm text-gray-500 hover:text-gray-700 font-jp-normal mt-2"
                       >
                         閉じる
                       </button>
+                    </div>
+                    
+                    {/* 凡例 */}
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="flex items-center justify-center space-x-4 text-xs text-gray-600">
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-blue-100 rounded-full"></div>
+                          <span>今日</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 opacity-30 bg-gray-400 rounded-full"></div>
+                          <span>選択不可</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
