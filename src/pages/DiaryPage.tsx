@@ -693,10 +693,7 @@ const DiaryPage: React.FC = () => {
           <Share2 className="w-5 h-5" />
           <span>SNSでシェア</span>
         </button>
-      </div>
-
-      {/* Twitterシェアボタン */}
-      <div className="flex justify-center pb-8">
+        
         <button
           onClick={handleTwitterShare}
           disabled={saving}
