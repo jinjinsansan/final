@@ -107,7 +107,6 @@ const App: React.FC = () => {
 
   // テストデータ生成関数
   const generateTestData = () => {
-    // 空の配列を返す（テストデータなし）
     return [];
   };
 
@@ -127,7 +126,7 @@ const App: React.FC = () => {
         const testData = generateTestData();
         setEntries(testData);
         localStorage.setItem('journalEntries', JSON.stringify(testData));
-        console.log('空のデータ配列を生成しました');
+        console.log('初期データ配列を生成しました');
       }
     } catch (error) {
       console.error('データ読み込みエラー:', error);
@@ -135,6 +134,7 @@ const App: React.FC = () => {
       const testData = generateTestData();
       setEntries(testData);
       localStorage.setItem('journalEntries', JSON.stringify(testData));
+      console.log('エラー時に空のデータ配列を生成しました');
     } finally {
       setDataLoading(false);
     }
