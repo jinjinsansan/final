@@ -7,7 +7,7 @@ const DiaryPage: React.FC = () => {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     event: '',
-    emotion: '',
+    emotion: '', 
     selfEsteemScore: 50,
     worthlessnessScore: 50,
     realization: ''
@@ -15,11 +15,29 @@ const DiaryPage: React.FC = () => {
 
   // 無価値感スコア用の状態
   const [worthlessnessScores, setWorthlessnessScores] = useState({
-    yesterdaySelfEsteem: '50',
-    yesterdayWorthlessness: '50',
-    todaySelfEsteem: '50',
-    todayWorthlessness: '50'
+    yesterdaySelfEsteem: '50', 
+    yesterdayWorthlessness: '50', 
+    todaySelfEsteem: '50', 
+    todayWorthlessness: '50' 
   });
+
+  // 最後に保存した無価値感スコアを取得
+  useEffect(() => {
+    const lastSavedScores = localStorage.getItem('lastSavedWorthlessnessScores');
+    if (lastSavedScores) {
+      try {
+        const parsedScores = JSON.parse(lastSavedScores);
+        // 最後に保存したスコアを前日のスコアとして設定
+        setWorthlessnessScores(prev => ({
+          ...prev,
+          yesterdaySelfEsteem: String(parsedScores.selfEsteemScore || 50),
+          yesterdayWorthlessness: String(parsedScores.worthlessnessScore || 50)
+        }));
+      } catch (error) {
+        console.error('最後に保存したスコアの読み込みエラー:', error);
+      }
+    }
+  }, []);
 
   // 初期スコアを読み込み
   useEffect(() => {
@@ -45,7 +63,7 @@ const DiaryPage: React.FC = () => {
         }
       } catch (error) {
         console.error('初期スコアの読み込みエラー:', error);
-      }
+      } 
     }
   }, []);
 
@@ -159,6 +177,17 @@ const DiaryPage: React.FC = () => {
       const finalWorthlessnessScore = formData.emotion === '無価値感' 
         ? (parseInt(worthlessnessScores.todayWorthlessness) || 50) 
         : formData.worthlessnessScore;
+
+      // 無価値感を選んだ場合、今日のスコアを保存して次回の前日のスコアとして使用
+      if (formData.emotion === '無価値感') {
+        const scoresToSave = {
+          selfEsteemScore: finalSelfEsteemScore,
+          worthlessnessScore: finalWorthlessnessScore,
+          savedAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem('lastSavedWorthlessnessScores', JSON.stringify(scoresToSave));
+      }
       
       const newEntry = {
         id: Date.now().toString(),
@@ -185,19 +214,25 @@ const DiaryPage: React.FC = () => {
         realization: ''
       });
       
-      // 初期スコアを再度読み込み
-      const savedInitialScores = localStorage.getItem('initialScores');
-      if (savedInitialScores) {
+      // 無価値感を選んだ場合、次回のために今日のスコアを前日のスコアとして設定
+      if (formData.emotion === '無価値感') {
+        const todaySelfEsteem = parseInt(worthlessnessScores.todaySelfEsteem) || 50;
+        const todayWorthlessness = parseInt(worthlessnessScores.todayWorthlessness) || 50;
+        
         try {
-          const initialScores = JSON.parse(savedInitialScores);
-          if (initialScores.selfEsteemScore && initialScores.worthlessnessScore) {
-            setWorthlessnessScores({
-              yesterdaySelfEsteem: String(initialScores.selfEsteemScore),
-              yesterdayWorthlessness: String(initialScores.worthlessnessScore),
-              todaySelfEsteem: String(initialScores.selfEsteemScore),
-              todayWorthlessness: String(initialScores.worthlessnessScore)
-            });
-          }
+          // 次回のフォーム用に設定
+          setWorthlessnessScores({
+            yesterdaySelfEsteem: String(todaySelfEsteem),
+            yesterdayWorthlessness: String(todayWorthlessness),
+            todaySelfEsteem: String(todaySelfEsteem),
+            todayWorthlessness: String(todayWorthlessness)
+          });
+          
+          console.log('次回のために今日のスコアを保存しました:', {
+            yesterdaySelfEsteem: todaySelfEsteem,
+            yesterdayWorthlessness: todayWorthlessness
+          });
+          
         } catch (error) {
           console.error('初期スコアの再読み込みエラー:', error);
           // エラー時はデフォルト値に戻す
@@ -207,10 +242,18 @@ const DiaryPage: React.FC = () => {
             todaySelfEsteem: '50',
             todayWorthlessness: '50'
           });
-        }
+        } 
       } else {
-        // 初期スコアがない場合はデフォルト値に戻す
-        setWorthlessnessScores({
+        // 最後に保存したスコアがある場合は、それを前日のスコアとして使用
+        const lastSavedScores = localStorage.getItem('lastSavedWorthlessnessScores');
+        if (lastSavedScores) {
+          // 最後に保存したスコアがある場合は何もしない（上の useEffect で処理済み）
+          return;
+        }
+        
+        // 最後に保存したスコアがない場合（初回）は、初期スコアを使用
+        setWorthlessnessScores(prev => ({
+          ...prev,
           yesterdaySelfEsteem: '50',
           yesterdayWorthlessness: '50',
           todaySelfEsteem: '50',
