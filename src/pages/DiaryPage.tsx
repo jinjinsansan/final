@@ -1,262 +1,192 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
+import { Search, Calendar, Filter, X, Eye, Edit3, Trash2, Save, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getCurrentUser } from '../lib/deviceAuth';
 
-// 日本時間を取得する関数
-const getJapaneseDate = (): Date => {
-  // 日本時間のタイムゾーンオフセット（UTC+9）
-  const japanTimeOffset = 9 * 60; // 9時間をミリ秒に変換
-  
-  // 現在のUTC時間を取得
-  const now = new Date();
-  
-  // ローカルのタイムゾーンオフセットを分で取得
-  const localOffset = now.getTimezoneOffset();
-  
-  // 日本時間との差分を計算（分）
-  const offsetDiff = localOffset + japanTimeOffset;
-  
-  // 現在時刻に差分を加えて日本時間を取得
-  const japanTime = new Date(now.getTime() + offsetDiff * 60 * 1000);
-  
-  return japanTime;
-};
+interface JournalEntry {
+  id: string;
+  date: string;
+  emotion: string;
+  event: string;
+  realization: string;
+  selfEsteemScore: number;
+  worthlessnessScore: number;
+  counselor_memo?: string;
+  is_visible_to_user?: boolean;
+  counselor_name?: string;
+}
 
-const DiaryPage: React.FC = () => {
+const DiarySearchPage: React.FC = () => {
   const currentUser = getCurrentUser();
-  const [formData, setFormData] = useState({
-    date: getJapaneseDate().toISOString().split('T')[0],
-    event: '',
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [searchType, setSearchType] = useState<'date' | 'keyword' | 'emotion'>('keyword');
+  const [searchValue, setSearchValue] = useState('');
+  const [selectedEmotion, setSelectedEmotion] = useState('');
+  const [dateRange, setDateRange] = useState({
+    start: '',
+    end: ''
+  });
+  const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    date: '',
     emotion: '',
+    event: '',
+    realization: '',
     selfEsteemScore: 50,
-    worthlessnessScore: 50,
-    realization: ''
+    worthlessnessScore: 50
   });
-
-  // 無価値感スコア用の状態
-  const [worthlessnessScores, setWorthlessnessScores] = useState({
-    yesterdaySelfEsteem: 50,
-    yesterdayWorthlessness: 50,
-    todaySelfEsteem: 50,
-    todayWorthlessness: 50
-  });
-
   const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarDate, setCalendarDate] = useState(getJapaneseDate());
-  const [saving, setSaving] = useState(false);
-
-  // 最後に保存した無価値感スコアを取得
-  useEffect(() => {
-    const lastSavedScores = localStorage.getItem('lastSavedWorthlessnessScores');
-    if (lastSavedScores) {
-      try {
-        const parsedScores = JSON.parse(lastSavedScores);
-        // 最後に保存したスコアを前日のスコアとして設定
-        setWorthlessnessScores(prev => ({
-          ...prev,
-          yesterdaySelfEsteem: parsedScores.selfEsteemScore,
-          yesterdayWorthlessness: parsedScores.worthlessnessScore,
-          // 今日のスコアも同じ値で初期化（ユーザーが変更可能）
-          todaySelfEsteem: parsedScores.selfEsteemScore,
-          todayWorthlessness: parsedScores.worthlessnessScore
-        }));
-      } catch (error) {
-        console.error('最後に保存したスコアの読み込みエラー:', error);
-      }
-    } else {
-      // 最後に保存したスコアがない場合は初期スコアを確認
-      const savedInitialScores = localStorage.getItem('initialScores');
-      if (savedInitialScores) {
-        try {
-          const initialScores = JSON.parse(savedInitialScores);
-          // 数値型と文字列型の両方に対応
-          const selfEsteemScore = typeof initialScores.selfEsteemScore === 'string' 
-            ? parseInt(initialScores.selfEsteemScore) 
-            : initialScores.selfEsteemScore;
-            
-          const worthlessnessScore = typeof initialScores.worthlessnessScore === 'string'
-            ? parseInt(initialScores.worthlessnessScore)
-            : initialScores.worthlessnessScore;
-            
-          if (!isNaN(selfEsteemScore) && !isNaN(worthlessnessScore)) {
-            setWorthlessnessScores({
-              yesterdaySelfEsteem: selfEsteemScore,
-              yesterdayWorthlessness: worthlessnessScore,
-              todaySelfEsteem: selfEsteemScore,
-              todayWorthlessness: worthlessnessScore
-            });
-          }
-        } catch (error) {
-          console.error('初期スコアの読み込みエラー:', error);
-        }
-      }
-    }
-  }, []);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [syncing, setSyncing] = useState(false);
 
   const emotions = [
-    { 
-      name: '恐怖', 
-      bgColor: 'bg-purple-100', 
-      borderColor: 'border-purple-300',
-      textColor: 'text-purple-800',
-      selectedBg: 'bg-purple-200',
-      selectedBorder: 'border-purple-500'
-    },
-    { 
-      name: '悲しみ', 
-      bgColor: 'bg-blue-100', 
-      borderColor: 'border-blue-300',
-      textColor: 'text-blue-800',
-      selectedBg: 'bg-blue-200',
-      selectedBorder: 'border-blue-500'
-    },
-    { 
-      name: '怒り', 
-      bgColor: 'bg-red-100', 
-      borderColor: 'border-red-300',
-      textColor: 'text-red-800',
-      selectedBg: 'bg-red-200',
-      selectedBorder: 'border-red-500'
-    },
-    { 
-      name: '悔しい', 
-      bgColor: 'bg-green-100', 
-      borderColor: 'border-green-300',
-      textColor: 'text-green-800',
-      selectedBg: 'bg-green-200',
-      selectedBorder: 'border-green-500'
-    },
-    { 
-      name: '無価値感', 
-      bgColor: 'bg-gray-100', 
-      borderColor: 'border-gray-400',
-      textColor: 'text-gray-800',
-      selectedBg: 'bg-gray-200',
-      selectedBorder: 'border-gray-600',
-      highlighted: true
-    },
-    { 
-      name: '罪悪感', 
-      bgColor: 'bg-orange-100', 
-      borderColor: 'border-orange-300',
-      textColor: 'text-orange-800',
-      selectedBg: 'bg-orange-200',
-      selectedBorder: 'border-orange-500'
-    },
-    { 
-      name: '寂しさ', 
-      bgColor: 'bg-indigo-100', 
-      borderColor: 'border-indigo-300',
-      textColor: 'text-indigo-800',
-      selectedBg: 'bg-indigo-200',
-      selectedBorder: 'border-indigo-500'
-    },
-    { 
-      name: '恥ずかしさ', 
-      bgColor: 'bg-pink-100', 
-      borderColor: 'border-pink-300',
-      textColor: 'text-pink-800',
-      selectedBg: 'bg-pink-200',
-      selectedBorder: 'border-pink-500'
-    }
+    '恐怖', '悲しみ', '怒り', '悔しい', '無価値感', '罪悪感', '寂しさ', '恥ずかしさ'
   ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    loadEntries();
+  }, []);
+
+  const loadEntries = async () => {
+    setSyncing(true);
     
-    if (!formData.emotion || !formData.event.trim()) {
-      alert('感情と出来事を入力してください。');
-      return;
-    }
-
-    setSaving(true);
-
     try {
-      // ローカルストレージに保存
-      const existingEntries = localStorage.getItem('journalEntries');
-      const entries = existingEntries ? JSON.parse(existingEntries) : [];
-      
-      // 無価値感を選んだ場合のスコアを設定
-      const finalSelfEsteemScore = formData.emotion === '無価値感' 
-        ? parseInt(worthlessnessScores.todaySelfEsteem) || 50 
-        : formData.selfEsteemScore;
-      const finalWorthlessnessScore = formData.emotion === '無価値感' 
-        ? parseInt(worthlessnessScores.todayWorthlessness) || 50 
-        : formData.worthlessnessScore;
-      
-      const newEntry = {
-        id: Date.now().toString(),
-        date: formData.date,
-        emotion: formData.emotion,
-        event: formData.event,
-        realization: formData.realization,
-        selfEsteemScore: finalSelfEsteemScore,
-        worthlessnessScore: finalWorthlessnessScore
-      };
-      
-      entries.unshift(newEntry);
-      localStorage.setItem('journalEntries', JSON.stringify(entries));
-      
-      // 無価値感を選んだ場合、今日のスコアを保存して次回の前日のスコアとして使用
-      if (formData.emotion === '無価値感') {
-        const scoresToSave = {
-          selfEsteemScore: finalSelfEsteemScore,
-          worthlessnessScore: finalWorthlessnessScore,
-          savedAt: new Date().toISOString()
-        };
+      // ローカルストレージからデータを取得
+      const savedEntries = localStorage.getItem('journalEntries');
+      if (savedEntries) {
+        const parsedEntries = JSON.parse(savedEntries);
+        setEntries(parsedEntries);
         
-        localStorage.setItem('lastSavedWorthlessnessScores', JSON.stringify(scoresToSave));
-        console.log('次回のために今日のスコアを保存しました:', scoresToSave);
+        // 直近5日分の日記を取得
+        const sortedEntries = [...parsedEntries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setRecentEntries(sortedEntries.slice(0, 5));
+        
+        console.log('ローカルストレージからデータを読み込みました');
       }
-      
-      alert('日記を保存しました！');
-    
-      // フォームをリセット
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        event: '',
-        emotion: '',
-        selfEsteemScore: 50,
-        worthlessnessScore: 50,
-        realization: ''
-      });
-      
-      // スコアもリセット（次回のために最新の値は保持されている）
-      setWorthlessnessScores({
-        yesterdaySelfEsteem: 50,
-        yesterdayWorthlessness: 50,
-        todaySelfEsteem: 50,
-        todayWorthlessness: 50
-      });
-      
     } catch (error) {
-      console.error('保存エラー:', error);
-      alert('保存に失敗しました。もう一度お試しください。');
+      console.error('データ読み込みエラー:', error);
     } finally {
-      setSaving(false);
+      setSyncing(false);
     }
   };
 
-  const handleShare = () => {
-    const username = currentUser?.lineUsername || 'ユーザー';
-    const shareText = `${username}の今日の感情日記 📝\n\n感情: ${formData.emotion}\n\n#かんじょうにっき #感情日記 #自己肯定感\n\n${window.location.origin}`;
-    
-    if (navigator.share) {
-      // Web Share API が利用可能な場合
-      navigator.share({
-        title: 'かんじょうにっき',
-        text: shareText,
-      }).catch((error) => {
-        console.log('シェアがキャンセルされました:', error);
-      });
-    } else {
-      // Web Share API が利用できない場合はクリップボードにコピー
-      navigator.clipboard.writeText(shareText).then(() => {
-        alert('シェア用テキストをクリップボードにコピーしました！\nSNSに貼り付けてシェアしてください。');
-      }).catch(() => {
-        // クリップボードAPIも使えない場合は手動でテキストを表示
-        prompt('以下のテキストをコピーしてSNSでシェアしてください:', shareText);
-      });
+  useEffect(() => {
+    // 検索条件に基づいてエントリーをフィルタリング
+    let filtered = [...entries];
+
+    if (searchType === 'keyword' && searchValue.trim()) {
+      filtered = filtered.filter(entry => 
+        entry.event.toLowerCase().includes(searchValue.toLowerCase()) ||
+        entry.realization.toLowerCase().includes(searchValue.toLowerCase())
+      );
+    }
+
+    if (searchType === 'emotion' && selectedEmotion) {
+      filtered = filtered.filter(entry => entry.emotion === selectedEmotion);
+    }
+
+    if (searchType === 'date') {
+      if (dateRange.start) {
+        filtered = filtered.filter(entry => entry.date >= dateRange.start);
+      }
+      if (dateRange.end) {
+        filtered = filtered.filter(entry => entry.date <= dateRange.end);
+      }
+    }
+
+    // 日付順でソート（新しい順）
+    filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    setFilteredEntries(filtered);
+  }, [entries, searchType, searchValue, selectedEmotion, dateRange]);
+
+  const clearSearch = () => {
+    setSearchValue('');
+    setSelectedEmotion('');
+    setDateRange({ start: '', end: '' });
+  };
+
+  const handleEdit = (entry: JournalEntry) => {
+    setEditingEntry(entry);
+    setEditFormData({
+      date: entry.date,
+      emotion: entry.emotion,
+      event: entry.event,
+      realization: entry.realization,
+      selfEsteemScore: entry.selfEsteemScore,
+      worthlessnessScore: entry.worthlessnessScore
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return;
+
+    setSyncing(true);
+
+    try {
+      const updatedEntry = {
+        ...editingEntry,
+        ...editFormData
+      };
+
+      // ローカルストレージのデータを更新
+      const updatedEntries = entries.map(entry => 
+        entry.id === editingEntry.id ? updatedEntry : entry
+      );
+      
+      setEntries(updatedEntries);
+      localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+      
+      // 直近の日記も更新
+      const sortedEntries = [...updatedEntries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setRecentEntries(sortedEntries.slice(0, 5));
+      
+      setEditingEntry(null);
+      alert('日記を更新しました！');
+      
+    } catch (error) {
+      console.error('更新エラー:', error);
+      alert('更新に失敗しました。もう一度お試しください。');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEntry(null);
+    setEditFormData({
+      date: '',
+      emotion: '',
+      event: '',
+      realization: '',
+      selfEsteemScore: 50,
+      worthlessnessScore: 50
+    });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('この日記を削除しますか？')) {
+      setSyncing(true);
+      
+      try {
+        const updatedEntries = entries.filter(entry => entry.id !== id);
+        setEntries(updatedEntries);
+        localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+        
+        // 直近の日記も更新
+        const sortedEntries = [...updatedEntries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setRecentEntries(sortedEntries.slice(0, 5));
+        
+        alert('日記を削除しました！');
+        
+      } catch (error) {
+        console.error('削除エラー:', error);
+        alert('削除に失敗しました。もう一度お試しください。');
+      } finally {
+        setSyncing(false);
+      }
     }
   };
 
@@ -266,6 +196,35 @@ const DiaryPage: React.FC = () => {
     const day = date.getDate();
     const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
     return `${month}月${day}日 (${dayOfWeek})`;
+  };
+
+  const getEmotionColor = (emotion: string) => {
+    const colorMap: { [key: string]: string } = {
+      '恐怖': 'bg-purple-100 text-purple-800 border-purple-200',
+      '悲しみ': 'bg-blue-100 text-blue-800 border-blue-200',
+      '怒り': 'bg-red-100 text-red-800 border-red-200',
+      '悔しい': 'bg-green-100 text-green-800 border-green-200',
+      '無価値感': 'bg-gray-100 text-gray-800 border-gray-300',
+      '罪悪感': 'bg-orange-100 text-orange-800 border-orange-200',
+      '寂しさ': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      '恥ずかしさ': 'bg-pink-100 text-pink-800 border-pink-200'
+    };
+    return colorMap[emotion] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const highlightText = (text: string, searchTerm: string) => {
+    if (!searchTerm.trim() || searchType !== 'keyword') return text;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <mark key={index} className="bg-yellow-200 px-1 rounded">
+          {part}
+        </mark>
+      ) : part
+    );
   };
 
   const generateCalendar = (date: Date) => {
@@ -288,12 +247,8 @@ const DiaryPage: React.FC = () => {
   };
 
   const handleDateSelect = (selectedDate: Date) => {
-    // タイムゾーンを考慮した正確な日付文字列を生成
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(selectedDate.getDate()).padStart(2, '0');
-    const dateString = `${year}-${month}-${day}`;
-    setFormData({...formData, date: dateString});
+    const dateString = selectedDate.toISOString().split('T')[0];
+    setEditFormData({...editFormData, date: dateString});
     setShowCalendar(false);
   };
 
@@ -307,378 +262,609 @@ const DiaryPage: React.FC = () => {
     setCalendarDate(newDate);
   };
 
-  // 自己肯定感スコア変更時の無価値感スコア自動計算
-  const handleSelfEsteemChange = (field: 'yesterdaySelfEsteem' | 'todaySelfEsteem', value: number) => {
-    const worthlessnessField = field === 'yesterdaySelfEsteem' ? 'yesterdayWorthlessness' : 'todayWorthlessness';
-    const calculatedWorthlessness = 100 - value;
-    
-    setWorthlessnessScores(prev => ({
-      ...prev,
-      [field]: value,
-      [worthlessnessField]: calculatedWorthlessness
-    }));
-  };
+  // 編集モーダル
+  const renderEditModal = () => {
+    if (!editingEntry) return null;
 
-  // 無価値感スコア直接変更時の自己肯定感スコア自動計算
-  const handleWorthlessnessChange = (field: 'yesterdayWorthlessness' | 'todayWorthlessness', value: number) => {
-    const selfEsteemField = field === 'yesterdayWorthlessness' ? 'yesterdaySelfEsteem' : 'todaySelfEsteem';
-    const calculatedSelfEsteem = 100 - value;
-    
-    setWorthlessnessScores(prev => ({
-      ...prev,
-      [field]: value,
-      [selfEsteemField]: calculatedSelfEsteem
-    }));
-  };
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-jp-bold text-gray-900">日記を編集</h2>
+              <button
+                onClick={handleCancelEdit}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
 
-  return (
-    <div className="w-full max-w-2xl mx-auto space-y-6 px-2">
-      {/* 今日の出来事セクション */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-jp-bold text-gray-900">今日の出来事</h2>
-          <div className="relative">
-            <button
-              onClick={() => setShowCalendar(!showCalendar)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 font-jp-normal hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>{formatDate(formData.date)}</span>
-            </button>
+            {/* 日付選択 */}
+            <div className="mb-6">
+              <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                日付
+              </label>
+              <div className="relative">
+                <button
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 font-jp-normal hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors w-full justify-between"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>{formatDate(editFormData.date)}</span>
+                  </div>
+                </button>
 
-            {/* カレンダーポップアップ */}
-            {showCalendar && (
-              <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 w-80 max-w-[calc(100vw-2rem)]">
-                {/* カレンダーヘッダー */}
-                <div className="flex items-center justify-between mb-4">
-                  <button
-                    onClick={() => navigateMonth('prev')}
-                    className="p-1 hover:bg-gray-100 rounded"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <h3 className="font-jp-bold text-gray-900">
-                    {calendarDate.getFullYear()}年{calendarDate.getMonth() + 1}月
-                  </h3>
-                  <button
-                    onClick={() => navigateMonth('next')}
-                    className="p-1 hover:bg-gray-100 rounded"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-
-                {/* 曜日ヘッダー */}
-                <div className="grid grid-cols-7 gap-1 mb-2">
-                  {['日', '月', '火', '水', '木', '金', '土'].map((day) => (
-                    <div key={day} className="text-center text-xs font-jp-medium text-gray-500 py-2">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                {/* カレンダー日付 */}
-                <div className="grid grid-cols-7 gap-1">
-                  {generateCalendar(calendarDate).days.map((day, index) => {
-                    const isCurrentMonth = day.getMonth() === calendarDate.getMonth();
-                    const isSelected = day.toISOString().split('T')[0] === formData.date;
-                    const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
-                    const isToday = dayString === getJapaneseDate().toISOString().split('T')[0];
-                    const isFutureDate = day > getJapaneseDate();
-                    return (
+                {/* カレンダーポップアップ */}
+                {showCalendar && (
+                  <div className="absolute left-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 w-80 max-w-[calc(100vw-2rem)]">
+                    {/* カレンダーヘッダー */}
+                    <div className="flex items-center justify-between mb-4">
                       <button
-                        key={index}
-                        onClick={() => handleDateSelect(day)}
-                        disabled={isFutureDate}
-                        className={`
-                          w-8 h-8 text-xs font-jp-normal rounded transition-colors 
-                          ${isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}
-                          ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}
-                          ${isToday && !isSelected ? 'bg-blue-100 text-blue-600' : ''}
-                          ${isFutureDate ? 'opacity-30 cursor-not-allowed' : ''}
-                        `}
+                        onClick={() => navigateMonth('prev')}
+                        className="p-1 hover:bg-gray-100 rounded"
                       >
-                        {day.getDate()}
+                        <ChevronLeft className="w-5 h-5 text-gray-600" />
                       </button>
-                    );
-                  })}
-                </div>
+                      <h3 className="font-jp-bold text-gray-900">
+                        {calendarDate.getFullYear()}年{calendarDate.getMonth() + 1}月
+                      </h3>
+                      <button
+                        onClick={() => navigateMonth('next')}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                      </button>
+                    </div>
 
-                {/* 閉じるボタン */}
-                <div className="mt-4 text-center">
-                  <button
-                    onClick={() => setShowCalendar(false)}
-                    className="text-sm text-gray-500 hover:text-gray-700 font-jp-normal"
+                    {/* 曜日ヘッダー */}
+                    <div className="grid grid-cols-7 gap-1 mb-2">
+                      {['日', '月', '火', '水', '木', '金', '土'].map((day) => (
+                        <div key={day} className="text-center text-xs font-jp-medium text-gray-500 py-2">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* カレンダー日付 */}
+                    <div className="grid grid-cols-7 gap-1">
+                      {generateCalendar(calendarDate).days.map((day, index) => {
+                        const isCurrentMonth = day.getMonth() === calendarDate.getMonth();
+                        const isSelected = day.toISOString().split('T')[0] === editFormData.date;
+                        const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
+                        
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => handleDateSelect(day)}
+                            className={`
+                              w-8 h-8 text-xs font-jp-normal rounded transition-colors
+                              ${isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}
+                              ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}
+                              ${isToday && !isSelected ? 'bg-blue-100 text-blue-600' : ''}
+                            `}
+                          >
+                            {day.getDate()}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* 閉じるボタン */}
+                    <div className="mt-4 text-center">
+                      <button
+                        onClick={() => setShowCalendar(false)}
+                        className="text-sm text-gray-500 hover:text-gray-700 font-jp-normal"
+                      >
+                        閉じる
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 感情選択 */}
+            <div className="mb-6">
+              <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                感情
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {emotions.map((emotion) => (
+                  <label
+                    key={emotion}
+                    className={`flex items-center space-x-2 p-3 rounded-lg cursor-pointer transition-all duration-200 border-2 ${
+                      editFormData.emotion === emotion
+                        ? getEmotionColor(emotion) + ' shadow-md'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
                   >
-                    閉じる
-                  </button>
+                    <input
+                      type="radio"
+                      name="emotion"
+                      value={emotion}
+                      checked={editFormData.emotion === emotion}
+                      onChange={(e) => setEditFormData({...editFormData, emotion: e.target.value})}
+                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="font-jp-medium text-sm">
+                      {emotion}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* 出来事 */}
+            <div className="mb-6">
+              <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                出来事
+              </label>
+              <textarea
+                value={editFormData.event}
+                onChange={(e) => setEditFormData({...editFormData, event: e.target.value})}
+                className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal resize-none"
+                placeholder="嫌な気持ちになった出来事を書いてください..."
+              />
+            </div>
+
+            {/* 気づき */}
+            <div className="mb-6">
+              <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                今日の小さな気づき
+              </label>
+              <textarea
+                value={editFormData.realization}
+                onChange={(e) => setEditFormData({...editFormData, realization: e.target.value})}
+                className="w-full h-24 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal resize-none"
+                placeholder="小さな気づきを書いてください..."
+              />
+            </div>
+
+            {/* 無価値感スコア（無価値感を選んだ場合のみ） */}
+            {editFormData.emotion === '無価値感' && (
+              <div className="mb-6 bg-red-50 rounded-lg p-4 border border-red-200">
+                <h3 className="text-red-800 font-jp-bold mb-4">
+                  無価値感スコア
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                      自己肯定感スコア
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={editFormData.selfEsteemScore}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 1;
+                        setEditFormData({
+                          ...editFormData,
+                          selfEsteemScore: value,
+                          worthlessnessScore: 100 - value
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                      無価値感スコア
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={editFormData.worthlessnessScore}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 1;
+                        setEditFormData({
+                          ...editFormData,
+                          worthlessnessScore: value,
+                          selfEsteemScore: 100 - value
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                    />
+                  </div>
                 </div>
               </div>
             )}
+
+            {/* ボタン */}
+            <div className="flex space-x-4">
+              <button
+                onClick={handleSaveEdit}
+                disabled={syncing}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors flex items-center justify-center space-x-2"
+              >
+                {syncing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>保存中...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>保存</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                disabled={syncing}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-jp-medium transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        <div className="bg-gray-50 rounded-lg p-6 mb-4">
-          <p className="text-gray-600 font-jp-normal text-sm mb-4">
-            嫌な気持ちになった出来事を書いてみましょう
-          </p>
-          <div className="relative overflow-hidden">
-            {/* 罫線背景 */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="w-full h-full bg-white rounded-lg border border-gray-200 overflow-hidden" style={{
-                backgroundImage: `
-                  linear-gradient(to bottom, transparent 0px, transparent 31px, #e5e7eb 31px, #e5e7eb 32px),
-                  linear-gradient(to right, #ef4444 0px, #ef4444 2px, transparent 2px)
-                `,
-                backgroundSize: '100% 32px, 100% 100%',
-                backgroundPosition: '0 16px, 24px 0'
-              }}>
-                {/* 左マージン線 */}
-                <div className="absolute left-6 top-0 bottom-0 w-px bg-red-300"></div>
-                {/* 穴あけ部分（3つ穴） */}
-                <div className="absolute left-3 top-8">
-                  <div className="w-2 h-2 bg-gray-300 rounded-full mb-16"></div>
-                  <div className="w-2 h-2 bg-gray-300 rounded-full mb-16"></div>
-                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                </div>
+  return (
+    <div className="w-full max-w-4xl mx-auto space-y-6 px-2">
+      {/* 検索ヘッダー */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-100 rounded-xl shadow-lg p-6 border border-blue-200">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-jp-bold text-blue-900">日記検索</h1>
+            {syncing && (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-blue-600 font-jp-medium text-sm">同期中...</span>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center space-x-2 px-4 py-2 text-sm text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-300 bg-white transition-colors"
+          >
+            <Filter className="w-4 h-4" />
+            <span>フィルター</span>
+          </button>
+        </div>
+
+        {/* 検索タイプ選択 */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {[
+            { type: 'keyword' as const, label: 'キーワード', icon: Search },
+            { type: 'date' as const, label: '日付', icon: Calendar },
+            { type: 'emotion' as const, label: '感情', icon: Filter }
+          ].map(({ type, label, icon: Icon }) => (
+            <button
+              key={type}
+              onClick={() => setSearchType(type)}
+              className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors ${
+                searchType === type
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 検索入力エリア */}
+        <div className="space-y-4">
+          {searchType === 'keyword' && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                placeholder="出来事や気づきを検索..."
+                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+              />
+              {searchValue && (
+                <button
+                  onClick={() => setSearchValue('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {searchType === 'emotion' && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {emotions.map((emotion) => (
+                <button
+                  key={emotion}
+                  onClick={() => setSelectedEmotion(selectedEmotion === emotion ? '' : emotion)}
+                  className={`p-2 sm:p-3 rounded-lg border-2 text-xs sm:text-sm font-jp-medium transition-all ${
+                    selectedEmotion === emotion
+                      ? getEmotionColor(emotion) + ' shadow-md'
+                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  {emotion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {searchType === 'date' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                  開始日
+                </label>
+                <input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                  終了日
+                </label>
+                <input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                />
               </div>
             </div>
-            
-            {/* テキストエリア */}
-            <textarea
-              value={formData.event}
-              onChange={(e) => setFormData({...formData, event: e.target.value})}
-              className="relative w-full h-64 p-4 pl-8 bg-transparent border-none resize-none focus:outline-none font-jp-normal text-gray-800 leading-8 overflow-hidden"
-              placeholder=""
-              style={{
-                lineHeight: '32px',
-                paddingTop: '16px'
-              }}
-            />
-          </div>
+          )}
         </div>
 
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <div className="flex items-start space-x-2">
-            <span className="text-blue-600 text-lg">💡</span>
-            <div className="text-sm text-blue-800 font-jp-normal">
-              <p className="font-jp-medium">思い出すのがつらい場合は、無理をしないでください。</p>
-              <p>書ける範囲で、あなたのペースで大丈夫です。</p>
-            </div>
+        {/* 検索結果サマリー */}
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+          <div className="text-sm text-gray-600 font-jp-normal">
+            {filteredEntries.length > 0 ? (
+              <span>
+                <span className="font-jp-bold text-blue-600">{filteredEntries.length}</span>件の日記が見つかりました
+              </span>
+            ) : (
+              <span>検索条件に一致する日記がありません</span>
+            )}
           </div>
+          {(searchValue || selectedEmotion || dateRange.start || dateRange.end) && (
+            <button
+              onClick={clearSearch}
+              className="flex items-center space-x-1 text-sm text-gray-500 hover:text-gray-700 font-jp-normal"
+            >
+              <X className="w-4 h-4" />
+              <span>クリア</span>
+            </button>
+          )}
         </div>
-
       </div>
 
-      {/* 今日の気持ちセクション */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-jp-bold text-gray-900 mb-4">今日の気持ち</h2>
-
-        <div className="mb-6">
-          <p className="text-gray-700 font-jp-normal mb-4 text-sm">
-            どの気持ちに近いですか？
-          </p>
-
-          <div className="grid grid-cols-2 gap-3">
-            {emotions.map((emotion) => (
-              <label
-                key={emotion.name}
-                className={`flex items-center space-x-2 p-2 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 border-2 text-sm sm:text-base ${
-                  formData.emotion === emotion.name
-                    ? `${emotion.selectedBg} ${emotion.selectedBorder} shadow-md transform scale-105`
-                    : `${emotion.bgColor} ${emotion.borderColor} hover:shadow-sm hover:scale-102`
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="emotion"
-                  value={emotion.name}
-                  checked={formData.emotion === emotion.name}
-                  onChange={(e) => setFormData({...formData, emotion: e.target.value})}
-                  className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                />
-                <div className={`w-3 h-3 rounded-full ${
-                  formData.emotion === emotion.name 
-                    ? emotion.selectedBorder.replace('border-', 'bg-')
-                    : emotion.borderColor.replace('border-', 'bg-')
-                }`}></div>
-                <span className={`font-jp-semibold text-sm sm:text-base ${emotion.textColor} ${
-                  formData.emotion === emotion.name ? 'font-jp-bold' : ''
-                }`}>
-                  {emotion.name}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* 無価値感を選んだ場合のスコア入力 */}
-        {formData.emotion === '無価値感' && (
-          <div className="bg-red-50 rounded-lg p-4 sm:p-6 border border-red-200 mb-6">
-            <h3 className="text-red-800 font-jp-bold mb-4">
-              「無価値感」を選んだ場合のみ入力
-            </h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* 前日のスコア */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <h4 className="text-sm font-jp-bold text-gray-700 mb-3 flex items-center">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
-                  前日のスコア
-                </h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-jp-medium text-gray-600 mb-1">
-                      自己肯定感
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={worthlessnessScores.yesterdaySelfEsteem}
-                      onChange={(e) => handleSelfEsteemChange('yesterdaySelfEsteem', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
-                      placeholder="50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-jp-medium text-gray-600 mb-1">
-                      無価値感
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={worthlessnessScores.yesterdayWorthlessness}
-                      onChange={(e) => handleWorthlessnessChange('yesterdayWorthlessness', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
-                      placeholder="50"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 今日のスコア */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <h4 className="text-sm font-jp-bold text-gray-700 mb-3 flex items-center">
-                  <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
-                  今日のスコア
-                </h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-jp-medium text-gray-600 mb-1">
-                      自己肯定感
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={worthlessnessScores.todaySelfEsteem}
-                      onChange={(e) => handleSelfEsteemChange('todaySelfEsteem', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
-                      placeholder="50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-jp-medium text-gray-600 mb-1">
-                      無価値感
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={worthlessnessScores.todayWorthlessness}
-                      onChange={(e) => handleWorthlessnessChange('todayWorthlessness', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
-                      placeholder="50"
-                    />
-                  </div>
-                </div>
-              </div>
+      {/* 検索条件がない場合は直近5日分を表示 */}
+      {!searchValue && !selectedEmotion && !dateRange.start && !dateRange.end && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-jp-bold text-gray-900 mb-6">直近の日記</h2>
+          {recentEntries.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-4">📝</div>
+              <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
+                まだ日記がありません
+              </h3>
+              <p className="text-gray-400 font-jp-normal">
+                最初の日記を書いてみましょう
+              </p>
             </div>
-            
-            <div className="mt-4 bg-blue-50 rounded-lg p-3 border border-blue-200">
-              <div className="text-xs text-blue-800 font-jp-normal space-y-1">
-                <p className="font-jp-medium">💡 自動計算機能</p>
-                <p>• 自己肯定感スコアを入力すると、無価値感スコアが自動で計算されます</p>
-                <p>• 計算式：無価値感スコア = 100 - 自己肯定感スコア</p>
-                <p>• どちらの項目からでも入力可能です</p>
+          ) : (
+            <div className="space-y-4">
+              {recentEntries.map((entry) => (
+                <div key={entry.id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center space-x-2 sm:space-x-3 flex-wrap">
+                      <span className={`px-3 py-1 rounded-full text-sm font-jp-medium border ${getEmotionColor(entry.emotion)}`}>
+                        {entry.emotion}
+                      </span>
+                      <span className="text-gray-500 text-xs sm:text-sm font-jp-normal">
+                        {formatDate(entry.date)}
+                      </span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleEdit(entry)}
+                        className="text-blue-600 hover:text-blue-700 p-1"
+                        title="編集"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleEdit(entry)}
+                        className="text-green-600 hover:text-green-700 p-1"
+                        title="編集"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(entry.id)}
+                        className="text-red-600 hover:text-red-700 p-1"
+                        title="削除"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <h4 className="font-jp-semibold text-gray-700 mb-1 text-sm">出来事</h4>
+                      <p className="text-gray-600 text-xs sm:text-sm font-jp-normal leading-relaxed line-clamp-2 break-words">
+                        {entry.event.length > 60 ? `${entry.event.substring(0, 60)}...` : entry.event}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-jp-semibold text-gray-700 mb-1 text-sm">気づき</h4>
+                      <p className="text-gray-600 text-xs sm:text-sm font-jp-normal leading-relaxed line-clamp-2 break-words">
+                        {entry.realization.length > 60 ? `${entry.realization.substring(0, 60)}...` : entry.realization}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* カウンセラーコメント表示（表示設定がtrueの場合のみ） */}
+                  {entry.is_visible_to_user && entry.counselor_memo && (
+                    <div className="mt-3 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="text-xs font-jp-medium text-blue-700">
+                          {entry.counselor_name || 'カウンセラー'}からのコメント
+                        </span>
+                      </div>
+                      <p className="text-blue-800 text-sm font-jp-normal leading-relaxed">
+                        {entry.counselor_memo}
+                      </p>
+                    </div>
+                  )}
+
+                  {entry.emotion === '無価値感' && (
+                    <div className="flex flex-wrap gap-2 sm:gap-6 text-xs bg-white rounded-lg p-2 border border-gray-200">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-500 font-jp-medium">自己肯定感:</span>
+                        <span className="font-jp-semibold text-blue-600">
+                          {entry.selfEsteemScore}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-500 font-jp-medium">無価値感:</span>
+                        <span className="font-jp-semibold text-red-600">
+                          {entry.worthlessnessScore}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 検索結果エリア */}
+      <div className="space-y-4">
+        {(searchValue || selectedEmotion || dateRange.start || dateRange.end) && filteredEntries.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
+              検索結果がありません
+            </h3>
+            <p className="text-gray-400 font-jp-normal">
+              別の検索条件を試してみてください
+            </p>
+          </div>
+        ) : (searchValue || selectedEmotion || dateRange.start || dateRange.end) && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-jp-bold text-gray-900 mb-6">検索結果</h2>
+            <div className="space-y-4">
+          {filteredEntries.map((entry) => (
+            <div key={entry.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center space-x-2 sm:space-x-3 flex-wrap">
+                  <span className={`px-3 py-1 rounded-full text-sm font-jp-medium border ${getEmotionColor(entry.emotion)}`}>
+                    {entry.emotion}
+                  </span>
+                  <span className="text-gray-500 text-xs sm:text-sm font-jp-normal">
+                    {formatDate(entry.date)}
+                  </span>
+                </div>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={() => handleEdit(entry)}
+                    className="text-blue-600 hover:text-blue-700 p-1"
+                    title="編集"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleEdit(entry)}
+                    className="text-green-600 hover:text-green-700 p-1"
+                    title="編集"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(entry.id)}
+                    className="text-red-600 hover:text-red-700 p-1"
+                    title="削除"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h4 className="font-jp-semibold text-gray-700 mb-2">出来事</h4>
+                  <p className="text-gray-600 text-sm font-jp-normal leading-relaxed break-words">
+                    {highlightText(entry.event, searchValue)}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-jp-semibold text-gray-700 mb-2">気づき</h4>
+                  <p className="text-gray-600 text-sm font-jp-normal leading-relaxed break-words">
+                    {highlightText(entry.realization, searchValue)}
+                  </p>
+                </div>
+              </div>
+              
+              {/* カウンセラーコメント表示（表示設定がtrueの場合のみ） */}
+              {entry.is_visible_to_user && entry.counselor_memo && (
+                <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className="text-sm font-jp-bold text-blue-700">
+                      {entry.counselor_name || 'カウンセラー'}からのコメント
+                    </span>
+                  </div>
+                  <p className="text-blue-800 text-sm font-jp-normal leading-relaxed">
+                    {entry.counselor_memo}
+                  </p>
+                </div>
+              )}
+
+              {entry.emotion === '無価値感' && (
+                <div className="flex flex-wrap gap-2 sm:gap-6 text-sm bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-500 font-jp-medium">自己肯定感:</span>
+                    <span className="font-jp-semibold text-blue-600">
+                      {entry.selfEsteemScore}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-500 font-jp-medium">無価値感:</span>
+                    <span className="font-jp-semibold text-red-600">
+                      {entry.worthlessnessScore}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
             </div>
           </div>
         )}
-
-        {/* 今日の小さな気づき */}
-        <div className="mb-6">
-          <h3 className="text-lg font-jp-bold text-gray-900 mb-4">今日の小さな気づき</h3>
-          <textarea
-            value={formData.realization}
-            onChange={(e) => setFormData({...formData, realization: e.target.value})}
-           className="relative w-full h-32 p-4 pl-8 bg-white border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal text-gray-800 leading-8 overflow-hidden"
-            placeholder=""
-           style={{
-             backgroundImage: `
-               linear-gradient(to bottom, transparent 0px, transparent 31px, #e5e7eb 31px, #e5e7eb 32px),
-               linear-gradient(to right, #ef4444 0px, #ef4444 2px, transparent 2px)
-             `,
-             backgroundSize: '100% 32px, 100% 100%',
-             backgroundPosition: '0 16px, 24px 0',
-             lineHeight: '32px',
-             paddingTop: '16px'
-           }}
-          />
-        </div>
-
-        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-          <div className="flex items-start space-x-2">
-            <span className="text-yellow-600 text-lg">⭐</span>
-            <div className="text-sm text-yellow-800 font-jp-normal">
-              <p className="font-jp-medium">感情に良い悪いはありません。すべて大切な気持ちです。</p>
-              <p>小さな変化も大きな成長です。自分を褒めてあげてください。</p>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* 保存ボタン */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pb-8">
-        <button
-          onClick={handleSubmit}
-          disabled={saving}
-          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-3 rounded-lg font-jp-medium transition-colors shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
-        >
-          {saving ? (
-            <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              <span>保存中...</span>
-            </>
-          ) : (
-            <>
-              <Plus className="w-5 h-5" />
-              <span>日記を保存</span>
-            </>
-          )}
-        </button>
-        
-        <button
-          onClick={handleShare}
-          disabled={saving}
-          className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-3 rounded-lg font-jp-medium transition-colors shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
-        >
-          <Share2 className="w-5 h-5" />
-          <span>SNSでシェア</span>
-        </button>
-      </div>
+      {/* 編集モーダル */}
+      {renderEditModal()}
       
       {/* ローカル保存モード表示 */}
       <div className="fixed bottom-4 right-4 bg-green-100 border border-green-200 rounded-lg p-3 shadow-lg">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-green-800 font-jp-medium text-sm">ローカル保存モード</span>
+          <span className="text-green-800 font-jp-medium text-sm">
+            {currentUser?.lineUsername || 'ゲスト'}のデータ
+          </span>
         </div>
       </div>
     </div>
   );
 };
 
-export default DiaryPage;
+export default DiarySearchPage;
