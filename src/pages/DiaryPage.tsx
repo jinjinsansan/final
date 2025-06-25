@@ -2,10 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { getCurrentUser } from '../lib/deviceAuth';
 
+// 日本時間を取得する関数
+const getJapaneseDate = (): Date => {
+  // 日本時間のタイムゾーンオフセット（UTC+9）
+  const japanTimeOffset = 9 * 60; // 9時間をミリ秒に変換
+  
+  // 現在のUTC時間を取得
+  const now = new Date();
+  
+  // ローカルのタイムゾーンオフセットを分で取得
+  const localOffset = now.getTimezoneOffset();
+  
+  // 日本時間との差分を計算（分）
+  const offsetDiff = localOffset + japanTimeOffset;
+  
+  // 現在時刻に差分を加えて日本時間を取得
+  const japanTime = new Date(now.getTime() + offsetDiff * 60 * 1000);
+  
+  return japanTime;
+};
+
 const DiaryPage: React.FC = () => {
   const currentUser = getCurrentUser();
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getJapaneseDate().toISOString().split('T')[0],
     event: '',
     emotion: '',
     selfEsteemScore: 50,
@@ -22,7 +42,7 @@ const DiaryPage: React.FC = () => {
   });
 
   const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [calendarDate, setCalendarDate] = useState(getJapaneseDate());
   const [saving, setSaving] = useState(false);
 
   // 最後に保存した無価値感スコアを取得
@@ -363,16 +383,19 @@ const DiaryPage: React.FC = () => {
                     const isCurrentMonth = day.getMonth() === calendarDate.getMonth();
                     const isSelected = day.toISOString().split('T')[0] === formData.date;
                     const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
-                    
+                    const isToday = dayString === getJapaneseDate().toISOString().split('T')[0];
+                    const isFutureDate = day > getJapaneseDate();
                     return (
                       <button
                         key={index}
                         onClick={() => handleDateSelect(day)}
+                        disabled={isFutureDate}
                         className={`
-                          w-8 h-8 text-xs font-jp-normal rounded transition-colors
+                          w-8 h-8 text-xs font-jp-normal rounded transition-colors 
                           ${isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}
                           ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}
                           ${isToday && !isSelected ? 'bg-blue-100 text-blue-600' : ''}
+                          ${isFutureDate ? 'opacity-30 cursor-not-allowed' : ''}
                         `}
                       >
                         {day.getDate()}
