@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
+import { Calendar, Search, TrendingUp, Plus, Edit3, Trash2, ChevronLeft, ChevronRight, Menu, X, BookOpen, Play, ArrowRight, Home, Heart, Share2, Settings, MessageCircle, RefreshCw, Database, AlertTriangle, Twitter } from 'lucide-react';
 import { getCurrentUser } from '../lib/deviceAuth';
 
 // 日本時間を取得する関数
@@ -256,6 +256,18 @@ const DiaryPage: React.FC = () => {
         prompt('以下のテキストをコピーしてSNSでシェアしてください:', shareText);
       });
     }
+  };
+
+  // Twitterでシェア
+  const handleTwitterShare = () => {
+    const username = currentUser?.lineUsername || 'ユーザー';
+    const shareText = encodeURIComponent(`${username}の今日の感情日記 📝\n\n感情: ${formData.emotion}\n\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://ryksl1di.autosns.app/line`);
+    
+    // Twitterシェア用URL
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}`;
+    
+    // 新しいウィンドウでTwitterシェアを開く
+    window.open(twitterUrl, '_blank');
   };
 
   const formatDate = (dateString: string) => {
@@ -680,6 +692,18 @@ const DiaryPage: React.FC = () => {
         >
           <Share2 className="w-5 h-5" />
           <span>SNSでシェア</span>
+        </button>
+      </div>
+
+      {/* Twitterシェアボタン */}
+      <div className="flex justify-center pb-8">
+        <button
+          onClick={handleTwitterShare}
+          disabled={saving}
+          className="w-full sm:w-auto bg-black hover:bg-gray-800 text-white px-6 sm:px-8 py-3 rounded-lg font-jp-medium transition-colors shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+        >
+          <Twitter className="w-5 h-5" />
+          <span>Xでシェア</span>
         </button>
       </div>
       

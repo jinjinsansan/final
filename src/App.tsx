@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Search, TrendingUp, Plus, Edit3, Trash2, ChevronLeft, ChevronRight, Menu, X, BookOpen, Play, ArrowRight, Home, Heart, Share2, Shield, Settings, MessageCircle, RefreshCw, Database, AlertTriangle } from 'lucide-react';
+import { Calendar, Search, TrendingUp, Plus, Edit3, Trash2, ChevronLeft, ChevronRight, Menu, X, BookOpen, Play, ArrowRight, Home, Heart, Share2, Shield, Settings, MessageCircle, RefreshCw, Database, AlertTriangle, Twitter } from 'lucide-react';
 import PrivacyConsent from './components/PrivacyConsent';
 import MaintenanceMode from './components/MaintenanceMode';
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
@@ -342,6 +342,22 @@ const App: React.FC = () => {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return allData;
+  };
+
+  // Twitterでシェア
+  const handleTwitterShareWorthlessness = (period: string, data: any[]) => {
+    const periodText = period === 'week' ? '1週間' : period === 'month' ? '1ヶ月' : '全期間';
+    const recordCount = data.length;
+    const emotionFreq = getEmotionFrequency();
+    const mostFrequentEmotion = emotionFreq.length > 0 ? `${emotionFreq[0][0]} (${emotionFreq[0][1]}回)` : 'なし';
+    
+    const shareText = encodeURIComponent(`📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://ryksl1di.autosns.app/line`);
+    
+    // Twitterシェア用URL
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}`;
+    
+    // 新しいウィンドウでTwitterシェアを開く
+    window.open(twitterUrl, '_blank');
   };
 
   const renderWorthlessnessChart = (data: any[]) => {
@@ -728,7 +744,7 @@ const App: React.FC = () => {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
                 <h1 className="text-2xl font-jp-bold text-gray-900">無価値感推移</h1>
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 mb-2 sm:mb-0">
                     {[
                       { key: 'week' as const, label: '1週間' },
                       { key: 'month' as const, label: '1ヶ月' },
@@ -747,13 +763,22 @@ const App: React.FC = () => {
                       </button>
                     ))}
                   </div>
-                  <button
-                    onClick={() => handleShareWorthlessness(emotionPeriod, filteredData)}
-                    className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>SNSでシェア</span>
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleShareWorthlessness(emotionPeriod, filteredData)}
+                      className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>SNSでシェア</span>
+                    </button>
+                    <button
+                      onClick={() => handleTwitterShareWorthlessness(emotionPeriod, filteredData)}
+                      className="flex items-center space-x-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors"
+                    >
+                      <Twitter className="w-4 h-4" />
+                      <span>Xでシェア</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
