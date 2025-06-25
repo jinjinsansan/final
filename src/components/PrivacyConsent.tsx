@@ -90,7 +90,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
       // 2秒後に同意処理を実行
       setTimeout(() => {
         onConsent(true);
-      }, 2000);
+      }, 3000);
       
     } catch (error) {
       console.error('データ復元エラー:', error);
@@ -232,7 +232,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
                 <div className={`rounded-lg p-4 border ${
                   recoveryStatus.includes('失敗') 
                     ? 'bg-red-50 border-red-200 text-red-800' 
-                    : 'bg-green-50 border-green-200 text-green-800'
+                    : 'bg-green-50 border-green-200 text-green-800 animate-pulse'
                 }`}>
                   <div className="flex items-center space-x-2">
                     {recoveryStatus.includes('失敗') ? (

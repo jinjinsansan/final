@@ -123,7 +123,7 @@ const DataBackupRecovery: React.FC = () => {
           // 3秒後に自動的にページを再読み込み
           setTimeout(() => {
             window.location.reload();
-          }, 3000);
+          }, 5000);
           
         } catch (error) {
           console.error('データ復元エラー:', error);
@@ -240,7 +240,7 @@ const DataBackupRecovery: React.FC = () => {
         <div className={`rounded-lg p-4 border ${
           status.includes('失敗') 
             ? 'bg-red-50 border-red-200 text-red-800' 
-            : 'bg-green-50 border-green-200 text-green-800'
+            : 'bg-green-50 border-green-200 text-green-800 animate-pulse'
         }`}>
           <div className="flex items-center space-x-2">
             {status.includes('失敗') ? (

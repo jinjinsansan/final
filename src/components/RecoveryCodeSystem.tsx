@@ -126,7 +126,7 @@ const RecoveryCodeSystem: React.FC = () => {
       // 3秒後に自動的にページを再読み込み
       setTimeout(() => {
         window.location.reload();
-      }, 3000);
+      }, 5000);
       
     } catch (error) {
       console.error('データ復元エラー:', error);
@@ -262,7 +262,7 @@ const RecoveryCodeSystem: React.FC = () => {
       <div className="mt-6 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
         <div className="flex items-start space-x-3">
           <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-yellow-800 font-jp-normal">
+          <div className="text-sm text-yellow-800 font-jp-normal break-words">
             <p className="font-jp-medium mb-2">注意事項</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>復活の呪文はユーザー名と初期スコアのみを復元します</li>

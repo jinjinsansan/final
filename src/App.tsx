@@ -156,16 +156,14 @@ const App: React.FC = () => {
   const handleDeviceAuthSuccess = (lineUsername: string) => {
     localStorage.setItem('line-username', lineUsername);
     setLineUsername(lineUsername);
-    
-    try {
-      // Supabaseユーザーを初期化
-      if (isConnected) {
-        initializeUser(lineUsername);
-      }
-    } catch (error) {
-      console.error('ユーザー初期化エラー:', error);
+
+    // Supabaseユーザーを初期化
+    if (isConnected) {
+      initializeUser(lineUsername).catch(error => {
+        console.error('ユーザー初期化エラー:', error);
+      });
     }
-    
+
     setCurrentPage('how-to');
     setAuthState('none');
   }
@@ -173,7 +171,7 @@ const App: React.FC = () => {
   const handleStartApp = () => {
     const consentGiven = localStorage.getItem('privacyConsentGiven');
     
-    if (consentGiven === 'true' && localStorage.getItem('line-username')) {
+    if (consentGiven === 'true' && savedUsername) {
       // 既存ユーザーは認証状態をチェック
       if (isAuthenticated()) {
         // 認証済みの場合は使い方ページへ
@@ -706,7 +704,7 @@ const App: React.FC = () => {
         return <DiarySearchPage />;
       case 'admin':
         return isAdmin ? <AdminPanel /> : <div className="text-center py-8">
-          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
           <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
           <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
         </div>;
