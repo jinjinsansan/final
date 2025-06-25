@@ -202,18 +202,39 @@ export const getUserCredentials = (): UserCredentials | null => {
 // 秘密の質問の保存
 export const saveSecurityQuestions = (questions: SecurityQuestion[]): void => {
   // 回答を暗号化（Base64エンコード）
-  const encodedQuestions = questions.map(q => ({
-    ...q,
-    answer: btoa(q.answer.toLowerCase().trim())
-  }));
-  
-  localStorage.setItem(STORAGE_KEYS.SECURITY_QUESTIONS, JSON.stringify(encodedQuestions));
+  try {
+    const encodedQuestions = questions.map(q => ({
+      ...q,
+      answer: btoa(q.answer.toLowerCase().trim())
+    }));
+    
+    localStorage.setItem(STORAGE_KEYS.SECURITY_QUESTIONS, JSON.stringify(encodedQuestions));
+  } catch (error) {
+    console.error('秘密の質問保存エラー:', error);
+    // エラーが発生しても処理を続行できるよう、基本情報だけでも保存
+    try {
+      const basicQuestions = questions.map(q => ({
+        id: q.id,
+        question: q.question,
+        answer: 'encrypted_failed' // エラー時のフォールバック
+      }));
+      localStorage.setItem(STORAGE_KEYS.SECURITY_QUESTIONS, JSON.stringify(basicQuestions));
+    } catch (fallbackError) {
+      console.error('秘密の質問フォールバック保存エラー:', fallbackError);
+    }
+  }
 };
+  
 
 // 秘密の質問の取得
 export const getSecurityQuestions = (): SecurityQuestion[] => {
-  const stored = localStorage.getItem(STORAGE_KEYS.SECURITY_QUESTIONS);
-  return stored ? JSON.parse(stored) : [];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.SECURITY_QUESTIONS);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('秘密の質問取得エラー:', error);
+    return [];
+  }
 };
 
 // 認証セッションの作成

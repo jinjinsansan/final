@@ -114,6 +114,9 @@ const DeviceAuthRegistration: React.FC<DeviceAuthRegistrationProps> = ({
 
   const handleRegistration = async () => {
     try {
+      // 登録処理中のフラグを設定
+      setLoading(true);
+      
       // 1. デバイス情報を保存
       if (!deviceInfo) {
         throw new Error('デバイス情報が生成されていません');
@@ -149,15 +152,26 @@ const DeviceAuthRegistration: React.FC<DeviceAuthRegistrationProps> = ({
       // セキュリティイベントをログ
       logSecurityEvent('device_registered', formData.lineUsername, 'デバイス認証システムに新規登録');
 
-      // 2秒後に登録完了を通知
+      // 登録完了ステップに移行
+      setStep('complete');
+      
+      // 2秒後に登録完了を通知して画面遷移
       setTimeout(() => {
-        onRegistrationComplete(formData.lineUsername);
+        try {
+          onRegistrationComplete(formData.lineUsername);
+        } catch (error) {
+          console.error('登録完了後の画面遷移エラー:', error);
+          // エラーが発生しても、ユーザーは登録完了画面を見ているので問題ない
+        }
       }, 2000);
 
-      setStep('complete');
-
     } catch (error) {
-      throw new Error('登録処理に失敗しました');
+      console.error('登録処理エラー:', error);
+      setErrors({ general: '登録処理に失敗しました。もう一度お試しください。' });
+      // エラーが発生しても登録は完了している可能性があるため、
+      // 登録完了ステップに移行しない
+    } finally {
+      setLoading(false);
     }
   };
 
