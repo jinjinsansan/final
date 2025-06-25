@@ -270,11 +270,12 @@ const App: React.FC = () => {
   const getWorthlessnessData = () => {
     // 最初にやることページで保存されたスコアを取得
     const savedInitialScores = localStorage.getItem('initialScores');
-    let initialData = [];
+    let initialData: any[] = [];
     
     if (savedInitialScores) {
       try {
         const initialScores = JSON.parse(savedInitialScores);
+        
         // 数値型と文字列型の両方に対応
         const selfEsteemScore = typeof initialScores.selfEsteemScore === 'string' 
           ? parseInt(initialScores.selfEsteemScore) 
@@ -290,15 +291,29 @@ const App: React.FC = () => {
           initialScores.measurementMonth && 
           initialScores.measurementDay
         ) {
-          // 計測日を作成（年は現在年を使用）
+          // 計測日を作成（現在の年を使用）
           const currentYear = new Date().getFullYear();
-          const measurementDate = `${currentYear}-${String(initialScores.measurementMonth).padStart(2, '0')}-${String(initialScores.measurementDay).padStart(2, '0')}`;
           
-          initialData.push({
-            date: measurementDate,
-            selfEsteem: selfEsteemScore,
-            worthlessness: worthlessnessScore
-          });
+          // 月と日を数値に変換
+          const month = parseInt(initialScores.measurementMonth);
+          const day = parseInt(initialScores.measurementDay);
+          
+          // 有効な月と日かチェック
+          if (!isNaN(month) && !isNaN(day) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            const measurementDate = `${currentYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            // 測定日が未来でないことを確認
+            const measurementDateObj = new Date(measurementDate);
+            const today = new Date();
+            
+            if (measurementDateObj <= today) {
+              initialData.push({
+                date: measurementDate,
+                selfEsteem: selfEsteemScore,
+                worthlessness: worthlessnessScore
+              });
+            }
+          }
         }
       } catch (error) {
         console.error('初期スコアの解析エラー:', error);
@@ -307,6 +322,12 @@ const App: React.FC = () => {
     
     const worthlessnessEntries = entries
       .filter(entry => entry.emotion === '無価値感')
+      .filter(entry => {
+        // 今年のデータのみフィルタリング
+        const entryDate = new Date(entry.date);
+        const currentYear = new Date().getFullYear();
+        return entryDate.getFullYear() === currentYear;
+      })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .map(entry => ({
         date: entry.date,
