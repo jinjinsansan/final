@@ -3,6 +3,7 @@ import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, User
 import { useSupabase } from '../hooks/useSupabase';
 import { syncService, userService, consentService, diaryService, supabase } from '../lib/supabase';
 import AutoSyncSettings from './AutoSyncSettings';
+import DataBackupRecovery from './DataBackupRecovery';
 
 const DataMigration: React.FC = () => {
   const { isConnected, currentUser, loading } = useSupabase();
@@ -14,7 +15,7 @@ const DataMigration: React.FC = () => {
   const [localConsentCount, setLocalConsentCount] = useState(0);
   const [supabaseConsentCount, setSupabaseConsentCount] = useState(0);
   const [userExists, setUserExists] = useState(false);
-  const [activeTab, setActiveTab] = useState<'manual' | 'auto'>('auto');
+  const [activeTab, setActiveTab] = useState<'manual' | 'auto' | 'backup'>('auto');
   const [stats, setStats] = useState<{
     userStats: { total: number; today: number; thisWeek: number } | null;
     diaryStats: { total: number; today: number; thisWeek: number; byEmotion: Record<string, number> } | null;
@@ -282,12 +283,24 @@ const DataMigration: React.FC = () => {
             >
               手動操作
             </button>
+            <button
+              onClick={() => setActiveTab('backup')}
+              className={`py-2 px-1 border-b-2 font-jp-medium text-sm ${
+                activeTab === 'backup'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              バックアップ
+            </button>
           </nav>
         </div>
 
         {/* タブコンテンツ */}
         {activeTab === 'auto' ? (
           <AutoSyncSettings />
+        ) : activeTab === 'backup' ? (
+          <DataBackupRecovery />
         ) : (
           <div className="space-y-6">
             {/* 本番環境統計（Supabase接続時のみ表示） */}

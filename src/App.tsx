@@ -5,6 +5,7 @@ import MaintenanceMode from './components/MaintenanceMode';
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
 import AdminPanel from './components/AdminPanel';
 import DataMigration from './components/DataMigration';
+import DataBackupRecovery from './components/DataBackupRecovery';
 import DiaryPage from './pages/DiaryPage';
 import DiarySearchPage from './pages/DiarySearchPage';
 import HowTo from './pages/HowTo';
@@ -975,7 +976,7 @@ const App: React.FC = () => {
                     { key: 'worthlessness-trend', label: '無価値感推移', icon: TrendingUp },
                     ...(isAdmin ? [
                       { key: 'admin', label: '管理画面', icon: Settings },
-                      { key: 'data-migration', label: 'データ管理', icon: Settings }
+                      { key: 'data-migration', label: 'データ管理', icon: Database }
                     ] : [])
                   ].map(({ key, label, icon: Icon }) => (
                     <button
