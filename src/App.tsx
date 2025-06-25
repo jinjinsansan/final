@@ -718,10 +718,6 @@ const App: React.FC = () => {
           <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
           <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
         </div>;
-          <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
-          <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
-          <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
-        </div>;
       case 'data-migration':
         return <DataMigration />;
       case 'worthlessness-trend':
