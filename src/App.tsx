@@ -17,9 +17,11 @@ import Support from './pages/Support';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import { useSupabase } from './hooks/useSupabase';
 import { useAutoSync } from './hooks/useAutoSync';
-import DeviceAuthLogin from './components/DeviceAuthLogin';
-import DeviceAuthRegistration from './components/DeviceAuthRegistration';
-import { isAuthenticated, getCurrentUser, logoutUser } from './lib/deviceAuth';
+import { isAuthenticated, getCurrentUser, logoutUser, getAuthSession } from './lib/deviceAuth';
+
+// 遅延ロードでコンポーネントを読み込み
+const DeviceAuthLogin = React.lazy(() => import('./components/DeviceAuthLogin'));
+const DeviceAuthRegistration = React.lazy(() => import('./components/DeviceAuthRegistration'));
 
 interface JournalEntry {
   id: string;
@@ -49,7 +51,7 @@ const App: React.FC = () => {
   const [showCounselorLogin, setShowCounselorLogin] = useState(false);
   const [counselorCredentials, setCounselorCredentials] = useState({
     email: '',
-    password: ''
+    password: '',
   });
   const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
   const [authState, setAuthState] = useState<'none' | 'login' | 'register'>('none');
@@ -64,7 +66,7 @@ const App: React.FC = () => {
     event: '',
     realization: '',
     selfEsteemScore: 5,
-    worthlessnessScore: 5
+    worthlessnessScore: 5,
   });
 
   const emotions = [
@@ -80,7 +82,7 @@ const App: React.FC = () => {
     const consentGiven = localStorage.getItem('privacyConsentGiven');
     const savedUsername = localStorage.getItem('line-username');
     
-    if (consentGiven === 'true') {
+    if (consentGiven === 'true' && savedUsername) {
       setShowPrivacyConsent(false);
       
       // 認証状態をチェック
@@ -90,13 +92,15 @@ const App: React.FC = () => {
         if (user) {
           setLineUsername(user.lineUsername);
           // Supabaseユーザーを初期化
-          if (isConnected) {
-            initializeUser(user.lineUsername);
+          if (isConnected && initializeUser) {
+            initializeUser(user.lineUsername).catch(error => {
+              console.error('ユーザー初期化エラー:', error);
+            });
           }
           setCurrentPage('how-to');
         }
-      } else if (savedUsername) {
-        // 未認証だがユーザー名がある場合はそのまま使用
+      } else {
+        // 未認証の場合はユーザー名を設定
         setLineUsername(savedUsername);
         // Supabaseユーザーを初期化
         if (isConnected) {
@@ -104,7 +108,7 @@ const App: React.FC = () => {
         }
         setCurrentPage('how-to');
       }
-    }
+    } 
   }, [isConnected]);
 
   // テストデータ生成関数
@@ -157,8 +161,10 @@ const App: React.FC = () => {
     localStorage.setItem('line-username', lineUsername);
     setLineUsername(lineUsername);
 
-    // Supabaseユーザーを初期化
-    if (isConnected) {
+    if (isConnected && initializeUser) {
+      initializeUser(lineUsername).catch(error => {
+        console.error('ユーザー初期化エラー:', error);
+      });
       initializeUser(lineUsername).catch(error => {
         console.error('ユーザー初期化エラー:', error);
       });
@@ -170,7 +176,7 @@ const App: React.FC = () => {
 
   const handleStartApp = () => {
     const consentGiven = localStorage.getItem('privacyConsentGiven');
-    
+
     if (consentGiven === 'true' && savedUsername) {
       // 既存ユーザーは認証状態をチェック
       if (isAuthenticated()) {
@@ -179,7 +185,7 @@ const App: React.FC = () => {
         if (user) {
           setLineUsername(user.lineUsername);
           setCurrentPage('how-to');
-        }
+        } 
       } else {
         // 未認証の場合はログイン画面へ
         setAuthState('login');
@@ -188,7 +194,7 @@ const App: React.FC = () => {
       // 新規ユーザーはプライバシー同意から
       setShowPrivacyConsent(true);
     }
-  };
+  }; 
 
   // ログアウト処理
   const handleLogout = () => {
@@ -197,7 +203,7 @@ const App: React.FC = () => {
       setLineUsername(null);
       setCurrentPage('home');
       setIsMobileMenuOpen(false);
-    }
+    } 
   };
 
   // カウンセラーアカウント情報
@@ -207,7 +213,7 @@ const App: React.FC = () => {
     { name: '心理カウンセラーあさみ', email: 'asami@namisapo.com' },
     { name: '心理カウンセラーSHU', email: 'shu@namisapo.com' },
     { name: '心理カウンセラーゆーちゃ', email: 'yucha@namisapo.com' },
-    { name: '心理カウンセラーSammy', email: 'sammy@namisapo.com' }
+    { name: '心理カウンセラーSammy', email: 'sammy@namisapo.com' },
   ];
 
   // カウンセラーログイン処理
@@ -236,7 +242,7 @@ const App: React.FC = () => {
     setShowCounselorLogin(false);
     setCurrentPage('admin');
     setCounselorCredentials({ email: '', password: '' });
-  };
+  }; 
 
   // ログアウト処理
   const handleCounselorLogout = () => {
@@ -244,7 +250,7 @@ const App: React.FC = () => {
     localStorage.removeItem('current_counselor');
     setIsAdmin(false);
     setCurrentPage('how-to');
-  };
+  }; 
 
   // カウンセラーログイン画面表示
   const handleShowCounselorLogin = () => {
@@ -252,7 +258,7 @@ const App: React.FC = () => {
   };
 
   const getEmotionFrequency = () => {
-    const now = new Date();
+    const now = new Date(); 
     let filteredEntries = entries;
 
     if (emotionPeriod === 'week') {
@@ -271,7 +277,7 @@ const App: React.FC = () => {
     return Object.entries(frequency)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5);
-  };
+  }; 
 
   const getWorthlessnessData = () => {
     // 最初にやることページで保存されたスコアを取得
@@ -327,7 +333,7 @@ const App: React.FC = () => {
     }
     
     const worthlessnessEntries = entries
-      .filter(entry => entry.emotion === '無価値感')
+      .filter(entry => entry.emotion === '無価値感') 
       .filter(entry => {
         // 今年のデータのみフィルタリング
         const entryDate = new Date(entry.date);
@@ -346,7 +352,7 @@ const App: React.FC = () => {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return allData;
-  };
+  }; 
 
   const renderWorthlessnessChart = (data: any[]) => {
     if (data.length === 0) {
@@ -354,7 +360,7 @@ const App: React.FC = () => {
         <div className="text-center py-8">
           <p className="text-gray-500 font-jp-normal">無価値感のデータがありません</p>
         </div>
-      );
+      ); 
     }
 
     const maxValue = 100;
@@ -482,7 +488,7 @@ const App: React.FC = () => {
         </div>
       </div>
     );
-  };
+  }; 
 
   const handleShareWorthlessness = (period: string, data: any[]) => {
     const periodText = period === 'week' ? '1週間' : period === 'month' ? '1ヶ月' : '全期間';
@@ -506,7 +512,7 @@ const App: React.FC = () => {
         prompt('以下のテキストをコピーしてSNSでシェアしてください:', shareText);
       });
     }
-  };
+  }; 
 
   // カウンセラーログインモーダル
   const renderCounselorLoginModal = () => {
@@ -597,7 +603,7 @@ const App: React.FC = () => {
         </div>
       </div>
     );
-  };
+  }; 
 
   const renderContent = () => {
     if (showPrivacyConsent) {
@@ -605,18 +611,22 @@ const App: React.FC = () => {
     }
 
     if (authState === 'login') {
-      return <DeviceAuthLogin 
-        onLoginSuccess={handleDeviceAuthSuccess}
-        onRegister={() => setAuthState('register')}
-        onBack={() => setCurrentPage('home')}
-      />;
+      return (
+        <React.Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+          <DeviceAuthLogin 
+            onLoginSuccess={handleDeviceAuthSuccess}
+            onRegister={() => setAuthState('register')}
+            onBack={() => setCurrentPage('home')}
+          />
+        </React.Suspense>
+      );
     }
 
     if (authState === 'register') {
-      return <DeviceAuthRegistration 
+      return <React.Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}><DeviceAuthRegistration 
         onRegistrationComplete={handleDeviceAuthSuccess}
         onBack={() => setCurrentPage('home')}
-      />;
+      /></React.Suspense>;
     }
 
     if (currentPage === 'home') {
@@ -708,6 +718,10 @@ const App: React.FC = () => {
           <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
           <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
         </div>;
+          <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+          <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
+          <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
+        </div>;
       case 'data-migration':
         return <DataMigration />;
       case 'worthlessness-trend':
@@ -718,7 +732,7 @@ const App: React.FC = () => {
         
         if (emotionPeriod === 'week') {
           const weekAgo = new Date();
-          weekAgo.setDate(weekAgo.getDate() - 7);
+          weekAgo.setDate(weekAgo.getDate() - 7); 
           filteredData = worthlessnessData.filter(item => new Date(item.date) >= weekAgo);
         } else if (emotionPeriod === 'month') {
           const monthAgo = new Date();
@@ -727,7 +741,7 @@ const App: React.FC = () => {
         }
 
         const emotionFrequency = getEmotionFrequency();
-
+        
         return (
           <div className="w-full max-w-4xl mx-auto space-y-6 px-2">
             <div className="bg-white rounded-xl shadow-lg p-6">
@@ -854,7 +868,7 @@ const App: React.FC = () => {
       default:
         return <HowTo />;
     }
-  };
+  }; 
 
   // メンテナンスモードのチェック
   if (maintenanceLoading) {
@@ -865,7 +879,7 @@ const App: React.FC = () => {
           <p className="text-gray-600 font-jp-normal">システム状態を確認中...</p>
         </div>
       </div>
-    );
+    ); 
   }
 
   if (isMaintenanceMode && maintenanceConfig) {
@@ -889,7 +903,7 @@ const App: React.FC = () => {
                     <span className="font-jp-bold text-lg">かんじょうにっき</span>
                   </button>
                   
-                  {/* ユーザー名表示 */}
+                  {/* ユーザー名表示 */ }
                   {lineUsername && (
                     <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-blue-50 rounded-full border border-blue-200">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -900,7 +914,7 @@ const App: React.FC = () => {
                   )}
                 </div>
 
-                {/* デスクトップナビゲーション */}
+                {/* デスクトップナビゲーション */ }
                 <nav className="hidden md:hidden space-x-8">
                   {[
                     { key: 'how-to', label: '使い方', icon: BookOpen },
@@ -908,7 +922,7 @@ const App: React.FC = () => {
                     { key: 'search', label: '検索', icon: Search },
                     { key: 'worthlessness-trend', label: '推移', icon: TrendingUp },
                     ...(isAdmin ? [{ key: 'admin', label: '管理', icon: Settings }] : [{ key: 'data-migration', label: 'データ管理', icon: Database }])
-                  ].map(({ key, label, icon: Icon }) => (
+                  ].map(({ key, label, icon: Icon }) => ( 
                     <button
                       key={key}
                       onClick={() => setCurrentPage(key)}
@@ -946,7 +960,7 @@ const App: React.FC = () => {
                   )}
                 </nav>
 
-                {/* モバイルメニューボタン */}
+                {/* モバイルメニューボタン */ }
                 <div className="flex items-center space-x-3 md:block">
                   {/* モバイル用ユーザー名表示 */}
                   {lineUsername && (
@@ -967,7 +981,7 @@ const App: React.FC = () => {
                 </div>
               </div>
             </div>
-
+            
             {/* モバイルメニュー */}
             {isMobileMenuOpen && (
               <div className="border-t border-gray-200 bg-white">
@@ -986,7 +1000,7 @@ const App: React.FC = () => {
                     ...(isAdmin ? [
                       { key: 'admin', label: '管理画面', icon: Settings },
                       { key: 'data-migration', label: 'データ管理', icon: Database }
-                    ] : [])
+                    ] : [{ key: 'data-migration', label: 'データ管理', icon: Database }])
                   ].map(({ key, label, icon: Icon }) => (
                     <button
                       key={key}
@@ -1005,7 +1019,7 @@ const App: React.FC = () => {
                     </button>
                   ))}
                   
-                  {/* お問い合わせ */}
+                  {/* お問い合わせ */ }
                   <a
                     href="https://lin.ee/OYN8msX"
                     target="_blank"
@@ -1030,7 +1044,7 @@ const App: React.FC = () => {
                     </button>
                   )}
                   
-                  {/* ログアウトボタン */}
+                  {/* ログアウトボタン */ }
                   {lineUsername && (
                     <button
                       onClick={handleLogout}
@@ -1040,7 +1054,7 @@ const App: React.FC = () => {
                       <span>ログアウト</span>
                     </button>
                   )}
-                  
+                   
                   {isAdmin && currentCounselor && (
                     <div className="px-3 py-2 border-t border-gray-200">
                       <div className="flex justify-between items-center">
@@ -1064,7 +1078,7 @@ const App: React.FC = () => {
             )}
           </header>
 
-          {/* メインコンテンツ */}
+          {/* メインコンテンツ */ }
           <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             {/* Supabase接続状態表示 */}
             {isAdmin && (
@@ -1104,7 +1118,7 @@ const App: React.FC = () => {
       {(showPrivacyConsent || currentPage === 'home' || authState !== 'none') && renderContent()}
       
       {/* カウンセラーログインモーダル */}
-      {renderCounselorLoginModal()}
+      {showCounselorLogin && renderCounselorLoginModal()}
     </div>
   );
 };
