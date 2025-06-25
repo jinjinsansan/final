@@ -7,7 +7,7 @@ const DiaryPage: React.FC = () => {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     event: '',
-    emotion: '', 
+    emotion: '',
     selfEsteemScore: 50,
     worthlessnessScore: 50,
     realization: ''
@@ -15,11 +15,15 @@ const DiaryPage: React.FC = () => {
 
   // 無価値感スコア用の状態
   const [worthlessnessScores, setWorthlessnessScores] = useState({
-    yesterdaySelfEsteem: '50', 
-    yesterdayWorthlessness: '50', 
-    todaySelfEsteem: '50', 
-    todayWorthlessness: '50' 
+    yesterdaySelfEsteem: 50,
+    yesterdayWorthlessness: 50,
+    todaySelfEsteem: 50,
+    todayWorthlessness: 50
   });
+
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [saving, setSaving] = useState(false);
 
   // 最後に保存した無価値感スコアを取得
   useEffect(() => {
@@ -30,46 +34,44 @@ const DiaryPage: React.FC = () => {
         // 最後に保存したスコアを前日のスコアとして設定
         setWorthlessnessScores(prev => ({
           ...prev,
-          yesterdaySelfEsteem: String(parsedScores.selfEsteemScore || 50),
-          yesterdayWorthlessness: String(parsedScores.worthlessnessScore || 50)
+          yesterdaySelfEsteem: parsedScores.selfEsteemScore,
+          yesterdayWorthlessness: parsedScores.worthlessnessScore,
+          // 今日のスコアも同じ値で初期化（ユーザーが変更可能）
+          todaySelfEsteem: parsedScores.selfEsteemScore,
+          todayWorthlessness: parsedScores.worthlessnessScore
         }));
       } catch (error) {
         console.error('最後に保存したスコアの読み込みエラー:', error);
       }
-    }
-  }, []);
-
-  // 初期スコアを読み込み
-  useEffect(() => {
-    const savedInitialScores = localStorage.getItem('initialScores');
-    if (savedInitialScores) {
-      try {
-        const initialScores = JSON.parse(savedInitialScores);
-        if (initialScores.selfEsteemScore && initialScores.worthlessnessScore) {
-          // 初期値として設定
-          setFormData(prev => ({
-            ...prev,
-            selfEsteemScore: parseInt(initialScores.selfEsteemScore) || 50,
-            worthlessnessScore: parseInt(initialScores.worthlessnessScore) || 50
-          }));
-          
-          // 無価値感スコアの状態も更新
-          setWorthlessnessScores({
-            yesterdaySelfEsteem: String(initialScores.selfEsteemScore),
-            yesterdayWorthlessness: String(initialScores.worthlessnessScore),
-            todaySelfEsteem: String(initialScores.selfEsteemScore),
-            todayWorthlessness: String(initialScores.worthlessnessScore)
-          });
+    } else {
+      // 最後に保存したスコアがない場合は初期スコアを確認
+      const savedInitialScores = localStorage.getItem('initialScores');
+      if (savedInitialScores) {
+        try {
+          const initialScores = JSON.parse(savedInitialScores);
+          // 数値型と文字列型の両方に対応
+          const selfEsteemScore = typeof initialScores.selfEsteemScore === 'string' 
+            ? parseInt(initialScores.selfEsteemScore) 
+            : initialScores.selfEsteemScore;
+            
+          const worthlessnessScore = typeof initialScores.worthlessnessScore === 'string'
+            ? parseInt(initialScores.worthlessnessScore)
+            : initialScores.worthlessnessScore;
+            
+          if (!isNaN(selfEsteemScore) && !isNaN(worthlessnessScore)) {
+            setWorthlessnessScores({
+              yesterdaySelfEsteem: selfEsteemScore,
+              yesterdayWorthlessness: worthlessnessScore,
+              todaySelfEsteem: selfEsteemScore,
+              todayWorthlessness: worthlessnessScore
+            });
+          }
+        } catch (error) {
+          console.error('初期スコアの読み込みエラー:', error);
         }
-      } catch (error) {
-        console.error('初期スコアの読み込みエラー:', error);
-      } 
+      }
     }
   }, []);
-
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarDate, setCalendarDate] = useState(new Date());
-  const [saving, setSaving] = useState(false);
 
   const emotions = [
     { 
@@ -146,22 +148,6 @@ const DiaryPage: React.FC = () => {
       alert('感情と出来事を入力してください。');
       return;
     }
-    
-    // 無価値感を選んだ場合、スコアのバリデーション
-    if (formData.emotion === '無価値感') {
-      const selfEsteemScore = parseInt(worthlessnessScores.todaySelfEsteem) || 0;
-      const worthlessnessScore = parseInt(worthlessnessScores.todayWorthlessness) || 0;
-      
-      if (selfEsteemScore > 100) {
-        alert('自己肯定感スコアは100以下で入力してください。');
-        return;
-      }
-      
-      if (worthlessnessScore > 100) {
-        alert('無価値感スコアは100以下で入力してください。');
-        return;
-      }
-    }
 
     setSaving(true);
 
@@ -169,25 +155,14 @@ const DiaryPage: React.FC = () => {
       // ローカルストレージに保存
       const existingEntries = localStorage.getItem('journalEntries');
       const entries = existingEntries ? JSON.parse(existingEntries) : [];
-
+      
       // 無価値感を選んだ場合のスコアを設定
       const finalSelfEsteemScore = formData.emotion === '無価値感' 
-        ? (parseInt(worthlessnessScores.todaySelfEsteem) || 50) 
+        ? parseInt(worthlessnessScores.todaySelfEsteem) || 50 
         : formData.selfEsteemScore;
       const finalWorthlessnessScore = formData.emotion === '無価値感' 
-        ? (parseInt(worthlessnessScores.todayWorthlessness) || 50) 
+        ? parseInt(worthlessnessScores.todayWorthlessness) || 50 
         : formData.worthlessnessScore;
-
-      // 無価値感を選んだ場合、今日のスコアを保存して次回の前日のスコアとして使用
-      if (formData.emotion === '無価値感') {
-        const scoresToSave = {
-          selfEsteemScore: finalSelfEsteemScore,
-          worthlessnessScore: finalWorthlessnessScore,
-          savedAt: new Date().toISOString()
-        };
-        
-        localStorage.setItem('lastSavedWorthlessnessScores', JSON.stringify(scoresToSave));
-      }
       
       const newEntry = {
         id: Date.now().toString(),
@@ -202,64 +177,37 @@ const DiaryPage: React.FC = () => {
       entries.unshift(newEntry);
       localStorage.setItem('journalEntries', JSON.stringify(entries));
       
+      // 無価値感を選んだ場合、今日のスコアを保存して次回の前日のスコアとして使用
+      if (formData.emotion === '無価値感') {
+        const scoresToSave = {
+          selfEsteemScore: finalSelfEsteemScore,
+          worthlessnessScore: finalWorthlessnessScore,
+          savedAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem('lastSavedWorthlessnessScores', JSON.stringify(scoresToSave));
+        console.log('次回のために今日のスコアを保存しました:', scoresToSave);
+      }
+      
       alert('日記を保存しました！');
     
       // フォームをリセット
       setFormData({
         date: new Date().toISOString().split('T')[0],
         event: '',
-        emotion: '', 
-        selfEsteemScore: 50, 
+        emotion: '',
+        selfEsteemScore: 50,
         worthlessnessScore: 50,
         realization: ''
       });
       
-      // 無価値感を選んだ場合、次回のために今日のスコアを前日のスコアとして設定
-      if (formData.emotion === '無価値感') {
-        const todaySelfEsteem = parseInt(worthlessnessScores.todaySelfEsteem) || 50;
-        const todayWorthlessness = parseInt(worthlessnessScores.todayWorthlessness) || 50;
-        
-        try {
-          // 次回のフォーム用に設定
-          setWorthlessnessScores({
-            yesterdaySelfEsteem: String(todaySelfEsteem),
-            yesterdayWorthlessness: String(todayWorthlessness),
-            todaySelfEsteem: String(todaySelfEsteem),
-            todayWorthlessness: String(todayWorthlessness)
-          });
-          
-          console.log('次回のために今日のスコアを保存しました:', {
-            yesterdaySelfEsteem: todaySelfEsteem,
-            yesterdayWorthlessness: todayWorthlessness
-          });
-          
-        } catch (error) {
-          console.error('初期スコアの再読み込みエラー:', error);
-          // エラー時はデフォルト値に戻す
-          setWorthlessnessScores({
-            yesterdaySelfEsteem: '50',
-            yesterdayWorthlessness: '50',
-            todaySelfEsteem: '50',
-            todayWorthlessness: '50'
-          });
-        } 
-      } else {
-        // 最後に保存したスコアがある場合は、それを前日のスコアとして使用
-        const lastSavedScores = localStorage.getItem('lastSavedWorthlessnessScores');
-        if (lastSavedScores) {
-          // 最後に保存したスコアがある場合は何もしない（上の useEffect で処理済み）
-          return;
-        }
-        
-        // 最後に保存したスコアがない場合（初回）は、初期スコアを使用
-        setWorthlessnessScores(prev => ({
-          ...prev,
-          yesterdaySelfEsteem: '50',
-          yesterdayWorthlessness: '50',
-          todaySelfEsteem: '50',
-          todayWorthlessness: '50'
-        });
-      }
+      // スコアもリセット（次回のために最新の値は保持されている）
+      setWorthlessnessScores({
+        yesterdaySelfEsteem: 50,
+        yesterdayWorthlessness: 50,
+        todaySelfEsteem: 50,
+        todayWorthlessness: 50
+      });
       
     } catch (error) {
       console.error('保存エラー:', error);
@@ -339,70 +287,26 @@ const DiaryPage: React.FC = () => {
     setCalendarDate(newDate);
   };
 
-  // 自己肯定感スコア変更時の無価値感スコア自動計算 
-  const handleSelfEsteemChange = (field: 'yesterdaySelfEsteem' | 'todaySelfEsteem', value: string) => {
+  // 自己肯定感スコア変更時の無価値感スコア自動計算
+  const handleSelfEsteemChange = (field: 'yesterdaySelfEsteem' | 'todaySelfEsteem', value: number) => {
     const worthlessnessField = field === 'yesterdaySelfEsteem' ? 'yesterdayWorthlessness' : 'todayWorthlessness';
-    
-    // 空文字列の場合は両方空にする
-    if (value === '') {
-      setWorthlessnessScores(prev => ({
-        ...prev,
-        [field]: '',
-        [worthlessnessField]: ''
-      }));
-      return;
-    }
-    
-    // 数値に変換
-    const numValue = parseInt(value) || 0;
-    
-    // 100を超える値が入力された場合は警告
-    if (numValue > 100) {
-      alert('自己肯定感スコアは100以下で入力してください。');
-      return;
-    }
-    
-    // 値が0〜100の範囲内に収まるようにする
-    const clampedValue = Math.max(0, Math.min(100, numValue));
-    const calculatedWorthlessness = String(100 - clampedValue);
+    const calculatedWorthlessness = 100 - value;
     
     setWorthlessnessScores(prev => ({
       ...prev,
-      [field]: String(clampedValue),
+      [field]: value,
       [worthlessnessField]: calculatedWorthlessness
     }));
   };
 
   // 無価値感スコア直接変更時の自己肯定感スコア自動計算
-  const handleWorthlessnessChange = (field: 'yesterdayWorthlessness' | 'todayWorthlessness', value: string) => {
+  const handleWorthlessnessChange = (field: 'yesterdayWorthlessness' | 'todayWorthlessness', value: number) => {
     const selfEsteemField = field === 'yesterdayWorthlessness' ? 'yesterdaySelfEsteem' : 'todaySelfEsteem';
-    
-    // 空文字列の場合は両方空にする
-    if (value === '') {
-      setWorthlessnessScores(prev => ({
-        ...prev,
-        [field]: '',
-        [selfEsteemField]: ''
-      }));
-      return;
-    }
-    
-    // 数値に変換
-    const numValue = parseInt(value) || 0;
-    
-    // 100を超える値が入力された場合は警告
-    if (numValue > 100) {
-      alert('無価値感スコアは100以下で入力してください。');
-      return;
-    }
-    
-    // 値が0〜100の範囲内に収まるようにする
-    const clampedValue = Math.max(0, Math.min(100, numValue));
-    const calculatedSelfEsteem = String(100 - clampedValue);
+    const calculatedSelfEsteem = 100 - value;
     
     setWorthlessnessScores(prev => ({
       ...prev,
-      [field]: String(clampedValue),
+      [field]: value,
       [selfEsteemField]: calculatedSelfEsteem
     }));
   };
@@ -605,27 +509,27 @@ const DiaryPage: React.FC = () => {
                       自己肯定感
                     </label>
                     <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                      type="number"
+                      min="1"
+                      max="100"
                       value={worthlessnessScores.yesterdaySelfEsteem}
-                      onChange={(e) => handleSelfEsteemChange('yesterdaySelfEsteem', e.target.value)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal" 
-                      placeholder=""
-                    /> 
+                      onChange={(e) => handleSelfEsteemChange('yesterdaySelfEsteem', parseInt(e.target.value) || 1)}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                      placeholder="50"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-jp-medium text-gray-600 mb-1">
                       無価値感
                     </label>
-                    <input 
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
                       value={worthlessnessScores.yesterdayWorthlessness}
-                      onChange={(e) => handleWorthlessnessChange('yesterdayWorthlessness', e.target.value)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal" 
-                      placeholder=""
+                      onChange={(e) => handleWorthlessnessChange('yesterdayWorthlessness', parseInt(e.target.value) || 1)}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                      placeholder="50"
                     />
                   </div>
                 </div>
@@ -642,28 +546,28 @@ const DiaryPage: React.FC = () => {
                     <label className="block text-xs font-jp-medium text-gray-600 mb-1">
                       自己肯定感
                     </label>
-                    <input 
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
                       value={worthlessnessScores.todaySelfEsteem}
-                      onChange={(e) => handleSelfEsteemChange('todaySelfEsteem', e.target.value)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal" 
-                      placeholder=""
+                      onChange={(e) => handleSelfEsteemChange('todaySelfEsteem', parseInt(e.target.value) || 1)}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                      placeholder="50"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-jp-medium text-gray-600 mb-1">
                       無価値感
                     </label>
-                    <input 
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
                       value={worthlessnessScores.todayWorthlessness}
-                      onChange={(e) => handleWorthlessnessChange('todayWorthlessness', e.target.value)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal" 
-                      placeholder=""
+                      onChange={(e) => handleWorthlessnessChange('todayWorthlessness', parseInt(e.target.value) || 1)}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                      placeholder="50"
                     />
                   </div>
                 </div>
