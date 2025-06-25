@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Eye, Lock, Database, AlertTriangle, Users, Clock, MessageCircle, Key } from 'lucide-react';
+import { Shield, Eye, Lock, Database, AlertTriangle, Users, Clock, MessageCircle, Key, CheckCircle } from 'lucide-react';
 import { logSecurityEvent } from '../lib/deviceAuth';
 
 interface PrivacyConsentProps {
@@ -247,54 +247,51 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
             </div>
           </div>
         ) : (
-        )}
-
-        {!showRecoveryCodeInput && (
           <div className="border-t pt-6">
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-700 leading-relaxed">
-              上記内容をご確認のうえ、同意いただける場合は「同意して開始」をタップしてください。<br />
-              同意いただけない場合、本サービスはご利用いただけません。
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="flex items-start space-x-3 mb-6">
-              <input
-                type="checkbox"
-                id="privacy-consent"
-                checked={isChecked}
-                onChange={(e) => setIsChecked(e.target.checked)}
-                className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="privacy-consent" className="text-sm text-gray-700 leading-relaxed">
-                上記のプライバシーポリシーの内容を理解し、個人情報の取り扱いについて同意します。
-              </label>
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                上記内容をご確認のうえ、同意いただける場合は「同意して開始」をタップしてください。<br />
+                同意いただけない場合、本サービスはご利用いただけません。
+              </p>
             </div>
 
-            <div className="flex space-x-4">
-              <button
-                type="submit"
-                disabled={!isChecked}
-                className={`flex-1 py-3 px-6 rounded-lg font-jp-medium transition-all ${
-                  isChecked
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                同意して開始
-              </button>
-              <button
-                type="button"
-                onClick={handleReject}
-                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-jp-medium transition-colors"
-              >
-                同意しない
-              </button>
-            </div>
-          </form>
+            <form onSubmit={handleSubmit}>
+              <div className="flex items-start space-x-3 mb-6">
+                <input
+                  type="checkbox"
+                  id="privacy-consent"
+                  checked={isChecked}
+                  onChange={(e) => setIsChecked(e.target.checked)}
+                  className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="privacy-consent" className="text-sm text-gray-700 leading-relaxed">
+                  上記のプライバシーポリシーの内容を理解し、個人情報の取り扱いについて同意します。
+                </label>
+              </div>
+
+              <div className="flex space-x-4">
+                <button
+                  type="submit"
+                  disabled={!isChecked}
+                  className={`flex-1 py-3 px-6 rounded-lg font-jp-medium transition-all ${
+                    isChecked
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  同意して開始
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReject}
+                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-jp-medium transition-colors"
+                >
+                  同意しない
+                </button>
+              </div>
+            </form>
           </div>
-        </div>
+        )}
 
         <div className="mt-6 pt-6 border-t text-center">
           <p className="text-xs text-gray-500">
