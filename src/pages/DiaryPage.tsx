@@ -237,7 +237,7 @@ const DiaryPage: React.FC = () => {
 
   const handleShare = () => {
     const username = currentUser?.lineUsername || 'ユーザー';
-    const shareText = `${username}の今日の感情日記 📝\n\n感情: ${formData.emotion}\n\n#かんじょうにっき #感情日記 #自己肯定感\n\n${window.location.origin}`;
+    const shareText = `${username}の今日の感情日記 📝\n\n感情: ${formData.emotion}\n\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://ryksl1di.autosns.app/line`;
     
     if (navigator.share) {
       // Web Share API が利用可能な場合

@@ -486,7 +486,7 @@ const App: React.FC = () => {
     const emotionFreq = getEmotionFrequency();
     const mostFrequentEmotion = emotionFreq.length > 0 ? `${emotionFreq[0][0]} (${emotionFreq[0][1]}回)` : 'なし';
     
-    const shareText = `📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\n${window.location.origin}`;
+    const shareText = `📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://ryksl1di.autosns.app/line`;
     
     if (navigator.share) {
       navigator.share({
