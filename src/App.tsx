@@ -6,6 +6,7 @@ import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
 import AdminPanel from './components/AdminPanel';
 import DataMigration from './components/DataMigration';
 import DataBackupRecovery from './components/DataBackupRecovery';
+import RecoveryCodeSystem from './components/RecoveryCodeSystem';
 import DiaryPage from './pages/DiaryPage';
 import DiarySearchPage from './pages/DiarySearchPage';
 import HowTo from './pages/HowTo';
@@ -698,9 +699,13 @@ const App: React.FC = () => {
       case 'search':
         return <DiarySearchPage />;
       case 'admin':
-        return isAdmin ? <AdminPanel /> : <div>アクセス権限がありません</div>;
+        return isAdmin ? <AdminPanel /> : <div className="text-center py-8">
+          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-jp-medium text-gray-700 mb-2">アクセス権限がありません</h3>
+          <p className="text-gray-500 font-jp-normal">この画面はカウンセラー専用です</p>
+        </div>;
       case 'data-migration':
-        return isAdmin ? <DataMigration /> : <div>アクセス権限がありません</div>;
+        return <DataMigration />;
       case 'worthlessness-trend':
         const worthlessnessData = getWorthlessnessData();
         

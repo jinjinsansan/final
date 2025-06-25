@@ -40,12 +40,16 @@ const Support: React.FC = () => {
                     <div className="w-2 h-2 bg-blue-500 rounded-full mt-3 flex-shrink-0"></div>
                     <p className="text-gray-700 font-jp-normal text-sm sm:text-base">カウンセラーからのコメント機能</p>
                   </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-3 flex-shrink-0"></div>
+                    <p className="text-gray-700 font-jp-normal text-sm sm:text-base">復活の呪文によるデータ復元</p>
+                  </div>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-purple-200 text-center">
                   <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
                     <Database className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                   </div>
-                  <h3 className="font-jp-bold text-gray-900 text-xs sm:text-sm">データバックアップ</h3>
+                  <h3 className="font-jp-bold text-gray-900 text-xs sm:text-sm">データバックアップ・復元</h3>
                 </div>
               </div>
             </div>
