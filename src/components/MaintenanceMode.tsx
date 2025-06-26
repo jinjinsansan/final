@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Clock, RefreshCw, Wrench, Heart, CheckCircle, Info, Upload, Shield, Download } from 'lucide-react';
-import { getAuthSession } from '../lib/deviceAuth';
 
 interface MaintenanceConfig {
   isEnabled: boolean;
@@ -88,7 +87,8 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
       if (adminLoginAttempts >= 2) {
         setLoginError('複数回失敗しました。正しいパスワードを入力してください。');
       } else {
-      setLoginError('パスワードが正しくありません');
+        setLoginError('パスワードが正しくありません');
+      }
     }
   };
 
