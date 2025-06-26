@@ -10,6 +10,7 @@ const DataMigration: React.FC = () => {
   const [migrating, setMigrating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [migrationStatus, setMigrationStatus] = useState<string>('');
+  const [showUserCreationButton, setShowUserCreationButton] = useState(false);
   const [localDataCount, setLocalDataCount] = useState(0);
   const [supabaseDataCount, setSupabaseDataCount] = useState(0);
   const [localConsentCount, setLocalConsentCount] = useState(0);
@@ -183,10 +184,8 @@ const DataMigration: React.FC = () => {
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      setMigrationStatus('エラー: ユーザーが設定されていません。先にユーザーを作成してください。');
-      setTimeout(() => {
-        setMigrationStatus('');
-      }, 5000);
+      setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
+      setShowUserCreationButton(true);
       return;
     }
     if (!currentUser) {
@@ -224,10 +223,8 @@ const DataMigration: React.FC = () => {
   const handleMigrateConsentsToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      setMigrationStatus('エラー: ユーザーが設定されていません。先にユーザーを作成してください。');
-      setTimeout(() => {
-        setMigrationStatus('');
-      }, 5000);
+      setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
+      setShowUserCreationButton(true);
       return;
     }
     if (!currentUser) {
@@ -258,10 +255,8 @@ const DataMigration: React.FC = () => {
   const handleSyncFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      setMigrationStatus('エラー: ユーザーが設定されていません。先にユーザーを作成してください。');
-      setTimeout(() => {
-        setMigrationStatus('');
-      }, 5000);
+      setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
+      setShowUserCreationButton(true);
       return;
     }
     if (!currentUser) {
@@ -293,10 +288,8 @@ const DataMigration: React.FC = () => {
   const handleSyncConsentsFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      setMigrationStatus('エラー: ユーザーが設定されていません。先にユーザーを作成してください。');
-      setTimeout(() => {
-        setMigrationStatus('');
-      }, 5000);
+      setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
+      setShowUserCreationButton(true);
       return;
     }
     if (!currentUser) {
@@ -698,11 +691,11 @@ const DataMigration: React.FC = () => {
               {/* ステータス表示 */}
               {migrationStatus && (
                 <div className={`rounded-lg p-4 border ${migrationStatus.includes('エラー') ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
-                  <div className="flex items-center space-x-2 mb-2">
+                  <div className="flex items-start space-x-2 mb-2">
                     {(migrating || syncing) ? (
                       <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin text-blue-600" />
                     ) : migrationStatus.includes('エラー') ? (
-                      <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-600" />
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-600 mt-0.5" />
                     ) : (
                       <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-600" />
                     )}
@@ -730,6 +723,26 @@ const DataMigration: React.FC = () => {
                      </div>
                    </div>
                  )}
+                  
+                  {/* ユーザー作成ボタン */}
+                  {showUserCreationButton && !currentUser && isConnected && (
+                    <div className="mt-4 pt-4 border-t border-red-200">
+                      <button
+                        onClick={handleCreateUser}
+                        disabled={isCreatingUser || migrating}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors"
+                      >
+                        {isCreatingUser || migrating ? (
+                          <div className="flex items-center justify-center">
+                            <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                            <span>ユーザー作成中...</span>
+                          </div>
+                        ) : (
+                          'Supabaseユーザーを作成'
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -193,7 +193,7 @@ export const userService = {
   async createUser(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
 
-    console.log(`ユーザー作成開始: "${lineUsername}" - ${new Date().toISOString()}`);
+    console.log(`ユーザー作成開始 (userService): "${lineUsername}" - ${new Date().toISOString()}`);
     try {
       // まず既存ユーザーをチェック
       const existingUser = await this.getUserByUsername(lineUsername);
@@ -204,13 +204,14 @@ export const userService = {
       
       // 新規ユーザー作成
       console.log(`新規ユーザーを作成します - username: "${lineUsername}" - ${new Date().toISOString()}`);
-      
+
+      // 重要: ここでupsertを使用して、重複エラーを回避
       const { data, error } = await supabase
         .from('users')
-        .insert([{ 
+        .upsert([{ 
           line_username: lineUsername,
           created_at: new Date().toISOString()
-        }])
+        }], { onConflict: 'line_username', ignoreDuplicates: true })
         .select()
         .maybeSingle();
       
@@ -262,7 +263,7 @@ export const userService = {
   async getUserByUsername(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
 
-    console.log(`ユーザー検索開始: "${lineUsername}" - ${new Date().toISOString()}`);
+    console.log(`ユーザー検索開始 (userService): "${lineUsername}" - ${new Date().toISOString()}`);
     try {
       const { data, error } = await supabase
         .from('users')
@@ -636,7 +637,7 @@ export const syncService = {
   async migrateLocalData(userId: string): Promise<boolean> {
     if (!supabase) return false;
 
-    console.log(`データ移行開始 - ユーザーID: ${userId} - ${new Date().toISOString()}`);
+    console.log(`データ移行開始 (syncService): ユーザーID: ${userId} - ${new Date().toISOString()}`);
     try {
       // ローカルストレージから日記データを取得
       const localEntries = localStorage.getItem('journalEntries');
@@ -797,8 +798,8 @@ export const syncService = {
   // 本番環境用：大量データの効率的な同期
   async bulkMigrateLocalData(userId: string, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
-    
-    console.log(`大量データ移行開始 - ユーザーID: ${userId}`);
+
+    console.log(`大量データ移行開始 (bulkMigrateLocalData): ユーザーID: ${userId} - ${new Date().toISOString()}`);
     try {
       const localEntries = localStorage.getItem('journalEntries');
       if (!localEntries) {
