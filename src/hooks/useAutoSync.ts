@@ -150,14 +150,14 @@ export const useAutoSync = () => {
   // 自動同期の有効/無効切り替え
   const toggleAutoSync = (enabled: boolean) => {
     localStorage.setItem('auto_sync_enabled', enabled.toString());
-
+    
     try {
       const user = getCurrentUser();
       logSecurityEvent('auto_sync_toggled', user?.lineUsername || 'system', `自動同期が${enabled ? '有効' : '無効'}になりました`);
     } catch (error) {
       console.error('セキュリティログ記録エラー:', error);
     }
-
+    
     setStatus(prev => ({ ...prev, isAutoSyncEnabled: enabled }));
     
     if (enabled && isConnected && currentUser) {
@@ -177,9 +177,11 @@ export const useAutoSync = () => {
 
     // 即座に同期を実行（非同期で）
     if (enabled && isConnected && currentUser) {
-      performAutoSync(currentUser.id).catch(error => {
-        console.error('自動同期実行エラー:', error);
-      });
+      setTimeout(() => {
+        performAutoSync(currentUser.id).catch(error => {
+          console.error('自動同期実行エラー:', error);
+        });
+      }, 0);
       
       try {
         const user = getCurrentUser();
@@ -195,16 +197,18 @@ export const useAutoSync = () => {
 
   // 定期同期の設定（5分間隔）
   useEffect(() => {    
-    if (status.isAutoSyncEnabled) {
-      // 前回のタイマーをクリア
+    if (!isConnected || !currentUser) {
+      throw new Error('Supabaseに接続されていないか、ユーザーが設定されていません');
+    }
+    
+    if (status.isAutoSyncEnabled && isConnected && currentUser) {
+    
       if (syncTimeoutRef.current) {
-        clearInterval(syncTimeoutRef.current);
-      }
       
       syncTimeoutRef.current = setInterval(() => {
-        if (isConnected && currentUser) {
-          performAutoSync(currentUser.id);
-        }
+        performAutoSync(currentUser.id).catch(error => {
+          console.error('定期同期エラー:', error);
+        });
       }, 5 * 60 * 1000); // 5分
 
       return () => {
@@ -214,14 +218,8 @@ export const useAutoSync = () => {
       };
     } else if (syncTimeoutRef.current) {
       clearInterval(syncTimeoutRef.current);
-    }
-  }, [status.isAutoSyncEnabled]);
-
-  return {
-    ...status,
-    toggleAutoSync,
-    triggerManualSync,
-    isConnected,
+      await performAutoSync(currentUser.id);
+  }, [status.isAutoSyncEnabled, isConnected, currentUser]);
     currentUser
   };
 };
