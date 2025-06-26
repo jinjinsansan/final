@@ -213,8 +213,8 @@ export const useSupabase = () => {
     updateEntry,
     deleteEntry,
     checkConnection,
-    error,
-    retryConnection,
-    retryCount
+    error: error,
+    retryConnection: retryConnection,
+    retryCount: retryCount
   };
 };
