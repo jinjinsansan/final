@@ -210,7 +210,7 @@ export const userService = {
   async createUser(lineUsername: string | null): Promise<User | null> {
     if (!supabase) {
       console.error('createUser: Supabaseクライアントが初期化されていません');
-      return { id: crypto.randomUUID(), line_username: lineUsername || 'unknown', created_at: new Date().toISOString() };
+      return null;
     }
     if (!lineUsername) {
       console.error('ユーザー作成エラー: ユーザー名が指定されていません');
@@ -218,24 +218,24 @@ export const userService = {
     }
 
     const timestamp = new Date().toISOString();
-    console.log(`ユーザー作成開始 (userService): "${lineUsername}" - ${timestamp}`);
+    console.log(`ユーザー作成開始 (userService): "${lineUsername.trim()}" - ${timestamp}`);
     try {
       // まず既存ユーザーをチェック
-      const existingUser = await this.getUserByUsername(lineUsername);
+      const existingUser = await this.getUserByUsername(lineUsername.trim());
       if (existingUser && existingUser.id) {
-        console.log(`ユーザーは既に存在します: "${lineUsername}" - ID: ${existingUser.id} - 既存ユーザーを返します - ${timestamp}`);
+        console.log(`ユーザーは既に存在します: "${lineUsername.trim()}" - ID: ${existingUser.id} - 既存ユーザーを返します - ${timestamp}`);
         // ユーザーIDをローカルストレージに保存
         localStorage.setItem('supabase_user_id', existingUser.id);
         return existingUser;
       }
       
       // 新規ユーザー作成
-      console.log(`新規ユーザーを作成します - username: "${lineUsername}" - ${timestamp}`);
+      console.log(`新規ユーザーを作成します - username: "${lineUsername.trim()}" - ${timestamp}`);
       
       // 念のためもう一度既存ユーザーをチェック（競合を避けるため）
-      const doubleCheckUser = await this.getUserByUsername(lineUsername);
+      const doubleCheckUser = await this.getUserByUsername(lineUsername.trim());
       if (doubleCheckUser && doubleCheckUser.id) {
-        console.log(`再確認: ユーザーは既に存在します: "${lineUsername}" - ID: ${doubleCheckUser.id} - ${timestamp}`);
+        console.log(`再確認: ユーザーは既に存在します: "${lineUsername.trim()}" - ID: ${doubleCheckUser.id} - ${timestamp}`);
         localStorage.setItem('supabase_user_id', doubleCheckUser.id);
         return doubleCheckUser;
       }
@@ -244,7 +244,7 @@ export const userService = {
       const { data, error } = await supabase
         .from('users')
         .upsert([{ 
-          line_username: lineUsername,
+          line_username: lineUsername.trim(),
           created_at: new Date().toISOString()
         }], { onConflict: 'line_username', ignoreDuplicates: true })
         .select()
@@ -262,8 +262,8 @@ export const userService = {
         
         // 重複キーエラーの場合は既存ユーザーを返す
         if (error.code === '23505' || error.message.includes('duplicate key') || error.message.includes('already exists')) {
-          console.log(`重複キーエラー - 既存ユーザーを取得します: "${lineUsername}"`);
-          const existingUser = await this.getUserByUsername(lineUsername);
+          console.log(`重複キーエラー - 既存ユーザーを取得します: "${lineUsername.trim()}"`);
+          const existingUser = await this.getUserByUsername(lineUsername.trim());
           if (existingUser && existingUser.id) {
             localStorage.setItem('supabase_user_id', existingUser.id);
           }
@@ -274,31 +274,31 @@ export const userService = {
       }
       
       if (!data) {
-        console.error(`ユーザー作成エラー: "${lineUsername}" - データが返されませんでした - ${timestamp}`);
+        console.error(`ユーザー作成エラー: "${lineUsername.trim()}" - データが返されませんでした - ${timestamp}`);
         // フォールバックとしてローカルユーザーを返す
-        return { id: crypto.randomUUID(), line_username: lineUsername, created_at: new Date().toISOString() };
+        return null;
       }
       
-      console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${data.id} - ${timestamp}`);
+      console.log(`ユーザー作成成功: "${lineUsername.trim()}" - ID: ${data.id} - ${timestamp}`);
       // ユーザーIDをローカルストレージに保存
       localStorage.setItem('supabase_user_id', data.id);
       return data;
     } catch (error) {
-      console.error(`ユーザー作成エラー: "${lineUsername}" - ${timestamp}`, error);
+      console.error(`ユーザー作成エラー: "${lineUsername.trim()}" - ${timestamp}`, error);
       
       // 重複エラーの場合は既存ユーザーを返す
       if (error instanceof Error && error.message.includes('duplicate key')) {
-        console.log(`重複エラーのため既存ユーザーを取得します: "${lineUsername}" - ${timestamp}`);
+        console.log(`重複エラーのため既存ユーザーを取得します: "${lineUsername.trim()}" - ${timestamp}`);
         try {
-          const existingUser = await this.getUserByUsername(lineUsername);
-          console.log(`既存ユーザーを取得しました: "${lineUsername}" - ID: ${existingUser?.id || 'null'} - ${timestamp}`);
+          const existingUser = await this.getUserByUsername(lineUsername.trim());
+          console.log(`既存ユーザーを取得しました: "${lineUsername.trim()}" - ID: ${existingUser?.id || 'null'} - ${timestamp}`);
           if (existingUser) {
             // ユーザーIDをローカルストレージに保存
             localStorage.setItem('supabase_user_id', existingUser.id);
           }
           return existingUser;
         } catch (getUserError) {
-          console.error(`既存ユーザー取得エラー: "${lineUsername}" - ${timestamp}`, getUserError);
+          console.error(`既存ユーザー取得エラー: "${lineUsername.trim()}" - ${timestamp}`, getUserError);
           return null;
         }
       }
@@ -310,7 +310,7 @@ export const userService = {
   async getUserByUsername(lineUsername: string | null): Promise<User | null> {
     if (!supabase) return null;
     if (!lineUsername) {
-      console.error('ユーザー検索エラー: ユーザー名が指定されていません', new Date().toISOString());
+      console.error('ユーザー検索エラー: ユーザー名が指定されていません');
       return null;
     }
 
@@ -327,7 +327,7 @@ export const userService = {
       
       if (error) {
         // ユーザーが見つからない場合は null を返す
-        if (error.code === 'PGRST116' || error.message.includes('No rows found')) {
+        if (error.code === 'PGRST116' || error.message.includes('No rows found') || error.message.includes('not found')) {
           console.log(`ユーザー検索結果: "${lineUsername.trim()}" - ユーザーが見つかりません - ${timestamp}`);
           return null;
         }
@@ -696,7 +696,7 @@ export const consentService = {
 // データ同期ユーティリティ
 export const syncService = {
   // ローカルストレージからSupabaseへデータを移行
-  async migrateLocalData(userId: string | null): Promise<boolean> {
+  async migrateLocalData(userId: string | null, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
     if (!userId) {
       console.error('データ移行エラー: ユーザーIDが指定されていません');
@@ -720,12 +720,16 @@ export const syncService = {
       }
       
       console.log(`データ移行: 移行するエントリー数: ${entries.length}`);
+      const totalEntries = entries.length;
       
       // 各エントリーを処理
       let successCount = 0;
       let errorCount = 0;
       let skippedCount = 0;
       let totalProcessed = 0;
+      
+      // 進捗コールバックが提供されている場合は初期値を設定
+      if (progressCallback) progressCallback(0);
       
       for (const entry of entries) {
         try {
@@ -778,6 +782,13 @@ export const syncService = {
           
           totalProcessed++;
           if (totalProcessed % 5 === 0) {
+            // 進捗コールバックが提供されている場合は進捗を通知
+            if (progressCallback) {
+              const progress = Math.round((totalProcessed / totalEntries) * 100);
+              progressCallback(progress);
+              console.log(`進捗コールバック: ${progress}%`);
+            }
+            
             console.log(`進捗: ${totalProcessed}/${entries.length} 処理完了`);
           }
         } catch (entryError) {
@@ -786,6 +797,10 @@ export const syncService = {
           // 個別エラーは警告として処理し、全体の処理は継続
         }
       }
+
+      // 進捗コールバックが提供されている場合は100%完了を通知
+      if (progressCallback) 
+        progressCallback(100);
       
       console.log(`ローカルデータの移行が完了しました - 成功=${successCount}, 失敗=${errorCount}, 合計=${entries.length}`);
       console.log(`処理時間: ${new Date().toISOString()} - 開始: ${startTime}`);
@@ -795,7 +810,7 @@ export const syncService = {
       }
       
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('データ移行エラー:', error);
       return false;
     }
@@ -803,7 +818,7 @@ export const syncService = {
 
   // Supabaseからローカルストレージにデータを同期
   async syncToLocal(userId: string | null): Promise<boolean> {
-    if (!supabase) return false;
+    if (!supabase || !userId) return false;
     if (!userId || userId.trim() === '') {
       console.error('データ同期エラー: ユーザーIDが指定されていません');
       return false;
@@ -812,7 +827,7 @@ export const syncService = {
     console.log(`Supabaseからローカルへの同期を開始: ユーザーID: ${userId} - ${new Date().toISOString()}`);
     
     try {
-      const { data: entries, error } = await supabase
+      const { data: entries = [], error } = await supabase
         .from('diary_entries')
         .select('*')
         .eq('user_id', userId)
@@ -822,6 +837,11 @@ export const syncService = {
         console.error('Supabaseからのデータ取得エラー:', error);
         console.error('エラー詳細:', error.message, error.details);
         throw error;
+      }
+      
+      if (!entries || entries.length === 0) {
+        console.log('Supabaseからのデータ取得: データが見つかりませんでした');
+        return true;
       }
       
       // ローカルストレージ形式に変換
@@ -839,7 +859,7 @@ export const syncService = {
       }));
       
       localStorage.setItem('journalEntries', JSON.stringify(localFormat));
-      console.log(`Supabaseからローカルへの同期が完了しました: ${localFormat.length}件のエントリーを同期`);
+      console.log(`Supabaseからローカルへの同期が完了しました: ${localFormat.length}件のエントリーを同期しました`);
       return true;
     } catch (error) {
       console.error('同期エラー:', error);
@@ -854,7 +874,7 @@ export const syncService = {
   // 同意履歴をSupabaseに同期
   async syncConsentHistories(): Promise<boolean> {
     if (!supabase) return false;
-
+    
     console.log('同意履歴の同期を開始 - ' + new Date().toISOString());
     
     // ユーザー名を取得
@@ -870,7 +890,7 @@ export const syncService = {
       if (!localHistories) {
         console.log('同意履歴同期: ローカル同意履歴が見つかりません - 同期スキップ');
         return true;
-      }
+      } 
 
       const histories = JSON.parse(localHistories);
       if (!Array.isArray(histories) || histories.length === 0) {
@@ -879,7 +899,7 @@ export const syncService = {
       }
       
       console.log(`同意履歴同期: 同期する同意履歴数: ${histories.length}件`);
-      
+
       let successCount = 0;
       let errorCount = 0;
       
@@ -887,7 +907,7 @@ export const syncService = {
       for (let i = 0; i < histories.length; i++) {
         try {
           const history = histories[i];
-          if (!history || !history.line_username || !history.consent_date) {
+          if (!history || typeof history !== 'object' || !history.line_username || !history.consent_date) {
             console.warn(`無効な同意履歴データをスキップします [${i+1}/${histories.length}]`);
             errorCount++;
             continue;
@@ -895,7 +915,7 @@ export const syncService = {
           
           console.log(`同意履歴を処理中 [${i+1}/${histories.length}]: ${history.line_username} - ${history.consent_date}`);
           
-          // 既存の記録をチェック
+          // 既存の記録をチェック（同じユーザー名と同意日時の組み合わせ）
           const { data: existing, error: checkError } = await supabase
             .from('consent_histories')
             .select('id')
@@ -910,7 +930,7 @@ export const syncService = {
           
           if (!existing || existing.length === 0) {
             console.log(`新規同意履歴を作成: ${history.line_username}`);
-            
+
             // 同意履歴データの準備
             const consentData = {
               line_username: history.line_username,
@@ -918,7 +938,7 @@ export const syncService = {
               consent_date: history.consent_date,
               ip_address: history.ip_address || 'unknown',
               user_agent: history.user_agent || 'unknown'
-            };
+            }; 
             
             const { data: insertedData, error: insertError } = await supabase
               .from('consent_histories')
@@ -927,7 +947,7 @@ export const syncService = {
             
             if (insertError) {
               console.warn('同意履歴作成エラー:', insertError, consentData);
-              errorCount++;
+              errorCount++; 
             } else {
               successCount++;
               console.log(`同意履歴を作成しました: ${history.line_username}`, insertedData);
@@ -937,7 +957,7 @@ export const syncService = {
             successCount++;
           }
            
-           // レート制限を回避するための短い待機
+           // レート制限を回避するための待機
            await new Promise(resolve => setTimeout(resolve, 100));
         } catch (historyError) {
           console.error(`同意履歴処理エラー [${i+1}/${histories.length}]:`, historyError);
@@ -946,7 +966,7 @@ export const syncService = {
       }
       
       const endTime = new Date().toISOString();
-      console.log(`同意履歴の同期が完了しました - 成功=${successCount}, 失敗=${errorCount}, 合計=${histories.length} - ${endTime}`);
+      console.log(`同意履歴の同期が完了しました - 成功=${successCount}, 失敗=${errorCount}, 合計=${histories.length} - 開始時刻: ${startTime}, 終了時刻: ${endTime}`);
       return successCount > 0 || histories.length === 0;
     } catch (error) {
       console.error('同意履歴同期エラー:', error);
@@ -954,7 +974,7 @@ export const syncService = {
         console.error('エラーメッセージ:', error.message);
         console.error('エラースタック:', error.stack);
       }
-      throw error;
+      return false;
     }
   },
 
@@ -962,7 +982,8 @@ export const syncService = {
   async syncConsentHistoriesToLocal(): Promise<boolean> {
     if (!supabase) return false;
     
-    console.log('Supabaseから同意履歴の同期を開始: ' + new Date().toISOString());
+    const startTime = new Date().toISOString();
+    console.log('Supabaseから同意履歴の同期を開始: ' + startTime);
     
     try {
       const { data: histories, error } = await supabase
@@ -973,6 +994,11 @@ export const syncService = {
       if (error) {
         console.error('Supabaseからの同意履歴取得エラー:', error);
         throw error;
+      }
+      
+      if (!histories || histories.length === 0) {
+        console.log('Supabaseから同意履歴の取得: データが見つかりませんでした');
+        return true;
       }
       
       // ローカルストレージ形式に変換
@@ -986,10 +1012,15 @@ export const syncService = {
       }));
       
       localStorage.setItem('consent_histories', JSON.stringify(localFormat));
-      console.log('同意履歴のローカル同期が完了しました: ' + new Date().toISOString());
+      const endTime = new Date().toISOString();
+      console.log(`同意履歴のローカル同期が完了しました: ${localFormat.length}件 - 開始: ${startTime}, 終了: ${endTime}`);
       return true;
     } catch (error) {
       console.error('同意履歴ローカル同期エラー:', error);
+      if (error instanceof Error) {
+        console.error('エラーメッセージ:', error.message);
+        console.error('エラースタック:', error.stack);
+      }
       throw error;
     }
   },
@@ -1068,7 +1099,7 @@ export const syncService = {
             try {
               console.log(`エントリー処理中: ${data.date} - ${data.emotion}`);
               // 既存エントリーの重複チェック
-              const { data: existing, error: checkError } = await supabase
+              const { data: existing = [], error: checkError } = await supabase
                 .from('diary_entries')
                 .select('id')
                 .eq('user_id', userId)
@@ -1081,7 +1112,7 @@ export const syncService = {
                 continue;
               }
               
-              if (!existing || existing.length === 0) {
+              if (existing.length === 0) {
                 console.log(`新規エントリーを作成: ${data.date} - ${data.emotion}`);
                 const { error: insertError } = await supabase
                   .from('diary_entries')
@@ -1089,7 +1120,7 @@ export const syncService = {
                 
                 if (insertError) {
                   console.warn('エントリー作成エラー:', insertError);
-                  console.warn('エラーが発生したエントリー:', data);
+                  console.warn('エラーが発生したエントリー:', JSON.stringify(data));
                   errorCount++;
                 } else {
                   successCount++;
@@ -1104,7 +1135,7 @@ export const syncService = {
               errorCount++;
             }
             
-            // 少し待機してレート制限を回避
+            // レート制限を回避するための待機
             await new Promise(resolve => setTimeout(resolve, 100));
           }
         } catch (batchError) {
@@ -1118,7 +1149,7 @@ export const syncService = {
           progressCallback(progress);
         }
         
-        // レート制限対策
+        // レート制限を回避するための待機
         await new Promise(resolve => setTimeout(resolve, 300));
       }
 
@@ -1129,7 +1160,7 @@ export const syncService = {
       
       // 完了メッセージ
       const endTime = new Date().toISOString();
-      console.log(`ローカルデータの移行が完了しました - 成功=${successCount}, 失敗=${errorCount}, スキップ=${skippedCount}, 合計=${entries.length} - 開始:${startTime} 終了:${endTime}`);
+      console.log(`ローカルデータの移行が完了しました - 成功=${successCount}, 失敗=${errorCount}, スキップ=${skippedCount}, 合計=${entries.length} - 開始: ${startTime}, 終了: ${endTime}`);
       console.log('移行結果の詳細:', { successCount, errorCount, skippedCount, totalEntries: entries.length });
       
       // スキップされたエントリーが多い場合でも成功として扱う
