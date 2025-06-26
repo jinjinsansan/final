@@ -6,7 +6,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
   try {
-    if (!url || url.trim() === '' || url.includes('your_supabase_project_url')) {
+    if (!url || url.trim() === '') {
       return false;
     }
     new URL(url);
@@ -18,16 +18,14 @@ const isValidUrl = (url: string): boolean => {
 
 const isValidSupabaseKey = (key: string): boolean => {
   return !!(key && 
-    key.trim() !== '' && 
-    !key.includes('your_supabase_anon_key') &&
-    key.length > 20);
+    key.trim() !== '');
 };
 
 // 本番環境での詳細な検証
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
 } else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
-  console.warn('Supabase環境変数が無効です。設定を確認してください。', supabaseUrl, supabaseAnonKey);
+  console.warn('Supabase環境変数が無効です。設定を確認してください。');
   console.log('URL:', supabaseUrl ? 'あり' : 'なし');
   console.log('Key:', supabaseAnonKey ? 'あり' : 'なし');
 }
