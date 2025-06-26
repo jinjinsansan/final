@@ -4,8 +4,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // 環境変数のデバッグ情報（詳細）
-console.log('Supabase URL exists:', !!supabaseUrl, supabaseUrl ? `(${supabaseUrl.substring(0, 15)}...)` : '');
-console.log('Supabase Key exists:', !!supabaseAnonKey, supabaseAnonKey ? `(${supabaseAnonKey.substring(0, 10)}...)` : '');
+console.log('Supabase URL:', !!supabaseUrl, supabaseUrl ? `(${supabaseUrl})` : '');
+console.log('Supabase Key:', !!supabaseAnonKey, supabaseAnonKey ? `(${supabaseAnonKey.substring(0, 15)}...)` : '');
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
@@ -44,6 +44,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Supabaseクライアントの作成
 export const supabase = (() => {
   try {
+    console.log('Supabase client initialization starting...');
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Supabase URL または API キーが設定されていません');
       return null;
@@ -55,6 +56,7 @@ export const supabase = (() => {
     console.log('Creating Supabase client - URL valid:', urlValid, 'Key valid:', keyValid);
       
     if (urlValid && keyValid && supabaseUrl && supabaseAnonKey) {
+      console.log('Creating Supabase client with URL:', supabaseUrl);
       try {
         const client = createClient(supabaseUrl, supabaseAnonKey, {
           auth: {
@@ -80,7 +82,7 @@ export const supabase = (() => {
 // 接続テスト用の関数
 export const testSupabaseConnection = async () => {
   if (!supabase) {
-    console.error('Connection test failed: Supabase client not initialized');
+    console.error('接続テスト失敗: Supabaseクライアントが初期化されていません');
     return { 
       success: false, 
       error: 'Supabaseクライアントが初期化されていません。環境変数を確認してください。',
@@ -95,18 +97,18 @@ export const testSupabaseConnection = async () => {
   
   try {
     // 単純なPingテスト
-    console.log('Testing Supabase connection...');
+    console.log('Supabase接続をテスト中...');
     const { data, error } = await supabase.from('users').select('id').limit(1);
     
     if (error) {      
-      console.error('Connection test error:', error.message, error);
+      console.error('接続テストエラー:', error.message, error);
       
       // APIキーエラーの特別処理
       if (error.message.includes('JWT') || error.message.includes('Invalid API key') || error.message.includes('key') || error.message.includes('token')) {
-        console.error('API キーエラーが検出されました:', error.message);
+        console.error('APIキーエラーが検出されました:', error.message);
         return { 
           success: false, 
-          error: 'APIキーが無効または期限切れです', 
+          error: 'APIキーが無効です', 
           details: error 
         };
       }
@@ -117,10 +119,10 @@ export const testSupabaseConnection = async () => {
         details: error 
       };
     }
-    console.log('Connection test successful');
+    console.log('接続テスト成功');
     return { success: true, data };
   } catch (error) {
-    console.error('Connection test exception:', error);
+    console.error('接続テスト例外:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : '不明なエラー',
@@ -190,9 +192,8 @@ export const userService = {
   async createUser(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
 
+    console.log('ユーザー作成開始:', lineUsername);
     try {
-      console.log('ユーザー作成開始:', lineUsername);
-      
       // まず既存ユーザーをチェック
       const existingUser = await this.getUserByUsername(lineUsername);
       if (existingUser) {
@@ -201,7 +202,7 @@ export const userService = {
       }
       
       // 新規ユーザー作成
-      console.log('新規ユーザーを作成します:', lineUsername);
+      console.log('新規ユーザーを作成します - username:', lineUsername);
       
       const { data, error } = await supabase
         .from('users')
@@ -214,6 +215,9 @@ export const userService = {
       
       if (error) {
         console.error('ユーザー作成エラー (insert):', error);
+        // エラーの詳細をログ
+        if (error.details) console.error('エラー詳細:', error.details);
+        if (error.hint) console.error('エラーヒント:', error.hint);
         throw error;
       }
       
@@ -247,9 +251,8 @@ export const userService = {
   async getUserByUsername(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
 
+    console.log('ユーザー検索開始:', lineUsername);
     try {
-      console.log('ユーザー検索:', lineUsername);
-      
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -258,7 +261,7 @@ export const userService = {
       
       if (error) {
         // ユーザーが見つからない場合は null を返す
-        if (error.code === 'PGRST116') {
+        if (error.code === 'PGRST116' || error.message.includes('No rows found')) {
           console.log('ユーザーが見つかりません:', lineUsername);
           return null;
         }
@@ -267,7 +270,7 @@ export const userService = {
       }
       
       console.log('ユーザー検索結果:', data);
-      return data;
+      return data || null;
     } catch (error) {
       console.error('ユーザー取得エラー:', error);
       return null;
