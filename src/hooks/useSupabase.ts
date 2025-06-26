@@ -7,10 +7,16 @@ export const useSupabase = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true); 
   const [error, setError] = useState<string | null>(null);
-  const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
+  const [lastConnectionAttempt, setLastConnectionAttempt] = useState<number>(0);
 
   useEffect(() => {
-    checkConnection();
+    const now = Date.now();
+    // 最後の接続試行から3秒以上経過している場合のみ実行
+    if (now - lastConnectionAttempt > 3000) {
+      setLastConnectionAttempt(now);
+      checkConnection();
+    }
   }, [connectionAttempts]);
 
   const checkConnection = async () => {
@@ -29,10 +35,17 @@ export const useSupabase = () => {
       // 新しい接続テスト関数を使用
       console.log('Checking Supabase connection...');
       const result = await testSupabaseConnection();
+      
       if (!result.success) {
         console.error('Supabase接続エラー:', result.error, result.details);
         setIsConnected(false);
-        setError(`接続エラー: ${result.error}`);
+        
+        // APIキーエラーの特別処理
+        if (result.error === 'Invalid API key') {
+          setError('接続エラー: Invalid API key');
+        } else {
+          setError(`接続エラー: ${result.error}`);
+        }
       } else {
         console.log('Supabase接続成功');
         setIsConnected(true);
@@ -54,6 +67,7 @@ export const useSupabase = () => {
   
   // 接続を再試行する関数
   const retryConnection = () => {
+    console.log('接続を再試行します...');
     setConnectionAttempts(prev => prev + 1);
   };
 
@@ -187,6 +201,6 @@ export const useSupabase = () => {
     deleteEntry,
     checkConnection,
     error,
-    retryConnection,
+    retryConnection
   };
 };

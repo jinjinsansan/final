@@ -1,16 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 環境変数から値を取得
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 10)}...` : 'undefined');
-console.log('Supabase Key exists:', !!supabaseAnonKey);
+console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined');
+console.log('Supabase Key exists:', !!supabaseAnonKey, supabaseAnonKey ? `Length: ${supabaseAnonKey.length}` : '');
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
   try {
-    if (!url || url.trim() === '' || url === 'undefined') {
+    if (!url || url.trim() === '' || url === 'undefined' || url.includes('your_supabase')) {
       return false;
     }
     new URL(url);
@@ -21,28 +20,33 @@ const isValidUrl = (url: string): boolean => {
 };
 
 const isValidSupabaseKey = (key: string): boolean => {
-  return !!(key && key.trim() !== '' && key !== 'undefined' && key.length > 20);
+  return !!(key && 
+    key.trim() !== '' && 
+    key !== 'undefined' && 
+    !key.includes('your_supabase') &&
+    key.length > 20);
 };
 
 // 本番環境での詳細な検証
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
 } else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
-  console.warn('Supabase環境変数が無効です。設定を確認してください。', {
-    urlValid: isValidUrl(supabaseUrl),
-    keyValid: isValidSupabaseKey(supabaseAnonKey),
-    urlLength: supabaseUrl?.length || 0,
-    keyLength: supabaseAnonKey?.length || 0
-  });
+  console.warn('Supabase環境変数が無効です。設定を確認してください。');
+  console.log('URL valid:', isValidUrl(supabaseUrl));
+  console.log('Key valid:', isValidSupabaseKey(supabaseAnonKey));
+  console.log('URL length:', supabaseUrl?.length || 0);
+  console.log('Key length:', supabaseAnonKey?.length || 0);
 }
 
 // Supabaseクライアントの作成
 export const supabase = (() => {
   try {
-    console.log('Creating Supabase client with valid URL and key:', 
-      isValidUrl(supabaseUrl), isValidSupabaseKey(supabaseAnonKey));
+    const urlValid = isValidUrl(supabaseUrl);
+    const keyValid = isValidSupabaseKey(supabaseAnonKey);
+    
+    console.log('Creating Supabase client with valid URL and key:', urlValid, keyValid);
       
-    if (isValidUrl(supabaseUrl) && isValidSupabaseKey(supabaseAnonKey)) {
+    if (urlValid && keyValid) {
       const client = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           persistSession: true,
@@ -66,7 +70,7 @@ export const testSupabaseConnection = async () => {
     console.log('Connection test failed: Supabase client not initialized');
     return { 
       success: false, 
-      error: 'Supabaseクライアントが初期化されていません',
+      error: 'Supabaseクライアントが初期化されていません。環境変数を確認してください。',
       details: {
         urlValid: isValidUrl(supabaseUrl),
         keyValid: isValidSupabaseKey(supabaseAnonKey),
@@ -80,14 +84,29 @@ export const testSupabaseConnection = async () => {
     // 単純なPingテスト
     console.log('Testing Supabase connection...');
     const { data, error } = await supabase.from('users').select('id').limit(1);
+    
     if (error) {
-      console.log('Connection test error:', error.message);
-      return { success: false, error: error.message, details: error };
+      console.error('Connection test error:', error.message, error);
+      
+      // APIキーエラーの特別処理
+      if (error.message.includes('JWT') || error.message.includes('key') || error.message.includes('token')) {
+        return { 
+          success: false, 
+          error: 'Invalid API key', 
+          details: error 
+        };
+      }
+      
+      return { 
+        success: false, 
+        error: error.message, 
+        details: error 
+      };
     }
     console.log('Connection test successful');
     return { success: true, data };
   } catch (error) {
-    console.log('Connection test exception:', error);
+    console.error('Connection test exception:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : '不明なエラー',

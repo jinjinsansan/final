@@ -904,17 +904,6 @@ const App: React.FC = () => {
           {/* ヘッダー */}
           <header className="bg-white shadow-sm border-b border-gray-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  {supabaseError && (
-                    <div className="mt-2 text-sm text-red-600">
-                      Supabase接続エラー: {supabaseError}
-                      <button 
-                        onClick={retryConnection}
-                        className="ml-2 px-2 py-1 bg-blue-600 text-white rounded text-xs"
-                      >
-                        再接続
-                      </button>
-                    </div>
-                  )}
               <div className="flex justify-between items-center h-16">
                 <div className="flex items-center space-x-4">
                   <button
@@ -1107,7 +1096,7 @@ const App: React.FC = () => {
             {isAdmin && (
               <div className="mb-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                  <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium ${
+                  <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs sm:text-sm font-jp-medium ${
                     isConnected 
                       ? 'bg-green-100 text-green-800 border border-green-200' 
                       : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
@@ -1119,11 +1108,12 @@ const App: React.FC = () => {
                     )}
                   </div>
                   {!isConnected && supabaseError && (
-                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
-                      <span className="text-xs">{supabaseError}</span>
+                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-lg text-xs sm:text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      <span>{supabaseError}</span>
                       <button 
                         onClick={retryConnection}
-                        className="ml-1 px-2 py-0.5 bg-red-600 text-white rounded-full text-xs"
+                        className="ml-2 px-2 py-0.5 bg-red-600 text-white rounded text-xs"
                       >
                         再試行
                       </button>
