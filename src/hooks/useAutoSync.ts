@@ -51,13 +51,6 @@ export const useAutoSync = () => {
   // 自動初期化処理
   const handleAutoInitialization = async (lineUsername: string) => {
     try {
-      // WebContainer環境ではローカルモードで動作
-      if (!isConnected) {
-        console.log('ローカルモードで動作します - 自動初期化をスキップします');
-        setStatus(prev => ({ ...prev, userCreated: true }));
-        return;
-      }
-      
       let user = await userService.getUserByUsername(lineUsername);
       
       if (!user) {
@@ -176,8 +169,7 @@ export const useAutoSync = () => {
   // 手動同期実行
   const triggerManualSync = async () => {
     if (!isConnected || !currentUser) {
-      console.log('ローカルモードで動作中です - 同期はスキップされます');
-      return;
+      throw new Error('Supabaseに接続されていないか、ユーザーが設定されていません');
     }
     
     setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));

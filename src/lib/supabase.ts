@@ -5,7 +5,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // WebContainer環境ではSupabase接続をスキップするフラグ
-const isWebContainerEnvironment = true; // WebContainer環境では常にtrueに設定
+const isWebContainerEnvironment = false; // Supabase接続を有効化
 
 // 環境変数のデバッグ情報（開発環境のみ）
 if (import.meta.env.DEV) {
@@ -48,11 +48,6 @@ else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
 export const supabase = (() => {
   try {
     // WebContainer環境ではSupabase接続をスキップ
-    if (isWebContainerEnvironment) {
-      console.log('WebContainer環境のため、Supabase接続をスキップします');
-      return null;
-    }
-    
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Supabase URL または API キーが設定されていません');
       return null;
@@ -94,17 +89,6 @@ export const supabase = (() => {
 export const testSupabaseConnection = async () => {
   if (!supabase) {
     // WebContainer環境の場合は特別なメッセージを返す
-    if (isWebContainerEnvironment) {
-      console.log('WebContainer環境のため、ローカルモードで動作します');
-      return { 
-        success: false,
-        error: 'WebContainer環境ではSupabase接続ができません。ローカルモードで動作します',
-        details: {
-          isWebContainerEnvironment: true
-        }
-      };
-    }
-    
     console.warn('接続テスト失敗: Supabaseクライアントが未初期化');
     return { 
       success: false,

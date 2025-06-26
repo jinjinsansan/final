@@ -109,7 +109,7 @@ const DataMigration: React.FC = () => {
   const handleCreateUser = async () => {
     const lineUsername = localStorage.getItem('line-username');
     if (!lineUsername) {
-      alert('ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してください。');
+      alert('ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してユーザー名を設定してください。');
       return;
     }
 
@@ -123,7 +123,7 @@ const DataMigration: React.FC = () => {
       // まず既存ユーザーをチェック
       const existingUser = await userService.getUserByUsername(lineUsername);
       if (existingUser) {
-        console.log('既存ユーザーが見つかりました');
+        console.log('既存ユーザーが見つかりました:', existingUser);
         setMigrationStatus('ユーザーは既に存在します！データ移行が可能になりました。');
         setUserExists(true);
         setTimeout(() => {
@@ -134,42 +134,22 @@ const DataMigration: React.FC = () => {
       
       // 新規ユーザー作成
       console.log('新規ユーザーを作成します:', lineUsername);
-      try {
-        const user = await userService.createUser(lineUsername);
-        
-        if (!user) {
-          console.error('ユーザー作成に失敗しました - nullが返されました');
-          throw new Error('ユーザー作成に失敗しました。');
-        }
-        
-        console.log('ユーザー作成成功:', user);
-        // 成功メッセージを表示
-        setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
-        setUserExists(true);
-        
-        // 少し待ってからリロード
-        setTimeout(() => {
-          window.location.reload(); // ページをリロードして状態を更新
-        }, 1500);
-      } catch (createError) {
-        // ユーザー作成エラーの詳細ログ
-        console.error('ユーザー作成中のエラー:', createError);
-        
-        // 重複エラーの場合は既存ユーザーとして扱う
-        if (createError instanceof Error && 
-            (createError.message.includes('duplicate') || 
-             createError.message.includes('already exists'))) {
-          console.log('ユーザーは既に存在します - 既存ユーザーとして扱います');
-          setMigrationStatus('ユーザーは既に存在します！データ移行が可能になりました。');
-          setUserExists(true);
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-          return;
-        }
-        
-        throw createError;
+      const user = await userService.createUser(lineUsername);
+      
+      if (!user) {
+        console.error('ユーザー作成に失敗しました - nullが返されました');
+        throw new Error('ユーザー作成に失敗しました。');
       }
+      
+      console.log('ユーザー作成成功:', user);
+      // 成功メッセージを表示
+      setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
+      setUserExists(true);
+      
+      // 少し待ってからリロード
+      setTimeout(() => {
+        window.location.reload(); // ページをリロードして状態を更新
+      }, 1500);
     } catch (error) {
       console.error('ユーザー作成エラー:', error);
       let errorMessage = 'ユーザー作成中にエラーが発生しました。';
@@ -204,7 +184,7 @@ const DataMigration: React.FC = () => {
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      setMigrationStatus('WebContainer環境ではSupabaseへの接続ができません。ローカルモードで動作します。');
+      setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
       setShowUserCreationButton(true);
       return;
     }
@@ -510,7 +490,7 @@ const DataMigration: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                     <span className="text-sm font-jp-medium text-yellow-800">
-                      WebContainer環境ではSupabaseへの接続ができません。ローカルモードで動作します。
+                      Supabaseに接続できません。ローカルモードで動作中です。
                     </span>
                   </div>
                   <p className="text-xs text-yellow-700 mt-2 ml-6">
@@ -565,7 +545,7 @@ const DataMigration: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <Info className="w-4 h-4 text-blue-600" />
                         <span className="text-sm font-jp-medium text-blue-800">
-                          WebContainer環境ではSupabaseへの接続ができません。ローカルモードで動作します。
+                          Supabaseにユーザーが存在します。データ移行が可能です。
                         </span>
                       </div>
                     </div>
@@ -577,13 +557,13 @@ const DataMigration: React.FC = () => {
                     <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                     <span className="text-sm font-jp-medium text-red-700">{userCreationError}</span>
                     <span className="text-sm font-jp-medium text-gray-700">
-                      WebContainer環境ではSupabaseへの接続ができません
+                      Supabaseユーザーが未作成
                     </span>
                   </div>
                   {isConnected && (
                     <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                       <p className="text-sm text-blue-800 mb-3">
-                        WebContainer環境ではSupabaseへの接続ができません。ローカルモードで動作します。
+                        Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
                       </p> 
                       <button
                         onClick={handleCreateUser}
@@ -596,7 +576,7 @@ const DataMigration: React.FC = () => {
                             <span>作成中...</span>
                           </div>
                         ) : (
-                          'ローカルユーザーを作成'
+                          'Supabaseユーザーを作成'
                         )}
                       </button>
                     </div>
