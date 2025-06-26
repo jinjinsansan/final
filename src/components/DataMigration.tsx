@@ -926,62 +926,6 @@ const DataMigration: React.FC = () => {
 
               {/* ステータス表示 */}
               {renderMigrationStatus()}
-              {/* {migrationStatus && (
-                <div className={`rounded-lg p-4 border ${migrationStatus.includes('エラー') ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
-                  <div className="flex items-start space-x-2 mb-2">
-                    {(migrating || syncing) ? (
-                      <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin text-blue-600" />
-                    ) : migrationStatus.includes('エラー') ? (
-                      <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-600 mt-0.5" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-600" />
-                    )}
-                    <span className={`text-sm font-jp-medium ${
-                      migrationStatus.includes('エラー') 
-                        ? 'text-red-700' 
-                        : 'text-gray-700'
-                    }`}>
-                      {migrationStatus}
-                    </span>
-                  </div>
-                 
-                 {/* 進捗バー */}
-                 {migrating && migrationProgress > 0 && (
-                   <div className="mt-2">
-                     <div className="flex justify-between items-center mb-1">
-                       <span className="text-xs font-jp-medium text-gray-600">移行進捗</span>
-                       <span className="text-xs font-jp-bold text-blue-600">{migrationProgress}%</span>
-                     </div>
-                     <div className="w-full bg-gray-200 rounded-full h-2">
-                       <div 
-                         className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                         style={{ width: `${migrationProgress}%` }}
-                       ></div>
-                     </div>
-                   </div>
-                 )}
-                  
-                  {/* ユーザー作成ボタン */}
-                  {showUserCreationButton && !currentUser && isConnected && (
-                    <div className="mt-4 pt-4 border-t border-red-200">
-                      <button
-                        onClick={handleCreateUser}
-                        disabled={isCreatingUser || migrating}
-                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors"
-                      >
-                        {isCreatingUser || migrating ? (
-                          <div className="flex items-center justify-center">
-                            <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                            <span>ユーザー作成中...</span>
-                          </div>
-                        ) : (
-                          'Supabaseユーザーを作成'
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )} */}
             </div>
 
             {/* 注意事項 */}
