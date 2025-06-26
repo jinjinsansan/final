@@ -231,7 +231,7 @@ const DataMigration: React.FC = () => {
 
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
     if (!userId) {
       setMigrationStatus('エラー: ユーザーIDが見つかりません。ユーザーを作成してください。');
       setShowUserCreationButton(true);
@@ -243,7 +243,7 @@ const DataMigration: React.FC = () => {
     setMigrationProgress(0);
 
     try {
-      setMigrationStatus(`ローカルデータをSupabaseに移行中... (ユーザーID: ${currentUser.id.substring(0, 8)}...)`);
+      setMigrationStatus(`ローカルデータをSupabaseに移行中... (ユーザーID: ${userId.substring(0, 8)}...)`);
       
       // 大量データ対応の移行処理
       const success = await syncService.bulkMigrateLocalData(userId, (progress) => {
@@ -328,7 +328,7 @@ const DataMigration: React.FC = () => {
 
   const handleMigrateConsentsToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
     if (!userId) {
       setMigrationStatus('エラー: ユーザーIDが見つかりません。ユーザーを作成してください。');
       setShowUserCreationButton(true);
@@ -362,7 +362,7 @@ const DataMigration: React.FC = () => {
 
   const handleSyncFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
     if (!userId) {
       setMigrationStatus('エラー: ユーザーIDが見つかりません。ユーザーを作成してください。');
       setShowUserCreationButton(true);
@@ -394,7 +394,7 @@ const DataMigration: React.FC = () => {
 
   const handleSyncConsentsFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
     if (!userId) {
       setMigrationStatus('エラー: ユーザーIDが見つかりません。ユーザーを作成してください。');
       setShowUserCreationButton(true);
