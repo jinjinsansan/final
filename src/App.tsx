@@ -56,7 +56,7 @@ const App: React.FC = () => {
 
   const [dataLoading, setDataLoading] = useState(true);
   const { isMaintenanceMode, config: maintenanceConfig, loading: maintenanceLoading } = useMaintenanceStatus();
-  const { isConnected, currentUser, initializeUser, loading: supabaseLoading, error: supabaseError, retryConnection } = useSupabase();
+  const { isConnected, currentUser, initializeUser, loading: supabaseLoading, error: supabaseError, retryConnection, retryCount } = useSupabase();
   const { isAutoSyncEnabled } = useAutoSync();
 
   const [formData, setFormData] = useState({
@@ -1095,7 +1095,7 @@ const App: React.FC = () => {
             {/* Supabase接続状態表示 */}
             {isAdmin && (
               <div className="mb-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 flex-wrap">
                   <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs sm:text-sm font-jp-medium ${
                     isConnected 
                       ? 'bg-green-100 text-green-800 border border-green-200' 
@@ -1108,12 +1108,13 @@ const App: React.FC = () => {
                     )}
                   </div>
                   {!isConnected && supabaseError && (
-                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-lg text-xs sm:text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
+                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-lg text-xs sm:text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200 w-full sm:w-auto">
                       <AlertTriangle className="w-3 h-3 mr-1" />
                       <span>{supabaseError}</span>
                       <button 
-                        onClick={retryConnection}
-                        className="ml-2 px-2 py-0.5 bg-red-600 text-white rounded text-xs"
+                        onClick={retryConnection} 
+                        disabled={retryCount >= 5}
+                        className={`ml-2 px-2 py-0.5 ${retryCount >= 5 ? 'bg-gray-400' : 'bg-red-600'} text-white rounded text-xs`}
                       >
                         再試行
                       </button>
@@ -1137,6 +1138,27 @@ const App: React.FC = () => {
             {renderContent()}
           </main>
         </>
+      )}
+      
+      {/* Supabase接続エラーバナー（ユーザー向け） */}
+      {!isAdmin && !showPrivacyConsent && currentPage !== 'home' && authState === 'none' && supabaseError && (
+        <div className="fixed top-16 inset-x-0 z-50">
+          <div className="bg-red-100 border-b border-red-200 px-4 py-2">
+            <div className="flex items-center justify-between max-w-7xl mx-auto">
+              <div className="flex items-center space-x-2 text-sm text-red-800">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Supabase接続エラー: {supabaseError}</span>
+              </div>
+              <button 
+                onClick={retryConnection}
+                disabled={retryCount >= 5}
+                className={`px-2 py-1 text-xs ${retryCount >= 5 ? 'bg-gray-400' : 'bg-red-600'} text-white rounded`}
+              >
+                再接続
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {(showPrivacyConsent || currentPage === 'home' || authState !== 'none') && renderContent()}

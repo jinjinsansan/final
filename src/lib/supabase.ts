@@ -4,7 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined');
-console.log('Supabase Key exists:', !!supabaseAnonKey, supabaseAnonKey ? `Length: ${supabaseAnonKey.length}` : '');
+console.log('Supabase Key exists:', !!supabaseAnonKey, supabaseAnonKey ? `Length: ${supabaseAnonKey.length}, First 10 chars: ${supabaseAnonKey.substring(0, 10)}...` : '');
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
@@ -41,20 +41,30 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Supabaseクライアントの作成
 export const supabase = (() => {
   try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase URL または API キーが設定されていません');
+      return null;
+    }
+    
     const urlValid = isValidUrl(supabaseUrl);
     const keyValid = isValidSupabaseKey(supabaseAnonKey);
     
-    console.log('Creating Supabase client with valid URL and key:', urlValid, keyValid);
+    console.log('Creating Supabase client - URL valid:', urlValid, 'Key valid:', keyValid);
       
     if (urlValid && keyValid) {
-      const client = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-        }
-      });
-      console.log('Supabase client created successfully');
-      return client;
+      try {
+        const client = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+          }
+        });
+        console.log('Supabase client created successfully');
+        return client;
+      } catch (createError) {
+        console.error('Supabaseクライアント作成中のエラー:', createError);
+        return null;
+      }
     }
     console.log('Failed to create Supabase client: invalid URL or key');
     return null;
@@ -90,9 +100,10 @@ export const testSupabaseConnection = async () => {
       
       // APIキーエラーの特別処理
       if (error.message.includes('JWT') || error.message.includes('key') || error.message.includes('token')) {
+        console.error('API キーエラーが検出されました:', error.message);
         return { 
           success: false, 
-          error: 'Invalid API key', 
+          error: 'APIキーが無効です', 
           details: error 
         };
       }
@@ -110,7 +121,8 @@ export const testSupabaseConnection = async () => {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : '不明なエラー',
-      details: error 
+      details: error,
+      isConnectionError: true
     };
   }
 };

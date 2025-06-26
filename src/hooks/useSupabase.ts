@@ -6,27 +6,35 @@ export const useSupabase = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true); 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); 
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
   const [lastConnectionAttempt, setLastConnectionAttempt] = useState<number>(0);
+  const [retryCount, setRetryCount] = useState<number>(0);
 
   useEffect(() => {
     const now = Date.now();
     // 最後の接続試行から3秒以上経過している場合のみ実行
     if (now - lastConnectionAttempt > 3000) {
       setLastConnectionAttempt(now);
-      checkConnection();
+      checkConnection(false);
     }
   }, [connectionAttempts]);
 
-  const checkConnection = async () => {
+  // 初回ロード時に接続を確認
+  useEffect(() => {
+    checkConnection(true);
+  }, []);
+
+  const checkConnection = async (isInitialCheck: boolean = false) => {
     setLoading(true);
-    setError(null);
+    if (isInitialCheck) {
+      setError(null);
+    }
     
     if (!supabase) {
       console.log('Supabase未設定 - ローカルモードで動作');
       setIsConnected(false);
-      setError('Supabaseクライアントが初期化されていません');
+      setError('Supabase接続エラー: 設定が見つかりません');
       setLoading(false);
       return;
     }
@@ -39,10 +47,9 @@ export const useSupabase = () => {
       if (!result.success) {
         console.error('Supabase接続エラー:', result.error, result.details);
         setIsConnected(false);
-        
-        // APIキーエラーの特別処理
-        if (result.error === 'Invalid API key') {
-          setError('接続エラー: Invalid API key');
+
+        if (result.error === 'APIキーが無効です') {
+          setError('接続エラー: APIキーが無効です');
         } else {
           setError(`接続エラー: ${result.error}`);
         }
@@ -67,8 +74,14 @@ export const useSupabase = () => {
   
   // 接続を再試行する関数
   const retryConnection = () => {
-    console.log('接続を再試行します...');
-    setConnectionAttempts(prev => prev + 1);
+    if (retryCount < 5) { // 再試行回数を制限
+      console.log('接続を再試行します...', retryCount + 1);
+      setRetryCount(prev => prev + 1);
+      setConnectionAttempts(prev => prev + 1);
+      setError(null);
+    } else {
+      setError('接続の再試行回数が上限に達しました。しばらく時間をおいてから再度お試しください。');
+    }
   };
 
   const initializeUser = async (lineUsername: string) => {
@@ -201,6 +214,7 @@ export const useSupabase = () => {
     deleteEntry,
     checkConnection,
     error,
-    retryConnection
+    retryConnection,
+    retryCount
   };
 };

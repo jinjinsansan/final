@@ -375,17 +375,32 @@ const DataMigration: React.FC = () => {
             {/* 接続状態 */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <div className="flex items-center space-x-3 mb-4">
-                <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className="font-jp-medium text-gray-900">
-                  Supabase接続状態: {isConnected ? '接続済み' : '未接続'}
-                </span>
+                <div className="flex items-center">
+                  <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="font-jp-medium text-gray-900 ml-3">
+                    Supabase接続状態: {isConnected ? '接続済み' : '未接続'}
+                  </span>
+                </div>
+                {!isConnected && (
+                  <button 
+                    onClick={retryConnection}
+                    className="ml-auto px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-jp-medium"
+                  >
+                    接続を再試行
+                  </button>
+                )}
               </div>
               
               {error && (
-                <div className="mt-2 bg-red-50 rounded-lg p-3 border border-red-200">
-                  <div className="flex items-center space-x-2">
+                <div className="mt-2 bg-red-50 rounded-lg p-3 border border-red-200 animate-pulse">
+                  <div className="flex items-start space-x-2">
                     <AlertTriangle className="w-4 h-4 text-red-600" />
-                    <span className="text-sm text-red-800 font-jp-medium">{error}</span>
+                    <div className="flex-1">
+                      <span className="text-sm text-red-800 font-jp-medium">{error}</span>
+                      <p className="text-xs text-red-600 mt-1">
+                        環境変数の設定を確認してください。正しいAPIキーが設定されていることを確認してください。
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -400,12 +415,15 @@ const DataMigration: React.FC = () => {
               {!isConnected && !loading && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                    <div className="flex-1 text-sm font-jp-medium text-yellow-800">
-                      <p className="mb-2">Supabaseに接続できません。ローカルモードで動作中です。</p>
+                    <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                    <div className="flex-1 text-sm font-jp-medium text-yellow-800 space-y-2">
+                      <p>Supabaseに接続できません。ローカルモードで動作中です。</p>
+                      <p className="text-xs">
+                        ローカルモードではデータはブラウザ内に保存され、クラウドと同期されません。
+                      </p>
                       <button 
                         onClick={retryConnection}
-                        className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs"
+                        className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs mt-1"
                       >
                         接続を再試行
                       </button>
