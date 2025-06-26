@@ -232,6 +232,24 @@ const DataMigration: React.FC = () => {
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    
+    // ユーザーIDが見つからない場合、ユーザー名から再取得を試みる
+    if (!userId) {
+      const lineUsername = localStorage.getItem('line-username');
+      if (lineUsername && isConnected) {
+        try {
+          const user = await userService.getUserByUsername(lineUsername);
+          if (user && user.id) {
+            userId = user.id;
+            localStorage.setItem('supabase_user_id', user.id);
+            console.log('ユーザーIDを再取得しました:', user.id);
+          }
+        } catch (error) {
+          console.error('ユーザーID再取得エラー:', error);
+        }
+      }
+    }
+    
     if (!userId) {
       setMigrationStatus('エラー: ユーザーIDが見つかりません。ユーザーを作成してください。');
       setShowUserCreationButton(true);
@@ -243,7 +261,8 @@ const DataMigration: React.FC = () => {
     setMigrationProgress(0);
 
     try {
-      setMigrationStatus(`ローカルデータをSupabaseに移行中... (ユーザーID: ${userId.substring(0, 8)}...)`);
+      const shortUserId = typeof userId === 'string' ? userId.substring(0, 8) : 'unknown';
+      setMigrationStatus(`ローカルデータをSupabaseに移行中... (ユーザーID: ${shortUserId}...)`);
       
       // 大量データ対応の移行処理
       const success = await syncService.bulkMigrateLocalData(userId, (progress) => {
@@ -252,9 +271,14 @@ const DataMigration: React.FC = () => {
       });
       
       if (success) {
-        setMigrationStatus('日記データの移行が完了しました！');
+        setMigrationStatus('日記データの移行が完了しました！ページを再読み込みしてください。');
         checkDataCounts();
         loadStats();
+        
+        // 移行成功後に再読み込み
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
       } else {
         setMigrationStatus('移行に失敗しました。');
       }
@@ -329,6 +353,24 @@ const DataMigration: React.FC = () => {
   const handleMigrateConsentsToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    
+    // ユーザーIDが見つからない場合、ユーザー名から再取得を試みる
+    if (!userId) {
+      const lineUsername = localStorage.getItem('line-username');
+      if (lineUsername && isConnected) {
+        try {
+          const user = await userService.getUserByUsername(lineUsername);
+          if (user && user.id) {
+            userId = user.id;
+            localStorage.setItem('supabase_user_id', user.id);
+            console.log('ユーザーIDを再取得しました:', user.id);
+          }
+        } catch (error) {
+          console.error('ユーザーID再取得エラー:', error);
+        }
+      }
+    }
+    
     if (!userId) {
       setMigrationStatus('エラー: ユーザーIDが見つかりません。ユーザーを作成してください。');
       setShowUserCreationButton(true);
@@ -339,16 +381,16 @@ const DataMigration: React.FC = () => {
     setMigrationStatus('同意履歴をSupabaseに移行中...');
 
     try {
-      // 同意履歴の移行前にユーザーIDを確認
-      if (!currentUser || !currentUser.id) {
-        throw new Error('ユーザーIDが不明です');
-      }
-      
       const success = await syncService.syncConsentHistories();
       
       if (success) {
         setMigrationStatus('同意履歴の移行が完了しました！ページを再読み込みしてください。');
         checkDataCounts();
+        
+        // 移行成功後に再読み込み
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
       } else {
         setMigrationStatus('同意履歴の移行に失敗しました。');
       }

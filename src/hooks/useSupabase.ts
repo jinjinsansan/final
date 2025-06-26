@@ -86,7 +86,7 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     if (!isConnected) {
       console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString());
-      return null;
+      return { id: null, line_username: lineUsername };
     }
 
     const startTime = new Date().toISOString();
@@ -94,8 +94,8 @@ export const useSupabase = () => {
     
     // 既に初期化中の場合は処理をスキップ
     if (loading) {
-      console.log(`別の初期化処理が進行中のため、スキップします: ${lineUsername}`, new Date().toISOString());
-      return null;
+      console.log(`別の初期化処理が進行中のため、現在のユーザーを返します: ${lineUsername}`, new Date().toISOString());
+      return currentUser || { id: null, line_username: lineUsername };
     }
     
     setLoading(true);
@@ -103,7 +103,8 @@ export const useSupabase = () => {
     
     try {
       // 既存ユーザーを検索
-      let user = await userService.getUserByUsername(lineUsername.trim());
+      const trimmedUsername = lineUsername.trim();
+      let user = await userService.getUserByUsername(trimmedUsername);
       console.log('ユーザー検索結果:', user ? `ユーザーが見つかりました: ${user.id}` : 'ユーザーが見つかりませんでした', new Date().toISOString());
       
       // セキュリティイベントをログ
@@ -129,24 +130,24 @@ export const useSupabase = () => {
       if (!user) {
         try {
            // 新規ユーザー作成
-           console.log(`新規ユーザー作成を試みます: "${lineUsername}" - ${new Date().toISOString()}`);
-           user = await userService.createUser(lineUsername);
+           console.log(`新規ユーザー作成を試みます: "${trimmedUsername}" - ${new Date().toISOString()}`);
+           user = await userService.createUser(trimmedUsername);
            
            if (user) {
              setCurrentUser(user);
-             console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${user.id}`);
+             console.log(`ユーザー作成成功: "${trimmedUsername}" - ID: ${user.id}`);
              
              try {
-               logSecurityEvent('supabase_user_created', lineUsername, 'Supabaseユーザーを作成しました');
+               logSecurityEvent('supabase_user_created', trimmedUsername, 'Supabaseユーザーを作成しました');
              } catch (logError) {
                console.error('セキュリティログ記録エラー:', logError);
              }
              
              // ローカルデータを移行
              try {
-               console.log(`ローカルデータの移行を開始: "${lineUsername}" - ID: ${user.id}`);
+               console.log(`ローカルデータの移行を開始: "${trimmedUsername}" - ID: ${user.id}`);
                await syncService.migrateLocalData(user.id);
-               console.log(`ローカルデータの移行が完了しました: "${lineUsername}"`);
+               console.log(`ローカルデータの移行が完了しました: "${trimmedUsername}"`);
              } catch (syncError) {
                console.error('データ移行エラー:', syncError);
              }
@@ -154,23 +155,23 @@ export const useSupabase = () => {
            
            try {
              console.log('ユーザー作成後に再検索を試みます');
-             user = await userService.getUserByUsername(lineUsername.trim());
+             user = await userService.getUserByUsername(trimmedUsername);
              console.log('再検索結果:', user ? 'ユーザーが見つかりました' : 'ユーザーが見つかりませんでした');
            } catch (searchError) {
              console.error('ユーザー再検索エラー:', searchError);
              throw new Error('ユーザーの作成と検索に失敗しました');
            }
          } catch (createError) {
-           console.error(`ユーザー作成エラー: "${lineUsername}"`, createError);
+           console.error(`ユーザー作成エラー: "${trimmedUsername}"`, createError);
            setError(createError instanceof Error ? createError.message : '不明なエラー');
          }
       } else {
         // 既存ユーザーの場合、Supabaseからローカルに同期
         try {
           if (user.id) {
-            console.log(`Supabaseからローカルへの同期を開始: "${lineUsername}" - ID: ${user.id}`);
+            console.log(`Supabaseからローカルへの同期を開始: "${trimmedUsername}" - ID: ${user.id}`);
             await syncService.syncToLocal(user.id);
-            console.log(`Supabaseからローカルへの同期が完了しました: "${lineUsername}"`);
+            console.log(`Supabaseからローカルへの同期が完了しました: "${trimmedUsername}"`);
           } else {
             console.error('ユーザーIDが不明です:', user);
           }
@@ -182,23 +183,25 @@ export const useSupabase = () => {
       // 明示的にユーザー情報を更新
       if (user) {
         setCurrentUser(user);
-        console.log('currentUserを更新しました:', user.id, new Date().toISOString());
+        console.log('currentUserを更新しました:', user.id || 'ID不明', new Date().toISOString());
         setError(null);
         
         // ローカルストレージにユーザーIDを保存
-        localStorage.setItem('supabase_user_id', user.id);
+        if (user.id) {
+          localStorage.setItem('supabase_user_id', user.id);
+        }
       } else {
         console.error('ユーザー情報が取得できませんでした');
         setError('ユーザー情報の取得に失敗しました');
       }
       return user;
     } catch (error) {
-      console.error(`ユーザー初期化エラー: ${lineUsername}`, error);
+      console.error(`ユーザー初期化エラー: ${trimmedUsername}`, error);
       setError(error instanceof Error ? error.message : '不明なエラー');
-      return null;
+      return { id: null, line_username: trimmedUsername };
     } finally {
       const endTime = new Date().toISOString();
-      console.log(`ユーザー初期化完了: "${lineUsername}" - ${endTime}`);
+      console.log(`ユーザー初期化完了: "${trimmedUsername}" - ${endTime}`);
       setLoading(false);
       console.log('ローディング状態を解除しました', new Date().toISOString());
     }
