@@ -4,7 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // 環境変数のデバッグ情報（詳細）
-console.log('Supabase URL:', !!supabaseUrl, supabaseUrl ? `(${supabaseUrl})` : '');
+console.log('Supabase URL:', !!supabaseUrl, supabaseUrl ? `(${supabaseUrl.substring(0, 15)}...)` : '');
 console.log('Supabase Key:', !!supabaseAnonKey, supabaseAnonKey ? `(${supabaseAnonKey.substring(0, 15)}...)` : '');
 
 // 環境変数の検証（本番環境対応）
