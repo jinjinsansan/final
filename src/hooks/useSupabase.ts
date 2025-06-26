@@ -86,6 +86,7 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     if (!isConnected) {
       console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString());
+      setError('Supabaseに接続されていません。接続を確立してから再度お試しください。');
       return null;
     }
 
@@ -94,7 +95,7 @@ export const useSupabase = () => {
     
     // 既に初期化中の場合は処理をスキップ
     if (loading) {
-      console.log('別の初期化処理が進行中のため、スキップします', new Date().toISOString());
+      console.log(`別の初期化処理が進行中のため、スキップします: ${lineUsername}`, new Date().toISOString());
       return null;
     }
     
@@ -103,7 +104,7 @@ export const useSupabase = () => {
     
     try {
       // 既存ユーザーを検索
-      let user = await userService.getUserByUsername(lineUsername);
+      let user = await userService.getUserByUsername(lineUsername.trim());
       console.log('ユーザー検索結果:', user ? `ユーザーが見つかりました: ${user.id}` : 'ユーザーが見つかりませんでした', new Date().toISOString());
       
       // セキュリティイベントをログ
@@ -127,7 +128,7 @@ export const useSupabase = () => {
         // 新規ユーザー作成
         console.log(`新規ユーザー作成を試みます: "${lineUsername}" - ${startTime}`);
         try {
-          user = await userService.createUser(lineUsername);
+          user = await userService.createUser(lineUsername.trim());
         } catch (createError) {
           console.error('ユーザー作成エラー (initializeUser):', createError);
           
@@ -135,7 +136,7 @@ export const useSupabase = () => {
           // (同時作成などで競合が発生した可能性がある)
           try {
             console.log('ユーザー作成エラー後に再検索を試みます');
-            user = await userService.getUserByUsername(lineUsername);
+            user = await userService.getUserByUsername(lineUsername.trim());
             console.log('再検索結果:', user ? 'ユーザーが見つかりました' : 'ユーザーが見つかりませんでした');
           } catch (searchError) {
             console.error('ユーザー再検索エラー:', searchError);
@@ -179,6 +180,7 @@ export const useSupabase = () => {
       if (user) {
         setCurrentUser(user);
         console.log('currentUserを更新しました:', user.id, new Date().toISOString());
+        setError(null);
         
         // ローカルストレージにユーザーIDを保存
         localStorage.setItem('supabase_user_id', user.id);

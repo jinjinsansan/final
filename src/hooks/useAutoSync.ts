@@ -40,14 +40,17 @@ export const useAutoSync = () => {
   // 接続状態が変わった時の自動処理
   useEffect(() => {
     if (!hasInitializedRef.current && isConnected) {
-      console.log('自動同期: 接続状態が変わりました - 自動初期化を試みます');
+      console.log('自動同期: 接続状態が変わりました - 自動初期化を試みます', new Date().toISOString());
       const lineUsername = localStorage.getItem('line-username');
       if (lineUsername) {
-        console.log('自動同期: ユーザー名が見つかりました:', lineUsername);
-        handleAutoInitialization(lineUsername);
+        console.log('自動同期: ユーザー名が見つかりました:', lineUsername, new Date().toISOString());
+        // 少し遅延させて実行（他の初期化処理が完了するのを待つ）
+        setTimeout(() => {
+          handleAutoInitialization(lineUsername);
+        }, 1000);
         hasInitializedRef.current = true;
       } else {
-        console.log('自動同期: ユーザー名が見つかりません');
+        console.log('自動同期: ユーザー名が見つかりません', new Date().toISOString());
         hasInitializedRef.current = true;
       }
     }
@@ -56,7 +59,7 @@ export const useAutoSync = () => {
   // 自動初期化処理
   const handleAutoInitialization = async (lineUsername: string) => {
     try {
-      console.log('自動同期: 自動初期化を開始します:', lineUsername);
+      console.log('自動同期: 自動初期化を開始します:', lineUsername, new Date().toISOString());
       setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
       
       let user = await userService.getUserByUsername(lineUsername);
@@ -64,7 +67,7 @@ export const useAutoSync = () => {
       
       if (!user) {
         if (import.meta.env.DEV) {
-          console.log('ユーザーが存在しないため、自動作成します');
+          console.log('ユーザーが存在しないため、自動作成します', new Date().toISOString());
         }
         
         try {
@@ -76,7 +79,7 @@ export const useAutoSync = () => {
         user = await userService.createUser(lineUsername);
         
         if (user) {
-          console.log('自動同期: ユーザーを作成しました:', user.id);
+          console.log('自動同期: ユーザーを作成しました:', user.id, new Date().toISOString());
           setStatus(prev => ({ 
             ...prev, 
             userCreated: true, 
@@ -90,7 +93,7 @@ export const useAutoSync = () => {
           }
         }
       } else {
-        console.log('自動同期: ユーザーは既に存在します:', user.id);
+        console.log('自動同期: ユーザーは既に存在します:', user.id, new Date().toISOString());
         setStatus(prev => ({ 
           ...prev, 
           userCreated: true, 
@@ -100,14 +103,14 @@ export const useAutoSync = () => {
         
         // 既存ユーザーの場合も、アプリの状態を更新
         if (initializeUser) {
-          console.log('自動同期: 既存ユーザーの状態を更新します');
+          console.log('自動同期: 既存ユーザーの状態を更新します', new Date().toISOString());
           await initializeUser(lineUsername);
         }
       }
 
       // 2. 自動同期が有効な場合のみデータ同期
       if (status.isAutoSyncEnabled && user) {
-        console.log('自動同期: データ同期を開始します');
+        console.log('自動同期: データ同期を開始します', new Date().toISOString());
         await performAutoSync(user.id);
       }
     } catch (error) {
@@ -125,7 +128,7 @@ export const useAutoSync = () => {
   // 自動同期実行
   const performAutoSync = async (userId: string) => {
     try {
-      console.log(`自動同期: データ同期を開始します - ユーザーID: ${userId}`);
+      console.log(`自動同期: データ同期を開始します - ユーザーID: ${userId}`, new Date().toISOString());
       setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
       
       // ローカルデータの存在確認
@@ -138,7 +141,7 @@ export const useAutoSync = () => {
       if (localEntries) {
         const entries = JSON.parse(localEntries);
         if (entries.length > 0) {
-          console.log(`自動同期: ${entries.length}件の日記データを同期します`);
+          console.log(`自動同期: ${entries.length}件の日記データを同期します`, new Date().toISOString());
           await syncService.migrateLocalData(userId);
           syncPerformed = true;
           if (import.meta.env.DEV) {
@@ -151,7 +154,7 @@ export const useAutoSync = () => {
       if (localConsents) {
         const consents = JSON.parse(localConsents);
         if (consents.length > 0) {
-          console.log(`自動同期: ${consents.length}件の同意履歴を同期します`);
+          console.log(`自動同期: ${consents.length}件の同意履歴を同期します`, new Date().toISOString());
           await syncService.syncConsentHistories();
           syncPerformed = true;
           if (import.meta.env.DEV) {
@@ -163,7 +166,7 @@ export const useAutoSync = () => {
       if (syncPerformed) {
         const now = new Date().toISOString();
         localStorage.setItem('last_sync_time', now);
-        console.log(`自動同期: 同期が完了しました - ${now}`);
+        console.log(`自動同期: 同期が完了しました - ${now}`, new Date().toISOString());
         
         try {
           logSecurityEvent('auto_sync_completed', userId, '自動同期が完了しました');
@@ -173,7 +176,7 @@ export const useAutoSync = () => {
         
         setStatus(prev => ({ ...prev, lastSyncTime: now }));
       } else {
-        console.log('自動同期: 同期するデータがありませんでした');
+        console.log('自動同期: 同期するデータがありませんでした', new Date().toISOString());
       }
 
     } catch (error) {
@@ -219,6 +222,7 @@ export const useAutoSync = () => {
       }
       
       await performAutoSync(currentUser.id);
+      console.log('手動同期が完了しました', new Date().toISOString());
       
       try {
         const user = getCurrentUser();

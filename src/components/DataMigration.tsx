@@ -109,13 +109,13 @@ const DataMigration: React.FC = () => {
   const handleCreateUser = async () => {
     const lineUsername = localStorage.getItem('line-username');
     if (!lineUsername) {
-      setMigrationStatus('エラー: ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してユーザー名を設定してください。');
+      setMigrationStatus('エラー: ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してください。');
       return;
     }
 
     try {
       setIsCreatingUser(true);
-      setMigrationStatus('ユーザー作成中...');
+      setMigrationStatus(`ユーザー作成中... (${lineUsername})`);
       setUserCreationError(null);
       setMigrating(true);
       console.log(`ユーザー作成開始: ${lineUsername}`);
@@ -125,13 +125,14 @@ const DataMigration: React.FC = () => {
       if (existingUser) {
         console.log('既存ユーザーが見つかりました:', existingUser);
         setMigrationStatus('ユーザーは既に存在します！データ移行が可能になりました。');
+        localStorage.setItem('supabase_user_id', existingUser.id);
         setUserExists(true);
         
         // 既存ユーザーの場合は、現在のユーザー状態を更新
         if (isConnected) {
           try {
             if (initializeUser) {
-              await initializeUser(lineUsername);
+              const user = await initializeUser(lineUsername);
               setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
               setTimeout(() => {
                 window.location.reload();
@@ -154,12 +155,13 @@ const DataMigration: React.FC = () => {
       console.log('新規ユーザーを作成します:', lineUsername);
       const user = await userService.createUser(lineUsername);
       
-      if (!user) {
+      if (!user || !user.id) {
         console.error('ユーザー作成に失敗しました - nullが返されました');
         throw new Error('ユーザー作成に失敗しました。');
       }
       
       console.log('ユーザー作成成功:', user);
+      localStorage.setItem('supabase_user_id', user.id);
       // 成功メッセージを表示
       setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
       setUserExists(true);
@@ -202,35 +204,20 @@ const DataMigration: React.FC = () => {
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
+      // ローカルストレージからユーザーIDを取得して使用
       const savedUserId = localStorage.getItem('supabase_user_id');
-      if (userExists || savedUserId) {
-        setMigrationStatus('ユーザーは存在しますが、現在のセッションで認識されていません。ページを再読み込みしてください。');
-        
-        // 自動的にユーザー情報を更新して再読み込み
-        const lineUsername = localStorage.getItem('line-username');
-        if (lineUsername && isConnected && initializeUser) {
-          if (initializeUser) {
-            try {
-              setMigrationStatus('ユーザー情報を更新中...');
-              await initializeUser(lineUsername);
-              setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
-            } catch (error) {
-              console.error('ユーザー初期化エラー:', error);
-            }
-          } else {
-            setMigrationStatus('ユーザー初期化関数が利用できません。ページを再読み込みしてください。');
-          }
-          
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
-          return;
-        }
+      if (savedUserId) {
+        await handleMigrateWithSavedUserId(savedUserId);
+        return;
+      } else if (userExists) {
+        // ユーザーは存在するが、IDが保存されていない場合
+        await handleRecoverUserSession();
+        return;
       } else {
         setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
         setShowUserCreationButton(true);
+        return;
       }
-      return;
     }
 
     setMigrating(true);
@@ -238,7 +225,7 @@ const DataMigration: React.FC = () => {
     setMigrationProgress(0);
 
     try {
-      setMigrationStatus('ローカルデータをSupabaseに移行中... (0%)');
+      setMigrationStatus(`ローカルデータをSupabaseに移行中... (ユーザーID: ${currentUser.id.substring(0, 8)}...)`);
       
       // 大量データ対応の移行処理
       const success = await syncService.bulkMigrateLocalData(currentUser.id, (progress) => {
@@ -247,7 +234,7 @@ const DataMigration: React.FC = () => {
       });
       
       if (success) {
-        setMigrationStatus('移行が完了しました！');
+        setMigrationStatus('日記データの移行が完了しました！');
         checkDataCounts();
         loadStats();
       } else {
@@ -262,37 +249,70 @@ const DataMigration: React.FC = () => {
     }
   };
 
+  // 保存されたユーザーIDを使用して移行する
+  const handleMigrateWithSavedUserId = async (userId: string) => {
+    setMigrating(true);
+    setMigrationStatus(`保存されたユーザーID(${userId.substring(0, 8)}...)を使用してデータを移行中...`);
+    setMigrationProgress(0);
+
+    try {
+      const success = await syncService.bulkMigrateLocalData(userId, (progress) => {
+        setMigrationProgress(progress);
+        setMigrationStatus(`ローカルデータをSupabaseに移行中... (${progress}%)`);
+      });
+      
+      if (success) {
+        setMigrationStatus('日記データの移行が完了しました！');
+        checkDataCounts();
+        loadStats();
+      } else {
+        setMigrationStatus('移行に失敗しました。ページを再読み込みして再試行してください。');
+      }
+    } catch (error) {
+      console.error('移行エラー:', error);
+      setMigrationStatus('移行中にエラーが発生しました。ユーザー情報を更新してください。');
+      setShowUserCreationButton(true);
+    } finally {
+      setMigrating(false);
+      setMigrationProgress(0);
+    }
+  };
+
+  // ユーザーセッションを復元する
+  const handleRecoverUserSession = async () => {
+    const lineUsername = localStorage.getItem('line-username');
+    if (!lineUsername || !isConnected || !initializeUser) {
+      setMigrationStatus('ユーザーセッションを復元できません。ユーザー名が見つからないか、接続が確立されていません。');
+      setShowUserCreationButton(true);
+      return;
+    }
+    
+    setMigrationStatus(`ユーザーセッションを復元中... (${lineUsername})`);
+    
+    try {
+      const user = await initializeUser(lineUsername);
+      if (user && user.id) {
+        localStorage.setItem('supabase_user_id', user.id);
+        setMigrationStatus('ユーザーセッションを復元しました。ページを再読み込みします...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setMigrationStatus('ユーザーセッションの復元に失敗しました。ユーザーを作成してください。');
+        setShowUserCreationButton(true);
+      }
+    } catch (error) {
+      console.error('ユーザーセッション復元エラー:', error);
+      setMigrationStatus('ユーザーセッションの復元に失敗しました。ユーザーを作成してください。');
+      setShowUserCreationButton(true);
+    }
+  };
+
   const handleMigrateConsentsToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      const savedUserId = localStorage.getItem('supabase_user_id');
-      if (userExists || savedUserId) {
-        setMigrationStatus('ユーザーは存在しますが、現在のセッションで認識されていません。ページを再読み込みしてください。');
-        
-        // 自動的にユーザー情報を更新して再読み込み
-        const lineUsername = localStorage.getItem('line-username');
-        if (lineUsername && isConnected && initializeUser) {
-          if (initializeUser) {
-            try {
-              setMigrationStatus('ユーザー情報を更新中...');
-              await initializeUser(lineUsername);
-              setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
-            } catch (error) {
-              console.error('ユーザー初期化エラー:', error);
-            }
-          } else {
-            setMigrationStatus('ユーザー初期化関数が利用できません。ページを再読み込みしてください。');
-          }
-          
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
-          return;
-        }
-      } else {
-        setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
-        setShowUserCreationButton(true);
-      }
+      // ユーザーセッションを回復
+      await handleRecoverUserSession();
       return;
     }
 
@@ -301,14 +321,14 @@ const DataMigration: React.FC = () => {
 
     try {
       // 同意履歴の移行前にユーザーIDを確認
-      if (!currentUser.id) {
+      if (!currentUser || !currentUser.id) {
         throw new Error('ユーザーIDが不明です');
       }
       
       const success = await syncService.syncConsentHistories();
       
       if (success) {
-        setMigrationStatus('同意履歴の移行が完了しました！');
+        setMigrationStatus('同意履歴の移行が完了しました！ページを再読み込みしてください。');
         checkDataCounts();
       } else {
         setMigrationStatus('同意履歴の移行に失敗しました。');
@@ -324,34 +344,8 @@ const DataMigration: React.FC = () => {
   const handleSyncFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      const savedUserId = localStorage.getItem('supabase_user_id');
-      if (userExists || savedUserId) {
-        setMigrationStatus('ユーザーは存在しますが、現在のセッションで認識されていません。ページを再読み込みしてください。');
-        
-        // 自動的にユーザー情報を更新して再読み込み
-        const lineUsername = localStorage.getItem('line-username');
-        if (lineUsername && isConnected && initializeUser) {
-          if (initializeUser) {
-            try {
-              setMigrationStatus('ユーザー情報を更新中...');
-              await initializeUser(lineUsername);
-              setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
-            } catch (error) {
-              console.error('ユーザー初期化エラー:', error);
-            }
-          } else {
-            setMigrationStatus('ユーザー初期化関数が利用できません。ページを再読み込みしてください。');
-          }
-          
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
-          return;
-        }
-      } else {
-        setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
-        setShowUserCreationButton(true);
-      }
+      // ユーザーセッションを回復
+      await handleRecoverUserSession();
       return;
     }
 
@@ -360,14 +354,14 @@ const DataMigration: React.FC = () => {
 
     try {
       // 同期前にユーザーIDを確認
-      if (!currentUser.id) {
+      if (!currentUser || !currentUser.id) {
         throw new Error('ユーザーIDが不明です');
       }
       
       const success = await syncService.syncToLocal(currentUser.id);
       
       if (success) {
-        setMigrationStatus('同期が完了しました！');
+        setMigrationStatus('Supabaseからの同期が完了しました！ページを再読み込みしてください。');
         checkDataCounts();
         loadStats();
       } else {
@@ -384,34 +378,8 @@ const DataMigration: React.FC = () => {
   const handleSyncConsentsFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      const savedUserId = localStorage.getItem('supabase_user_id');
-      if (userExists || savedUserId) {
-        setMigrationStatus('ユーザーは存在しますが、現在のセッションで認識されていません。ページを再読み込みしてください。');
-        
-        // 自動的にユーザー情報を更新して再読み込み
-        const lineUsername = localStorage.getItem('line-username');
-        if (lineUsername && isConnected && initializeUser) {
-          if (initializeUser) {
-            try {
-              setMigrationStatus('ユーザー情報を更新中...');
-              await initializeUser(lineUsername);
-              setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
-            } catch (error) {
-              console.error('ユーザー初期化エラー:', error);
-            }
-          } else {
-            setMigrationStatus('ユーザー初期化関数が利用できません。ページを再読み込みしてください。');
-          }
-          
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
-          return;
-        }
-      } else {
-        setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
-        setShowUserCreationButton(true);
-      }
+      // ユーザーセッションを回復
+      await handleRecoverUserSession();
       return;
     }
 
@@ -422,7 +390,7 @@ const DataMigration: React.FC = () => {
       const success = await syncService.syncConsentHistoriesToLocal();
       
       if (success) {
-        setMigrationStatus('同意履歴の同期が完了しました！');
+        setMigrationStatus('同意履歴の同期が完了しました！ページを再読み込みしてください。');
         checkDataCounts();
       } else {
         setMigrationStatus('同意履歴の同期に失敗しました。');
