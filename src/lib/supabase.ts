@@ -4,14 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// WebContainer環境ではSupabase接続をスキップするフラグ
-const isWebContainerEnvironment = false; // Supabase接続を有効化
-
 // 環境変数のデバッグ情報（開発環境のみ）
 if (import.meta.env.DEV) {
   console.log('Supabase URL設定:', !!supabaseUrl);
   console.log('Supabase Key設定:', !!supabaseAnonKey);
-  console.log('WebContainer環境:', isWebContainerEnvironment);
 }
 
 // 環境変数の検証（本番環境対応）
@@ -47,7 +43,6 @@ else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
 // Supabaseクライアントの作成
 export const supabase = (() => {
   try {
-    // WebContainer環境ではSupabase接続をスキップ
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Supabase URL または API キーが設定されていません');
       return null;

@@ -39,7 +39,7 @@ export const useAutoSync = () => {
 
   // 接続状態が変わった時の自動処理
   useEffect(() => {
-    if (isConnected && !hasInitializedRef.current) {
+    if (isConnected && !hasInitializedRef.current && localStorage.getItem('line-username')) {
       hasInitializedRef.current = true;
       const lineUsername = localStorage.getItem('line-username');
       if (lineUsername) {
