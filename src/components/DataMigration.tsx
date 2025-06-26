@@ -232,6 +232,7 @@ const DataMigration: React.FC = () => {
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    console.log('データ移行開始 - ユーザーID:', userId);
     
     // ユーザーIDが見つからない場合、ユーザー名から再取得を試みる
     if (!userId) {
@@ -261,7 +262,8 @@ const DataMigration: React.FC = () => {
     setMigrationProgress(0);
 
     try {
-      const shortUserId = userId.substring(0, 8);
+      const shortUserId = typeof userId === 'string' ? userId.substring(0, 8) : 'unknown';
+      console.log(`ローカルデータをSupabaseに移行中... (${shortUserId}...)`);
       setMigrationStatus(`ローカルデータをSupabaseに移行中... (${shortUserId}...)`);
       
       // 大量データ対応の移行処理
@@ -271,6 +273,7 @@ const DataMigration: React.FC = () => {
       });
       
       if (success) {
+        console.log('日記データの移行が完了しました！');
         setMigrationStatus('日記データの移行が完了しました！ページを再読み込みしてください。');
         checkDataCounts();
         loadStats();
@@ -280,6 +283,7 @@ const DataMigration: React.FC = () => {
           window.location.reload();
         }, 3000);
       } else {
+        console.log('移行に失敗しました。');
         setMigrationStatus('移行に失敗しました。');
       }
     } catch (error) {
@@ -353,6 +357,7 @@ const DataMigration: React.FC = () => {
   const handleMigrateConsentsToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    console.log('同意履歴移行開始 - ユーザーID:', userId);
     
     // ユーザーIDが見つからない場合、ユーザー名から再取得を試みる
     if (!userId) {
@@ -381,9 +386,12 @@ const DataMigration: React.FC = () => {
     setMigrationStatus('同意履歴をSupabaseに移行中... しばらくお待ちください');
 
     try {
+      console.log('同意履歴の同期を開始します');
       const success = await syncService.syncConsentHistories();
+      console.log('同意履歴の同期結果:', success ? '成功' : '失敗');
       
       if (success) {
+        console.log('同意履歴の移行が完了しました！');
         setMigrationStatus('同意履歴の移行が完了しました！ページを再読み込みしてください。');
         checkDataCounts();
 
@@ -392,6 +400,7 @@ const DataMigration: React.FC = () => {
           window.location.reload();
         }, 3000);
       } else {
+        console.log('同意履歴の移行に失敗しました。');
         setMigrationStatus('同意履歴の移行に失敗しました。');
       }
     } catch (error) {
