@@ -131,12 +131,13 @@ const DataMigration: React.FC = () => {
         if (isConnected) {
           try {
             await initializeUser(lineUsername);
+            setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
             setTimeout(() => {
               window.location.reload();
-            }, 1500);
+            }, 2000);
           } catch (initError) {
             console.error('ユーザー初期化エラー:', initError);
-            setUserCreationError('ユーザー初期化に失敗しました。');
+            setMigrationStatus('ユーザー情報の更新に失敗しました。ページを再読み込みしてください。');
           }
         }
         return;
@@ -159,7 +160,7 @@ const DataMigration: React.FC = () => {
       // 少し待ってからリロード
       setTimeout(() => {
         window.location.reload(); // ページをリロードして状態を更新
-      }, 1500);
+      }, 2000);
     } catch (error) {
       console.error('ユーザー作成エラー:', error);
       let errorMessage = 'ユーザー作成中にエラーが発生しました。';
@@ -196,9 +197,21 @@ const DataMigration: React.FC = () => {
     if (!currentUser) {
       if (userExists) {
         setMigrationStatus('ユーザーは存在しますが、現在のセッションで認識されていません。ページを再読み込みしてください。');
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        
+        // 自動的にユーザー情報を更新して再読み込み
+        const lineUsername = localStorage.getItem('line-username');
+        if (lineUsername && isConnected) {
+          try {
+            await initializeUser(lineUsername);
+            setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
+          } catch (error) {
+            console.error('ユーザー初期化エラー:', error);
+          }
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
       } else {
         setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
         setShowUserCreationButton(true);
@@ -235,9 +248,21 @@ const DataMigration: React.FC = () => {
     if (!currentUser) {
       if (userExists) {
         setMigrationStatus('ユーザーは存在しますが、現在のセッションで認識されていません。ページを再読み込みしてください。');
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        
+        // 自動的にユーザー情報を更新して再読み込み
+        const lineUsername = localStorage.getItem('line-username');
+        if (lineUsername && isConnected) {
+          try {
+            await initializeUser(lineUsername);
+            setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
+          } catch (error) {
+            console.error('ユーザー初期化エラー:', error);
+          }
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
       } else {
         setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
         setShowUserCreationButton(true);
