@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Clock, RefreshCw, Wrench, Heart, CheckCircle, Info } from 'lucide-react';
+import { getAuthSession } from '../lib/deviceAuth';
 
 interface MaintenanceConfig {
   isEnabled: boolean;
@@ -14,12 +15,16 @@ interface MaintenanceConfig {
 
 interface MaintenanceModeProps {
   config: MaintenanceConfig;
+  onAdminLogin?: () => void;
   onRetry?: () => void;
 }
 
-const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onRetry }) => {
+const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin, onRetry }) => {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('');
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
     const updateTime = () => {
@@ -56,6 +61,27 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onRetry }) =>
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, [config.endTime]);
+
+  // 管理者ログイン処理
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 管理者パスワードをチェック（実際の実装ではより安全な方法を使用）
+    if (adminPassword === 'counselor123') {
+      // 管理者としてログイン
+      localStorage.setItem('current_counselor', '管理者（緊急アクセス）');
+      
+      // 親コンポーネントに通知
+      if (onAdminLogin) {
+        onAdminLogin();
+      } else {
+        // 通知がない場合はページをリロード
+        window.location.reload();
+      }
+    } else {
+      setLoginError('パスワードが正しくありません');
+    }
+  };
 
   const getMaintenanceIcon = () => {
     switch (config.type) {
@@ -259,7 +285,7 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onRetry }) =>
               一般社団法人NAMIDAサポート協会 | かんじょうにっき
             </p>
             <p className="text-xs text-gray-400 font-jp-normal mt-1">
-              ご不便をおかけして申し訳ございません
+          <p className="text-xs text-gray-400 font-jp-normal mt-1 mb-4">
             </p>
           </div>
         </div>

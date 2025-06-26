@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Settings, Power, PowerOff, Clock, AlertTriangle, CheckCircle, Save, RotateCcw } from 'lucide-react';
+import { Settings, Power, PowerOff, Clock, AlertTriangle, CheckCircle, Save, RotateCcw, Shield } from 'lucide-react';
 import { useMaintenanceStatus } from '../hooks/useMaintenanceStatus';
 
 const MaintenanceController: React.FC = () => {
   const { 
     isMaintenanceMode, 
+    isAdminBypass,
     config, 
     setLocalMaintenanceMode, 
     clearLocalMaintenanceMode,
@@ -122,8 +123,10 @@ const MaintenanceController: React.FC = () => {
           <div className="flex items-center space-x-3">
             {isMaintenanceMode ? (
               <>
-                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="font-jp-bold text-red-600">メンテナンスモード有効</span>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                  <span className="font-jp-bold text-red-600">メンテナンスモード有効</span>
+                </div>
                 {config?.type && (
                   <span className={`px-2 py-1 rounded-full text-xs font-jp-medium ${
                     config.type === 'emergency' ? 'bg-red-100 text-red-800' :
@@ -134,6 +137,13 @@ const MaintenanceController: React.FC = () => {
                      config.type === 'completed' ? '完了' : '予定'}
                   </span>
                 )}
+                {isAdminBypass && (
+                  <div className="ml-auto bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-jp-medium border border-green-200 flex items-center">
+                    <Shield className="w-3 h-3 mr-1" />
+                    <span>管理者アクセス中</span>
+                  </div>
+                )}
+                
               </>
             ) : (
               <>
@@ -144,8 +154,13 @@ const MaintenanceController: React.FC = () => {
           </div>
 
           {config && (
-            <div className="mt-4 space-y-2 text-sm text-gray-700">
-              <p><span className="font-jp-medium">メッセージ:</span> {config.message}</p>
+            <div className="mt-4 space-y-3 text-sm text-gray-700">
+              <div className="flex flex-col">
+                <span className="font-jp-medium mb-1">メッセージ:</span>
+                <div className="bg-white p-3 rounded-lg border border-gray-200">
+                  {config.message}
+                </div>
+              </div>
               {config.endTime && (
                 <p><span className="font-jp-medium">終了予定:</span> {new Date(config.endTime).toLocaleString('ja-JP')}</p>
               )}
@@ -308,13 +323,24 @@ const MaintenanceController: React.FC = () => {
         {/* アクションボタン */}
         <div className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-gray-200">
           {!isMaintenanceMode ? (
-            <button
-              onClick={handleEnableMaintenanceMode}
-              className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-jp-bold transition-colors shadow-md hover:shadow-lg"
-            >
-              <PowerOff className="w-5 h-5" />
-              <span>メンテナンスモード開始</span>
-            </button>
+            <div className="w-full">
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-4">
+                <div className="flex items-start space-x-3">
+                  <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-800 font-jp-normal">
+                    <p className="font-jp-medium mb-2">管理者バイパス機能について</p>
+                    <p>メンテナンスモードを有効にしても、カウンセラーアカウントでログインしている場合は引き続きアプリにアクセスできます。</p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleEnableMaintenanceMode}
+                className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-jp-bold transition-colors shadow-md hover:shadow-lg"
+              >
+                <PowerOff className="w-5 h-5" />
+                <span>メンテナンスモード開始</span>
+              </button>
+            </div>
           ) : (
             <div className="flex flex-wrap gap-4">
               {config?.type !== 'completed' && (
@@ -339,17 +365,65 @@ const MaintenanceController: React.FC = () => {
         </div>
 
         {/* 注意事項 */}
-        <div className="mt-6 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+        <div className="mt-6 bg-yellow-50 rounded-lg p-4 border border-yellow-200 relative">
+          {isMaintenanceMode && isAdminBypass && (
+            <div className="absolute -top-3 right-3 bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-jp-medium border border-green-200 shadow-sm">
+              <div className="flex items-center space-x-1">
+                <Shield className="w-3 h-3" />
+                <span>管理者バイパス有効中</span>
+              </div>
+            </div>
+          )}
+          
           <div className="flex items-start space-x-3">
             <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-yellow-800 font-jp-normal space-y-1">
               <p className="font-jp-medium">重要な注意事項:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>メンテナンスモード中、すべてのユーザーがアプリを使用できなくなります</li>
+                <li>メンテナンスモード中、一般ユーザーはアプリを使用できなくなります</li>
+                <li><span className="font-jp-bold">カウンセラーアカウントでログイン中の管理者は引き続きアクセス可能です</span></li>
                 <li>ユーザーのローカルデータは保護され、失われることはありません</li>
                 <li>緊急メンテナンスは事前通知なしで実行されます</li>
                 <li>メンテナンス完了後は自動的に通常運用に戻ります</li>
               </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* 管理者バイパス説明 */}
+      <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <Shield className="w-8 h-8 text-green-600" />
+          <h2 className="text-xl font-jp-bold text-gray-900">管理者バイパス機能</h2>
+        </div>
+        
+        <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+          <h3 className="font-jp-bold text-gray-900 mb-4">メンテナンスモード中の管理者アクセス</h3>
+          
+          <div className="space-y-4">
+            <p className="text-gray-700 font-jp-normal">
+              メンテナンスモードが有効な場合でも、カウンセラーアカウントでログインしている管理者は引き続きアプリにアクセスできます。
+              これにより、メンテナンス中でもシステムの管理や設定変更が可能です。
+            </p>
+            
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <h4 className="font-jp-semibold text-gray-900 mb-2">管理者バイパスの条件</h4>
+              <ul className="list-disc list-inside space-y-1 ml-4 text-sm text-gray-700">
+                <li>カウンセラーアカウントでログインしていること</li>
+                <li>ローカルストレージに <code className="bg-gray-100 px-1 py-0.5 rounded">current_counselor</code> が設定されていること</li>
+              </ul>
+            </div>
+            
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <h4 className="font-jp-semibold text-gray-900 mb-2">バイパス中の表示</h4>
+              <p className="text-sm text-gray-700 mb-2">
+                管理者バイパスが有効な場合、以下の表示でメンテナンスモード中であることを確認できます：
+              </p>
+              <div className="flex items-center space-x-2 bg-red-100 text-red-800 px-3 py-2 rounded-lg border border-red-200 inline-flex">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="font-jp-medium">メンテナンスモード中（管理者アクセス）</span>
+              </div>
             </div>
           </div>
         </div>
