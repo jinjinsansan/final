@@ -7,6 +7,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 console.log('Supabase URL exists:', !!supabaseUrl);
 console.log('Supabase Key exists:', !!supabaseAnonKey);
 
+// 環境変数のログ出力（デバッグ用）
+console.log('Supabase URL exists:', !!supabaseUrl);
+console.log('Supabase Key exists:', !!supabaseAnonKey);
+
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
   try {
@@ -33,14 +37,103 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
   console.log('URL:', supabaseUrl || 'undefined');
   console.log('Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined');
+  console.log('URL:', supabaseUrl || 'undefined');
+  console.log('Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined');
 } else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
   console.warn('Supabase環境変数が無効です。設定を確認してください。');
   console.log('URL valid:', isValidUrl(supabaseUrl));
   console.log('Key valid:', isValidSupabaseKey(supabaseAnonKey));
   console.log('URL:', supabaseUrl ? `${supabaseUrl.substring(0, 10)}...` : 'undefined');
   console.log('Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined');
+  console.log('URL:', supabaseUrl ? `${supabaseUrl.substring(0, 10)}...` : 'undefined');
+  console.log('Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined');
 }
 
+// Supabaseクライアントの作成
+export const supabase = (() => {
+  try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase URL または API キーが設定されていません');
+      return null;
+    }
+    
+    const urlValid = isValidUrl(supabaseUrl);
+    const keyValid = isValidSupabaseKey(supabaseAnonKey);
+    
+    console.log('Creating Supabase client - URL valid:', urlValid, 'Key valid:', keyValid);
+      
+    if (urlValid && keyValid) {
+      try {
+        const client = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+          }
+        });
+        console.log('Supabase client created successfully');
+        return client;
+      } catch (createError) {
+        console.error('Supabaseクライアント作成中のエラー:', createError);
+        return null;
+      }
+    }
+    console.log('Failed to create Supabase client: invalid URL or key');
+    return null;
+  } catch (error) {
+    console.error('Supabaseクライアント作成エラー:', error);
+    return null;
+  }
+})();
+
+// 接続テスト用の関数
+export const testSupabaseConnection = async () => {
+  if (!supabase) {
+    console.log('Connection test failed: Supabase client not initialized');
+    return { 
+      success: false, 
+      error: 'Supabaseクライアントが初期化されていません。環境変数を確認してください。',
+      details: {
+        urlValid: isValidUrl(supabaseUrl),
+        keyValid: isValidSupabaseKey(supabaseAnonKey),
+        url: supabaseUrl ? `${supabaseUrl.substring(0, 10)}...` : 'なし',
+        keyExists: !!supabaseAnonKey
+      }
+    };
+  }
+  
+  try {
+    // 単純なPingテスト
+    console.log('Testing Supabase connection...');
+    const { data, error } = await supabase.from('users').select('id').limit(1);
+    
+    if (error) {
+      console.error('Connection test error:', error.message, error);
+      
+      // APIキーエラーの特別処理
+      if (error.message.includes('JWT') || error.message.includes('key') || error.message.includes('token')) {
+        console.error('API キーエラーが検出されました:', error.message);
+        return { 
+          success: false, 
+          error: 'APIキーが無効です', 
+          details: error 
+        };
+      }
+      
+      return { 
+        success: false, 
+        error: error.message, 
+        details: error 
+      };
+    }
+    console.log('Connection test successful');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Connection test exception:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : '不明なエラー',
+      details: error,
+      isConnectionError: true
 // Supabaseクライアントの作成
 export const supabase = (() => {
   try {
