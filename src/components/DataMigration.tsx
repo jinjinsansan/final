@@ -214,51 +214,65 @@ const DataMigration: React.FC = () => {
   const handleCreateUser = async () => {
     const lineUsername = localStorage.getItem('line-username');
     if (!lineUsername) {
-      alert('ユーザー名が設定されていません。');
+      alert('ユーザー名が設定されていません。プライバシーポリシーに同意して、ユーザー名を設定してください。');
       return;
     }
 
     try {
       setMigrationStatus('ユーザー作成中...');
       setMigrating(true);
+      console.log(`ユーザー作成開始: ${lineUsername}`);
       
       // まず既存ユーザーをチェック
       const existingUser = await userService.getUserByUsername(lineUsername);
       if (existingUser) {
+        console.log('既存ユーザーが見つかりました:', existingUser);
         setMigrationStatus('ユーザーは既に存在します。データ移行が可能になりました。');
-        window.location.reload();
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
         return;
       }
       
       // 新規ユーザー作成
+      console.log('新規ユーザーを作成します:', lineUsername);
       const user = await userService.createUser(lineUsername);
       
       if (!user) {
+        console.error('ユーザー作成に失敗しました - nullが返されました');
         throw new Error('ユーザー作成に失敗しました。');
       }
       
+      console.log('ユーザー作成成功:', user);
       // 成功メッセージを表示
       setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
       
       // 少し待ってからリロード
       setTimeout(() => {
-        setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
         window.location.reload(); // ページをリロードして状態を更新
       }, 1500);
     } catch (error) {
       console.error('ユーザー作成エラー:', error);
+      let errorMessage = 'ユーザー作成中にエラーが発生しました。';
       
       // エラーメッセージを詳細に表示
       if (error instanceof Error) {
-        if (error.message.includes('duplicate key')) {
+        errorMessage += ` ${error.message}`;
+        console.log('エラーメッセージ:', error.message);
+        
+        // 重複キーエラーの場合
+        if (error.message.includes('duplicate key') || error.message.includes('already exists')) {
+          console.log('重複エラーを検出しました - 既存ユーザーを使用します');
           setMigrationStatus('このユーザー名は既に登録されています。既存のユーザーを使用します。');
-          window.location.reload();
-        } else {
-          alert(`ユーザー作成中にエラーが発生しました: ${error.message}`);
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+          return;
         }
-      } else {
-        alert('ユーザー作成中に不明なエラーが発生しました。');
       }
+      
+      // エラーメッセージを表示
+      setMigrationStatus(`エラー: ${errorMessage}`);
     } finally {
       setMigrating(false);
     }
@@ -390,7 +404,7 @@ const DataMigration: React.FC = () => {
                 <div className="flex items-center">
                   <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} mr-3`}></div>
                   <span className="font-jp-medium text-gray-900">
-                    Supabase接続状態: {isConnected ? '接続済み' : '未接続'}
+                    Supabaseユーザーが設定されていません
                   </span>
                 </div>
                 {!isConnected && (
@@ -432,14 +446,15 @@ const DataMigration: React.FC = () => {
                       <p className="text-sm font-jp-medium text-yellow-800">Supabaseに接続できません。ローカルモードで動作中です。</p>
                       <p className="text-xs text-yellow-700 mt-1">
                         ローカルモードではデータはブラウザ内に保存され、クラウドと同期されません。
-                      </p>
-                    </div>
+                    <p className="text-sm text-blue-800 mb-3">
+                      Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
+                      ユーザー作成には数秒かかる場合があります。
                   </div>
                   <div className="mt-2 text-center">
                     <button 
                       onClick={retryConnection}
-                      className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs"
-                    >
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors w-full"
+                        'ユーザーを作成してデータ同期を有効化'
                       接続を再試行
                     </button>
                   </div>
@@ -615,8 +630,22 @@ const DataMigration: React.FC = () => {
               {migrationStatus && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="flex items-center space-x-2 mb-2">
-                    <RefreshCw className={`w-4 h-4 ${(migrating || syncing) ? 'animate-spin text-blue-600' : 'text-green-600'} flex-shrink-0`} />
-                    <span className="text-sm font-jp-medium text-gray-700">{migrationStatus}</span>
+                    <RefreshCw 
+                      className={`w-4 h-4 flex-shrink-0 ${
+                        (migrating || syncing) 
+                          ? 'animate-spin text-blue-600' 
+                          : migrationStatus.includes('エラー') 
+                            ? 'text-red-600' 
+                            : 'text-green-600'
+                      }`} 
+                    />
+                    <span className={`text-sm font-jp-medium ${
+                      migrationStatus.includes('エラー') 
+                        ? 'text-red-700' 
+                        : 'text-gray-700'
+                    }`}>
+                      {migrationStatus}
+                    </span>
                   </div>
                  
                  {/* 進捗バー */}

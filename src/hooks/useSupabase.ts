@@ -86,10 +86,17 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     if (!isConnected) return null;
 
+    console.log(`ユーザー初期化開始: ${lineUsername} - ${new Date().toISOString()}`);
+    
+    // 既に初期化中の場合は処理をスキップ
+    if (loading) {
+      console.log('別の初期化処理が進行中のため、スキップします');
+      return null;
+    }
+    
     setLoading(true);
+    
     try {
-      console.log('ユーザー初期化開始:', lineUsername);
-      
       // 既存ユーザーを検索
       let user = await userService.getUserByUsername(lineUsername);
       
@@ -97,7 +104,7 @@ export const useSupabase = () => {
       if (user) {
         logSecurityEvent('supabase_user_found', lineUsername, 'Supabaseユーザーが見つかりました');
       } else {
-        console.log('Supabaseユーザーが見つかりません。新規作成を試みます:', lineUsername);
+        console.log(`Supabaseユーザーが見つかりません: ${lineUsername} - 新規作成を試みます`);
         try {
           logSecurityEvent('supabase_user_not_found', lineUsername, 'Supabaseユーザーが見つかりません');
         } catch (logError) {
@@ -107,11 +114,11 @@ export const useSupabase = () => {
       
       if (!user) {
         // 新規ユーザー作成
-        console.log('新規ユーザー作成を試みます:', lineUsername);
+        console.log(`新規ユーザー作成を試みます: ${lineUsername} - ${new Date().toISOString()}`);
         user = await userService.createUser(lineUsername);
         
         if (user) {
-          console.log('ユーザー作成成功:', user);
+          console.log(`ユーザー作成成功: ${lineUsername} - ID: ${user.id}`);
           try {
             logSecurityEvent('supabase_user_created', lineUsername, 'Supabaseユーザーを作成しました');
           } catch (logError) {
@@ -120,7 +127,9 @@ export const useSupabase = () => {
           
           // ローカルデータを移行
           try {
+            console.log(`ローカルデータの移行を開始: ${lineUsername} - ID: ${user.id}`);
             await syncService.migrateLocalData(user.id);
+            console.log(`ローカルデータの移行が完了しました: ${lineUsername}`);
           } catch (syncError) {
             console.error('データ移行エラー:', syncError);
           }
@@ -128,7 +137,9 @@ export const useSupabase = () => {
       } else {
         // 既存ユーザーの場合、Supabaseからローカルに同期
         try {
+          console.log(`Supabaseからローカルへの同期を開始: ${lineUsername} - ID: ${user.id}`);
           await syncService.syncToLocal(user.id);
+          console.log(`Supabaseからローカルへの同期が完了しました: ${lineUsername}`);
         } catch (syncError) {
           console.error('データ同期エラー:', syncError);
         }
@@ -137,10 +148,11 @@ export const useSupabase = () => {
       setCurrentUser(user);
       return user;
     } catch (error) {
-      console.error('ユーザー初期化エラー:', error);
+      console.error(`ユーザー初期化エラー: ${lineUsername}`, error);
       setError(error instanceof Error ? error.message : '不明なエラー');
       return null;
     } finally {
+      console.log(`ユーザー初期化完了: ${lineUsername} - ${new Date().toISOString()}`);
       setLoading(false);
     }
   };

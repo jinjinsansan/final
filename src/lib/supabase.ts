@@ -197,17 +197,17 @@ export const userService = {
   async createUser(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
 
-    console.log(`ユーザー作成開始: "${lineUsername}"`);
+    console.log(`ユーザー作成開始: "${lineUsername}" - ${new Date().toISOString()}`);
     try {
       // まず既存ユーザーをチェック
       const existingUser = await this.getUserByUsername(lineUsername);
       if (existingUser) {
-        console.log('ユーザーは既に存在します:', existingUser);
+        console.log(`ユーザーは既に存在します: "${lineUsername}" - ID: ${existingUser.id}`);
         return existingUser;
       }
       
       // 新規ユーザー作成
-      console.log(`新規ユーザーを作成します - username: "${lineUsername}"`);
+      console.log(`新規ユーザーを作成します - username: "${lineUsername}" - ${new Date().toISOString()}`);
       
       const { data, error } = await supabase
         .from('users')
@@ -220,31 +220,41 @@ export const userService = {
       
       if (error) {
         console.error('ユーザー作成エラー (insert):', error);
-        // エラーの詳細をログ
-        if (error.details) console.error('エラー詳細:', error.details);
-        if (error.hint) console.error('エラーヒント:', error.hint);
+        
+        // エラーの詳細情報をログ
+        console.error('エラーコード:', error.code);
+        console.error('エラーメッセージ:', error.message);
+        if (error.details) console.error('エラー詳細:', JSON.stringify(error.details));
+        if (error.hint) console.error('エラーヒント:', JSON.stringify(error.hint));
+        
+        // 重複キーエラーの場合は既存ユーザーを返す
+        if (error.code === '23505' || error.message.includes('duplicate key') || error.message.includes('already exists')) {
+          console.log(`重複キーエラー - 既存ユーザーを取得します: "${lineUsername}"`);
+          return await this.getUserByUsername(lineUsername);
+        }
+        
         throw error;
       }
       
       if (!data) {
-        console.error(`ユーザー作成エラー: "${lineUsername}" - データが返されませんでした`);
+        console.error(`ユーザー作成エラー: "${lineUsername}" - データが返されませんでした - ${new Date().toISOString()}`);
         return null;
       }
       
-      console.log(`ユーザー作成成功: "${lineUsername}"`, data);
+      console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${data.id} - ${new Date().toISOString()}`);
       return data;
     } catch (error) {
-      console.error('ユーザー作成エラー:', error);
+      console.error(`ユーザー作成エラー: "${lineUsername}"`, error);
       
       // 重複エラーの場合は既存ユーザーを返す
       if (error instanceof Error && error.message.includes('duplicate key')) {
-        console.log('重複エラーのため既存ユーザーを取得します');
+        console.log(`重複エラーのため既存ユーザーを取得します: "${lineUsername}"`);
         try {
           const existingUser = await this.getUserByUsername(lineUsername);
-          console.log('既存ユーザーを取得しました:', existingUser);
+          console.log(`既存ユーザーを取得しました: "${lineUsername}" - ID: ${existingUser?.id || 'null'}`);
           return existingUser;
         } catch (getUserError) {
-          console.error('既存ユーザー取得エラー:', getUserError);
+          console.error(`既存ユーザー取得エラー: "${lineUsername}"`, getUserError);
           return null;
         }
       }
@@ -256,7 +266,7 @@ export const userService = {
   async getUserByUsername(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
 
-    console.log(`ユーザー検索開始: "${lineUsername}"`);
+    console.log(`ユーザー検索開始: "${lineUsername}" - ${new Date().toISOString()}`);
     try {
       const { data, error } = await supabase
         .from('users')
@@ -267,17 +277,19 @@ export const userService = {
       if (error) {
         // ユーザーが見つからない場合は null を返す
         if (error.code === 'PGRST116' || error.message.includes('No rows found')) {
-          console.log(`ユーザーが見つかりません: "${lineUsername}"`);
+          console.log(`ユーザーが見つかりません: "${lineUsername}" - ${new Date().toISOString()}`);
           return null;
         }
-        console.error(`ユーザー検索エラー: "${lineUsername}"`, error);
+        console.error(`ユーザー検索エラー: "${lineUsername}" - ${new Date().toISOString()}`, error);
+        console.error('エラーコード:', error.code);
+        console.error('エラーメッセージ:', error.message);
         throw error;
       }
       
-      console.log(`ユーザー検索結果: "${lineUsername}"`, data ? '見つかりました' : '見つかりません');
+      console.log(`ユーザー検索結果: "${lineUsername}" - ${data ? `ID: ${data.id} - 見つかりました` : '見つかりません'} - ${new Date().toISOString()}`);
       return data || null;
     } catch (error) {
-      console.error(`ユーザー取得エラー: "${lineUsername}"`, error);
+      console.error(`ユーザー取得エラー: "${lineUsername}" - ${new Date().toISOString()}`, error);
       return null;
     }
   },
@@ -627,14 +639,23 @@ export const syncService = {
   // ローカルストレージからSupabaseへデータを移行
   async migrateLocalData(userId: string): Promise<boolean> {
     if (!supabase) return false;
-    
+
+    console.log(`データ移行開始 - ユーザーID: ${userId} - ${new Date().toISOString()}`);
     try {
       // ローカルストレージから日記データを取得
       const localEntries = localStorage.getItem('journalEntries');
-      if (!localEntries) return true;
+      if (!localEntries) {
+        console.log('ローカルデータが見つかりません - 移行スキップ');
+        return true;
+      }
       
       const entries = JSON.parse(localEntries);
-      if (entries.length === 0) return true;
+      if (entries.length === 0) {
+        console.log('ローカルデータが空です - 移行スキップ');
+        return true;
+      }
+      
+      console.log(`移行するエントリー数: ${entries.length}`);
       
       // バッチ処理で効率的に保存（本番環境対応）
       const batchSize = 50; // 一度に50件ずつ処理
@@ -705,30 +726,45 @@ export const syncService = {
   // 同意履歴をSupabaseに同期
   async syncConsentHistories(): Promise<boolean> {
     if (!supabase) return false;
-    
+
+    console.log('同意履歴の同期を開始 - ' + new Date().toISOString());
     try {
       // ローカルストレージから同意履歴を取得
       const localHistories = localStorage.getItem('consent_histories');
-      if (!localHistories) return true;
+      if (!localHistories) {
+        console.log('ローカル同意履歴が見つかりません - 同期スキップ');
+        return true;
+      }
       
       const histories = JSON.parse(localHistories);
+      console.log(`同期する同意履歴数: ${histories.length}`);
       
       // Supabaseに保存
       for (const history of histories) {
+        console.log(`同意履歴を処理中: ${history.line_username} - ${history.consent_date}`);
+        
         // 既存の記録をチェック
-        const existing = await consentService.getConsentHistoryByUsername(history.line_username);
-        if (!existing) {
-          await consentService.createConsentRecord({
-            line_username: history.line_username,
-            consent_given: history.consent_given,
-            consent_date: history.consent_date,
-            ip_address: history.ip_address,
-            user_agent: history.user_agent
-          });
+        try {
+          const existing = await consentService.getConsentHistoryByUsername(history.line_username);
+          if (!existing) {
+            console.log(`新規同意履歴を作成: ${history.line_username}`);
+            await consentService.createConsentRecord({
+              line_username: history.line_username,
+              consent_given: history.consent_given,
+              consent_date: history.consent_date,
+              ip_address: history.ip_address,
+              user_agent: history.user_agent
+            });
+          } else {
+            console.log(`同意履歴は既に存在します: ${history.line_username}`);
+          }
+        } catch (historyError) {
+          console.error(`同意履歴処理エラー: ${history.line_username}`, historyError);
+          // エラーがあっても続行
         }
       }
       
-      console.log('同意履歴の同期が完了しました');
+      console.log(`同意履歴の同期が完了しました - ${histories.length}件 - ${new Date().toISOString()}`);
       return true;
     } catch (error) {
       console.error('同意履歴同期エラー:', error);
@@ -776,9 +812,18 @@ export const syncService = {
       // バッチ処理で効率的に保存（本番環境対応）
       const batchSize = 20; // 一度に20件ずつ処理
       const totalBatches = Math.ceil(entries.length / batchSize);
+      console.log(`バッチ処理を開始: ${totalBatches}バッチ`);
       
       for (let i = 0; i < totalBatches; i++) {
         const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
+        
+        const insertData = batch.map((entry: any) => ({
+          user_id: userId,
+          date: entry.date,
+      // 一括処理でデータを移行
+      for (let i = 0; i < totalBatches; i++) {
+        const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
+        console.log(`バッチ ${i+1}/${totalBatches} 処理中 - ${batch.length}件`);
         
         const insertData = batch.map((entry: any) => ({
           user_id: userId,
@@ -790,31 +835,29 @@ export const syncService = {
           worthlessness_score: entry.worthlessnessScore || 50
         }));
         
-        const { error } = await supabase
-          .from('diary_entries')
-          .upsert(insertData, { 
-            onConflict: 'user_id,date,emotion',
-            ignoreDuplicates: true 
-          });
-        
-        if (error) {
-          console.warn('バッチ処理エラー:', error);
-        }
-        
-        // 進捗報告
-        if (progressCallback) {
-          const progress = Math.round(((i + 1) / totalBatches) * 100);
+        try {
+          const { error } = await supabase
+            .from('diary_entries')
+            .upsert(insertData, { 
+              onConflict: 'user_id,date,emotion',
+              ignoreDuplicates: true 
+            });
+          
+          if (error) {
+            console.warn(`バッチ ${i+1} 処理エラー:`, error);
           progressCallback(progress);
-        }
+        } catch (batchError) {
+          console.error(`バッチ ${i+1} 処理例外:`, batchError);
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // レート制限対策
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      console.log('大量データの移行が完了しました');
+      console.log(`ローカルデータの移行が完了しました - ${entries.length}件 - ${new Date().toISOString()}`);
       return true;
     } catch (error) {
-      console.error('大量データ移行エラー:', error);
+      console.error(`データ移行エラー - ユーザーID: ${userId}`, error);
       return false;
     }
   }
