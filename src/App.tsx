@@ -36,7 +36,7 @@ const App: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedEmotion, setSelectedEmotion] = useState('');
+  const [selectedEmotion, setSelectedEmotion] = useState<string>('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showPrivacyConsent, setShowPrivacyConsent] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -81,6 +81,7 @@ const App: React.FC = () => {
     const savedUsername = localStorage.getItem('line-username');
     
     console.log('アプリ初期化 - 同意状態:', consentGiven, '保存ユーザー名:', savedUsername);
+    console.log('現在のページ:', currentPage);
     
     if (consentGiven === 'true') {
       setShowPrivacyConsent(false);
@@ -95,7 +96,10 @@ const App: React.FC = () => {
           if (isConnected && initializeUser) {
             initializeUser(user.lineUsername);
           }
-          setCurrentPage('how-to');
+          // 既にページが選択されている場合は変更しない
+          if (currentPage === 'home') {
+            setCurrentPage('how-to');
+          }
         }
       } else if (savedUsername) {
         // 未認証だがユーザー名がある場合はそのまま使用
@@ -105,10 +109,13 @@ const App: React.FC = () => {
           console.log('保存されたユーザー名でSupabaseユーザーを初期化:', savedUsername);
           initializeUser(savedUsername);
         }
-        setCurrentPage('how-to');
+        // 既にページが選択されている場合は変更しない
+        if (currentPage === 'home') {
+          setCurrentPage('how-to');
+        }
       }
     }
-  }, [isConnected, initializeUser]);
+  }, [isConnected, initializeUser, currentPage]);
 
   // テストデータ生成関数
   const generateTestData = () => {
@@ -898,7 +905,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" key={`page-${currentPage}`}>
       {!showPrivacyConsent && currentPage !== 'home' && authState === 'none' && (
         <>
           {/* ヘッダー */}
@@ -907,7 +914,10 @@ const App: React.FC = () => {
               <div className="flex justify-between items-center h-16">
                 <div className="flex items-center space-x-4">
                   <button
-                    onClick={() => setCurrentPage('home')}
+                    onClick={() => {
+                      setCurrentPage('home');
+                      console.log('ホームページに移動');
+                    }}
                     className="flex items-center space-x-2 text-gray-900 hover:text-blue-600 transition-colors mr-2"
                   >
                     <Heart className="w-6 h-6 text-pink-500" />
@@ -930,13 +940,16 @@ const App: React.FC = () => {
                   {[
                     { key: 'how-to', label: '使い方', icon: BookOpen },
                     { key: 'diary', label: '日記', icon: Plus },
-                    { key: 'search', label: '検索', icon: Search },
+                    { key: 'search', label: '日記検索', icon: Search },
                     { key: 'worthlessness-trend', label: '推移', icon: TrendingUp },
                     ...(isAdmin ? [{ key: 'admin', label: '管理', icon: Settings }] : [])
                   ].map(({ key, label, icon: Icon }) => (
                     <button
                       key={key}
-                      onClick={() => setCurrentPage(key)}
+                      onClick={() => {
+                        setCurrentPage(key);
+                        console.log('ページ変更:', key);
+                      }}
                       className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-jp-medium transition-colors ${
                         currentPage === key
                           ? 'text-blue-600 bg-blue-50'
@@ -1019,6 +1032,7 @@ const App: React.FC = () => {
                       onClick={() => {
                         setCurrentPage(key);
                         setIsMobileMenuOpen(false);
+                        console.log('ページ変更:', key);
                       }}
                       className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md text-base font-jp-medium transition-colors ${
                         currentPage === key
@@ -1091,7 +1105,7 @@ const App: React.FC = () => {
           </header>
 
           {/* メインコンテンツ */}
-          <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8" key={`main-${currentPage}`}>
             {/* Supabase接続状態表示 */}
             {isAdmin && (
               <div className="mb-4">
