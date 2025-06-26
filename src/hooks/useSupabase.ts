@@ -185,7 +185,7 @@ export const useSupabase = () => {
     saveEntry,
     updateEntry,
     deleteEntry,
-    checkConnection
+    checkConnection,
     error,
     retryConnection,
   };
