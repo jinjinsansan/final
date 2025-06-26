@@ -103,6 +103,9 @@ export const useSupabase = () => {
       // 既存ユーザーを検索
       let user = await userService.getUserByUsername(lineUsername);
       
+      // 明示的にローディング状態を設定
+      setLoading(true);
+      
       // セキュリティイベントをログ
       if (user) {
         console.log(`Supabaseユーザーが見つかりました: "${lineUsername}" - ID: ${user.id}`);
@@ -123,7 +126,15 @@ export const useSupabase = () => {
       if (!user) {
         // 新規ユーザー作成
         console.log(`新規ユーザー作成を試みます: "${lineUsername}" - ${new Date().toISOString()}`);
-        user = await userService.createUser(lineUsername);
+        try {
+          user = await userService.createUser(lineUsername);
+        } catch (createError) {
+          console.error('ユーザー作成エラー:', createError);
+          
+          // 作成エラーの場合、もう一度ユーザー検索を試みる
+          // (同時作成などで競合が発生した可能性がある)
+          user = await userService.getUserByUsername(lineUsername);
+        }
         
         if (user) {
           console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${user.id}`);
@@ -145,15 +156,24 @@ export const useSupabase = () => {
       } else {
         // 既存ユーザーの場合、Supabaseからローカルに同期
         try {
-          console.log(`Supabaseからローカルへの同期を開始: "${lineUsername}" - ID: ${user.id}`);
-          await syncService.syncToLocal(user.id);
-          console.log(`Supabaseからローカルへの同期が完了しました: "${lineUsername}"`);
+          if (user.id) {
+            console.log(`Supabaseからローカルへの同期を開始: "${lineUsername}" - ID: ${user.id}`);
+            await syncService.syncToLocal(user.id);
+            console.log(`Supabaseからローカルへの同期が完了しました: "${lineUsername}"`);
+          } else {
+            console.error('ユーザーIDが不明です:', user);
+          }
         } catch (syncError) {
           console.error('データ同期エラー:', syncError);
         }
       }
       
-      setCurrentUser(user);
+      // 明示的にユーザー情報を更新
+      if (user) {
+        setCurrentUser(user);
+        setError(null);
+      }
+      
       return user;
     } catch (error) {
       console.error(`ユーザー初期化エラー: ${lineUsername}`, error);
@@ -161,7 +181,7 @@ export const useSupabase = () => {
       return null;
     } finally {
       console.log(`ユーザー初期化完了: "${lineUsername}" - ${new Date().toISOString()}`);
-      setLoading(false);
+      setTimeout(() => setLoading(false), 500); // 少し遅延させてUI更新を確実にする
     }
   };
 
