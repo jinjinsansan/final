@@ -890,7 +890,6 @@ const App: React.FC = () => {
   }
 
   // メンテナンスモードかつ管理者でない場合のみメンテナンス画面を表示
-  // メンテナンスモードかつ管理者でない場合のみメンテナンス画面を表示
   if (isMaintenanceMode && !isAdminBypass && maintenanceConfig) {
     return <MaintenanceMode config={maintenanceConfig} />;
   }
@@ -1115,12 +1114,6 @@ const App: React.FC = () => {
                     <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-purple-100 text-purple-800 border border-purple-200">
                       <RefreshCw className="w-3 h-3" />
                       <span>自動同期有効</span>
-                    </div>
-                  )}
-                  {isMaintenanceMode && isAdminBypass && (
-                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
-                      <AlertTriangle className="w-3 h-3" />
-                      <span>メンテナンス中（管理者）</span>
                     </div>
                   )}
                   {isMaintenanceMode && isAdminBypass && (
