@@ -98,7 +98,7 @@ export const useAutoSync = () => {
   };
 
   // 自動同期の有効/無効切り替え
-  const toggleAutoSync = (enabled: boolean) => {
+  const toggleAutoSync = async (enabled: boolean) => {
     localStorage.setItem('auto_sync_enabled', enabled.toString());
     
     try {
