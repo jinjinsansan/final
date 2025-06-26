@@ -3,9 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// 環境変数のデバッグ情報（最小限）
-console.log('Supabase URL設定:', !!supabaseUrl);
-console.log('Supabase Key設定:', !!supabaseAnonKey);
+// 環境変数のデバッグ情報（最小限、開発環境のみ）
+if (import.meta.env.DEV) {
+  console.log('Supabase URL設定:', !!supabaseUrl);
+  console.log('Supabase Key設定:', !!supabaseAnonKey);
+}
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
@@ -31,7 +33,8 @@ const isValidSupabaseKey = (key: string): boolean => {
 // 本番環境での詳細な検証
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
-} else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
+} 
+else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
   console.warn('Supabase環境変数が無効です。設定を確認してください。');
 }
 
@@ -86,8 +89,11 @@ export const testSupabaseConnection = async () => {
   }
   
   try {
-    // 単純なPingテスト
-    console.log('Supabase接続テスト中...', new Date().toISOString());
+    // 単純なPingテスト（詳細ログは開発環境のみ）
+    if (import.meta.env.DEV) {
+      console.log('Supabase接続テスト中...', new Date().toISOString());
+    }
+    
     const { data, error } = await supabase.from('users').select('id').limit(1);
     
     if (error) {      
@@ -812,7 +818,7 @@ export const syncService = {
       const batchSize = 20;
       const totalBatches = Math.ceil(entries.length / batchSize);
       
-      // 一括処理でデータを移行
+      // バッチ処理でデータを移行
       for (let i = 0; i < totalBatches; i++) {
         const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
         console.log(`バッチ ${i+1}/${totalBatches} 処理中 - ${batch.length}件`);
@@ -851,7 +857,7 @@ export const syncService = {
         progressCallback(100);
       }
       
-      
+      // 完了メッセージ
       console.log(`ローカルデータの移行が完了しました - ${entries.length}件 - ${new Date().toISOString()}`);
       return true;
     } catch (error) {
