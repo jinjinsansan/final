@@ -360,6 +360,22 @@ const App: React.FC = () => {
     window.open(twitterUrl, '_blank');
   };
 
+  // Twitterでシェア
+  const handleTwitterShareWorthlessness = (period: string, data: any[]) => {
+    const periodText = period === 'week' ? '1週間' : period === 'month' ? '1ヶ月' : '全期間';
+    const recordCount = data.length;
+    const emotionFreq = getEmotionFrequency();
+    const mostFrequentEmotion = emotionFreq.length > 0 ? `${emotionFreq[0][0]} (${emotionFreq[0][1]}回)` : 'なし';
+    
+    const shareText = encodeURIComponent(`📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://namisapo.vercel.app/`);
+    
+    // Twitterシェア用URL
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}`;
+    
+    // 新しいウィンドウでTwitterシェアを開く
+    window.open(twitterUrl, '_blank');
+  };
+
   const renderWorthlessnessChart = (data: any[]) => {
     if (data.length === 0) {
       return (
@@ -770,6 +786,17 @@ const App: React.FC = () => {
                     >
                       <Share2 className="w-4 h-4" />
                       <span>SNSでシェア</span>
+                    </button>
+                    <button
+                      onClick={() => handleTwitterShareWorthlessness(emotionPeriod, filteredData)}
+                      className="flex items-center space-x-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
+                      <span>Xでシェア</span>
+                    </button>
+                  </div>
                     </button>
                     <button
                       onClick={() => handleTwitterShareWorthlessness(emotionPeriod, filteredData)}
