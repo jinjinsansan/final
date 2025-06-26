@@ -109,7 +109,7 @@ const DataMigration: React.FC = () => {
   const handleCreateUser = async () => {
     const lineUsername = localStorage.getItem('line-username');
     if (!lineUsername) {
-      setMigrationStatus('エラー: ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してユーザー名を設定してください。');
+      setMigrationStatus('エラー: ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してください。');
       return;
     }
 
@@ -126,9 +126,19 @@ const DataMigration: React.FC = () => {
         console.log('既存ユーザーが見つかりました:', existingUser);
         setMigrationStatus('ユーザーは既に存在します！データ移行が可能になりました。');
         setUserExists(true);
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
+        
+        // 既存ユーザーの場合は、現在のユーザー状態を更新
+        if (isConnected) {
+          try {
+            await initializeUser(lineUsername);
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } catch (initError) {
+            console.error('ユーザー初期化エラー:', initError);
+            setUserCreationError('ユーザー初期化に失敗しました。');
+          }
+        }
         return;
       }
       
@@ -184,8 +194,15 @@ const DataMigration: React.FC = () => {
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
-      setShowUserCreationButton(true);
+      if (userExists) {
+        setMigrationStatus('ユーザーは存在しますが、現在のセッションで認識されていません。ページを再読み込みしてください。');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
+        setShowUserCreationButton(true);
+      }
       return;
     }
 
@@ -216,8 +233,15 @@ const DataMigration: React.FC = () => {
   const handleMigrateConsentsToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
-      setShowUserCreationButton(true);
+      if (userExists) {
+        setMigrationStatus('ユーザーは存在しますが、現在のセッションで認識されていません。ページを再読み込みしてください。');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
+        setShowUserCreationButton(true);
+      }
       return;
     }
 

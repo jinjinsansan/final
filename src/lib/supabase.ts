@@ -670,7 +670,7 @@ export const syncService = {
   async migrateLocalData(userId: string | null): Promise<boolean> {
     if (!supabase) return false;
     if (!userId) {
-      console.error('ユーザーIDが指定されていません');
+      console.error('ユーザーIDが指定されていません - 移行をスキップします');
       return false;
     }
 
@@ -697,27 +697,46 @@ export const syncService = {
       
       for (const entry of entries) {
         try {
+          const entryData = {
+            user_id: userId,
+            date: entry.date,
+            emotion: entry.emotion,
+            event: entry.event,
+            realization: entry.realization,
+            self_esteem_score: entry.selfEsteemScore || 50,
+            worthlessness_score: entry.worthlessnessScore || 50,
+            counselor_memo: entry.counselor_memo,
+            is_visible_to_user: entry.is_visible_to_user,
+            counselor_name: entry.counselor_name
+          };
+          
           // 既存エントリーの重複チェック
-          const { data: existing } = await supabase
+          const { data: existing, error: checkError } = await supabase
             .from('diary_entries')
             .select('id')
             .eq('user_id', userId)
             .eq('date', entry.date)
-            .eq('emotion', entry.emotion)
-            .single();
+            .eq('emotion', entry.emotion);
           
-          if (!existing) {
-            const entryData = {
-              user_id: userId,
-              date: entry.date,
-              emotion: entry.emotion,
-              event: entry.event,
-              realization: entry.realization,
-              self_esteem_score: entry.selfEsteemScore || 50,
-              worthlessness_score: entry.worthlessnessScore || 50
-            };
+          if (checkError) {
+            console.warn('エントリー確認エラー:', checkError);
+            errorCount++;
+            continue;
+          }
+          
+          if (!existing || existing.length === 0) {
+            const { error: insertError } = await supabase
+              .from('diary_entries')
+              .insert(entryData);
             
-            await diaryService.createEntry(entryData);
+            if (insertError) {
+              console.warn('エントリー作成エラー:', insertError);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          } else {
+            console.log(`エントリーは既に存在します: ${entry.date} - ${entry.emotion}`);
             successCount++;
           }
         } catch (entryError) {
@@ -889,7 +908,7 @@ export const syncService = {
   async bulkMigrateLocalData(userId: string | null, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
     if (!userId) {
-      console.error('ユーザーIDが指定されていません');
+      console.error('ユーザーIDが指定されていません - 大量データ移行をスキップします');
       return false;
     }
 

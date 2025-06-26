@@ -40,10 +40,10 @@ export const useAutoSync = () => {
   // 接続状態が変わった時の自動処理
   useEffect(() => {
     if (isConnected && !hasInitializedRef.current && localStorage.getItem('line-username')) {
-      hasInitializedRef.current = true;
       const lineUsername = localStorage.getItem('line-username');
       if (lineUsername) {
         handleAutoInitialization(lineUsername);
+        hasInitializedRef.current = true;
       }
     }
   }, [isConnected]);
@@ -52,6 +52,7 @@ export const useAutoSync = () => {
   const handleAutoInitialization = async (lineUsername: string) => {
     try {
       let user = await userService.getUserByUsername(lineUsername);
+      setStatus(prev => ({ ...prev, syncInProgress: true }));
       
       if (!user) {
         if (import.meta.env.DEV) {
@@ -67,14 +68,18 @@ export const useAutoSync = () => {
         user = await userService.createUser(lineUsername);
         
         if (user) {
-          setStatus(prev => ({ ...prev, userCreated: true }));
+          setStatus(prev => ({ ...prev, userCreated: true, syncError: null }));
           // ユーザー作成後、アプリの状態を更新
           if (initializeUser) {
             await initializeUser(lineUsername); 
           }
         }
       } else {
-        setStatus(prev => ({ ...prev, userCreated: true }));
+        setStatus(prev => ({ ...prev, userCreated: true, syncError: null }));
+        // 既存ユーザーの場合も、アプリの状態を更新
+        if (initializeUser) {
+          await initializeUser(lineUsername);
+        }
       }
 
       // 2. 自動同期が有効な場合のみデータ同期
