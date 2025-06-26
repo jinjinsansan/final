@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// 環境変数のデバッグ情報（最小限、開発環境のみ）
+// 環境変数のデバッグ情報（開発環境のみ）
 if (import.meta.env.DEV) {
   console.log('Supabase URL設定:', !!supabaseUrl);
   console.log('Supabase Key設定:', !!supabaseAnonKey);
@@ -847,6 +847,12 @@ export const syncService = {
           }
         } catch (batchError) {
           console.error(`バッチ ${i+1} 処理例外:`, batchError);
+        }
+        
+        // 進捗報告
+        if (progressCallback) {
+          const progress = Math.round(((i + 1) / totalBatches) * 100);
+          progressCallback(progress);
         }
         
         // レート制限対策

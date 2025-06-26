@@ -15,12 +15,21 @@ interface MaintenanceConfig {
 interface MaintenanceModeProps {
   config: MaintenanceConfig;
   onAdminLogin?: () => void;
+  onAdminLogin?: () => void;
   onRetry?: () => void;
 }
 
 const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin, onRetry }) => {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('');
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [showBackupRestore, setShowBackupRestore] = useState(false);
+  const [backupData, setBackupData] = useState<File | null>(null);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
+  const [adminLoginAttempts, setAdminLoginAttempts] = useState(0);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -65,6 +74,163 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, [config.endTime]);
+
+  // 管理者ログイン処理
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminLoginAttempts(prev => prev + 1);
+    
+    // 管理者パスワードをチェック（実際の実装ではより安全な方法を使用）
+    if (adminPassword === 'counselor123') {
+      // 管理者としてログイン
+      localStorage.setItem('current_counselor', '管理者（緊急アクセス）');
+      
+      // 親コンポーネントに通知
+      if (onAdminLogin) {
+        onAdminLogin();
+      } else {
+        // 通知がない場合はページをリロード
+        window.location.reload();
+      }
+    } else {
+      if (adminLoginAttempts >= 2) {
+        setLoginError('複数回失敗しました。正しいパスワードを入力してください。');
+      } else {
+        setLoginError('パスワードが正しくありません');
+      }
+    }
+  };
+
+  // バックアップファイルの選択
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setBackupData(e.target.files[0]);
+      setRestoreStatus(null);
+    }
+  };
+
+  // バックアップからの復元
+  const handleRestoreBackup = async () => {
+    if (!backupData) {
+      setRestoreStatus('バックアップファイルを選択してください。');
+      return;
+    }
+    
+    if (!window.confirm('バックアップからデータを復元しますか？')) {
+      return;
+    }
+    
+    setRestoreLoading(true);
+    setRestoreStatus(null);
+    
+    try {
+      // ファイルを読み込み
+      const fileReader = new FileReader();
+      
+      fileReader.onload = (event) => {
+        try {
+          if (!event.target || typeof event.target.result !== 'string') {
+            throw new Error('ファイルの読み込みに失敗しました。');
+          }
+          
+          const backupObject = JSON.parse(event.target.result);
+          
+          // バージョンチェック
+          if (!backupObject.version) {
+            throw new Error('無効なバックアップファイルです。');
+          }
+          
+          // データの復元
+          if (backupObject.journalEntries) {
+            localStorage.setItem('journalEntries', JSON.stringify(backupObject.journalEntries));
+          }
+          
+          if (backupObject.initialScores) {
+            localStorage.setItem('initialScores', JSON.stringify(backupObject.initialScores));
+          }
+          
+          if (backupObject.consentHistories) {
+            localStorage.setItem('consent_histories', JSON.stringify(backupObject.consentHistories));
+          }
+          
+          if (backupObject.lineUsername) {
+            localStorage.setItem('line-username', backupObject.lineUsername);
+          }
+          
+          if (backupObject.privacyConsentGiven) {
+            localStorage.setItem('privacyConsentGiven', backupObject.privacyConsentGiven);
+          }
+          
+          if (backupObject.privacyConsentDate) {
+            localStorage.setItem('privacyConsentDate', backupObject.privacyConsentDate);
+          }
+          
+          setRestoreStatus('データが正常に復元されました！ページを再読み込みしてください。');
+          
+          // 5秒後に自動的にページを再読み込み
+          setTimeout(() => {
+            window.location.reload();
+          }, 5000);
+          
+        } catch (error) {
+          console.error('データ復元エラー:', error);
+          setRestoreStatus('データの復元に失敗しました。有効なバックアップファイルか確認してください。');
+          setRestoreLoading(false);
+        }
+      };
+      
+      fileReader.onerror = () => {
+        setRestoreStatus('ファイルの読み込みに失敗しました。');
+        setRestoreLoading(false);
+      };
+      
+      fileReader.readAsText(backupData);
+      
+    } catch (error) {
+      console.error('バックアップ復元エラー:', error);
+      setRestoreStatus('バックアップの復元に失敗しました。');
+      setRestoreLoading(false);
+    }
+  };
+
+  // バックアップデータの作成
+  const handleCreateBackup = () => {
+    try {
+      // ローカルストレージからデータを収集
+      const backupObject = {
+        journalEntries: localStorage.getItem('journalEntries') ? JSON.parse(localStorage.getItem('journalEntries')!) : [],
+        initialScores: localStorage.getItem('initialScores') ? JSON.parse(localStorage.getItem('initialScores')!) : null,
+        consentHistories: localStorage.getItem('consent_histories') ? JSON.parse(localStorage.getItem('consent_histories')!) : [],
+        lineUsername: localStorage.getItem('line-username'),
+        privacyConsentGiven: localStorage.getItem('privacyConsentGiven'),
+        privacyConsentDate: localStorage.getItem('privacyConsentDate'),
+        backupDate: new Date().toISOString(),
+        version: '1.0'
+      };
+      
+      // JSONに変換してダウンロード
+      const dataStr = JSON.stringify(backupObject, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      
+      // ファイル名にユーザー名と日付を含める
+      const username = localStorage.getItem('line-username') || 'user';
+      const date = new Date().toISOString().split('T')[0];
+      const fileName = `kanjou-nikki-backup-${username}-${date}.json`;
+      
+      // ダウンロードリンクを作成して自動クリック
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(dataBlob);
+      downloadLink.download = fileName;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      setRestoreStatus('バックアップが正常に作成されました！');
+    } catch (error) {
+      console.error('バックアップ作成エラー:', error);
+      setRestoreStatus('バックアップの作成に失敗しました。');
+    }
+  };
 
   // 管理者ログイン処理
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -409,6 +575,154 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
               </>
             )}
           </div>
+
+          {/* バックアップ復元セクション */}
+          <div className="mt-6">
+            <button
+              onClick={() => {
+                setShowBackupRestore(!showBackupRestore);
+                setRestoreStatus(null);
+              }}
+              className="flex items-center space-x-2 bg-purple-100 hover:bg-purple-200 text-purple-800 px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors mx-auto mb-2"
+            >
+              <Upload className="w-4 h-4" />
+              <span>データ管理</span>
+            </button>
+          </div>
+
+          {showBackupRestore && (
+            <div className="mt-2 bg-purple-50 rounded-lg p-4 border border-purple-200">
+              <h3 className="font-jp-bold text-gray-900 mb-3 text-sm">データ管理</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                  <h4 className="font-jp-medium text-blue-900 text-xs mb-2">バックアップを作成</h4>
+                  <button
+                    onClick={handleCreateBackup}
+                    className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-jp-medium transition-colors w-full text-xs"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>バックアップを作成</span>
+                  </button>
+                </div>
+                
+                <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                  <h4 className="font-jp-medium text-purple-900 text-xs mb-2">バックアップから復元</h4>
+                  <div className="space-y-2">
+                    <div className="bg-white rounded-lg p-2 border border-gray-200">
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleFileChange}
+                        className="block w-full text-xs text-gray-500
+                          file:mr-2 file:py-1 file:px-2
+                          file:rounded-lg file:border-0
+                          file:text-xs file:font-jp-medium
+                          file:bg-purple-100 file:text-purple-700
+                          hover:file:bg-purple-200
+                          cursor-pointer"
+                      />
+                    </div>
+                    
+                    <button
+                      onClick={handleRestoreBackup}
+                      disabled={restoreLoading || !backupData}
+                      className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg font-jp-medium transition-colors w-full text-xs"
+                    >
+                      {restoreLoading ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Upload className="w-3 h-3" />
+                      )}
+                      <span>バックアップから復元</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* 復元ステータス表示 */}
+              {restoreStatus && (
+                <div className={`mt-3 rounded-lg p-3 border ${
+                  restoreStatus.includes('失敗') 
+                    ? 'bg-red-50 border-red-200 text-red-800' 
+                    : 'bg-green-50 border-green-200 text-green-800'
+                }`}>
+                  <div className="flex items-center space-x-2">
+                    {restoreStatus.includes('失敗') ? (
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span className="text-xs font-jp-medium">{restoreStatus}</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-3 bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-yellow-800 font-jp-normal">
+                    <p className="font-jp-medium mb-1">注意事項</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>メンテナンス中でもデータのバックアップと復元が可能です</li>
+                      <li>復元後はページを再読み込みしてください</li>
+                      <li>バックアップファイルは安全な場所に保存してください</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 管理者ログインボタン */}
+          <div className="mt-6">
+            <button
+              onClick={() => setShowAdminLogin(!showAdminLogin)}
+              className="text-xs text-gray-500 hover:text-gray-700 font-jp-normal underline"
+            >
+              カウンセラーログイン
+            </button>
+          </div>
+
+          {/* 管理者ログインフォーム */}
+          {showAdminLogin && (
+            <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-jp-bold text-gray-900 text-sm">カウンセラーログイン</h3>
+                <button
+                  onClick={() => setShowAdminLogin(false)}
+                  className="text-gray-400 hover:text-gray-600 text-xs"
+                >
+                  閉じる
+                </button>
+              </div>
+              
+              <form onSubmit={handleAdminLogin} className="space-y-3">
+                <div>
+                  <input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="カウンセラーパスワードを入力"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal text-sm"
+                  />
+                </div>
+                
+                {loginError && (
+                  <div className="bg-red-50 rounded-lg p-2 border border-red-200">
+                    <p className="text-xs text-red-600 font-jp-normal">{loginError}</p>
+                  </div>
+                )}
+                
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors"
+                >
+                  ログイン
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* 連絡先情報 */}
           {config.contactInfo && (
