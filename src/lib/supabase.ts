@@ -3,14 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// 環境変数のデバッグ情報
-console.log('Supabase URL exists:', !!supabaseUrl);
-console.log('Supabase Key exists:', !!supabaseAnonKey);
+// 環境変数のデバッグ情報（詳細）
+console.log('Supabase URL exists:', !!supabaseUrl, supabaseUrl ? `(${supabaseUrl.substring(0, 15)}...)` : '');
+console.log('Supabase Key exists:', !!supabaseAnonKey, supabaseAnonKey ? `(${supabaseAnonKey.substring(0, 10)}...)` : '');
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
   try {
-    if (!url || url.trim() === '' || url === 'undefined' || url.includes('your_supabase_project_url')) {
+    if (!url || url.trim() === '' || url === 'undefined' || url.includes('your_supabase')) {
       return false;
     }
     new URL(url);
@@ -24,21 +24,21 @@ const isValidSupabaseKey = (key: string): boolean => {
   return !!(key && 
     key.trim() !== '' && 
     key !== 'undefined' &&
-    !key.includes('your_supabase_anon_key') &&
+    !key.includes('your_supabase') &&
     key.length > 20);
 };
 
 // 本番環境での詳細な検証
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
-  console.log('URL:', supabaseUrl || 'undefined');
-  console.log('Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined');
+  console.log('URL missing:', !supabaseUrl);
+  console.log('Key missing:', !supabaseAnonKey);
 } else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
   console.warn('Supabase環境変数が無効です。設定を確認してください。');
   console.log('URL valid:', isValidUrl(supabaseUrl));
   console.log('Key valid:', isValidSupabaseKey(supabaseAnonKey));
-  console.log('URL:', supabaseUrl ? `${supabaseUrl.substring(0, 10)}...` : 'undefined');
-  console.log('Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined');
+  console.log('URL:', supabaseUrl ? `${supabaseUrl.substring(0, 15)}...` : 'undefined');
+  console.log('Key length:', supabaseAnonKey ? supabaseAnonKey.length : 0);
 }
 
 // Supabaseクライアントの作成
@@ -54,7 +54,7 @@ export const supabase = (() => {
     
     console.log('Creating Supabase client - URL valid:', urlValid, 'Key valid:', keyValid);
       
-    if (urlValid && keyValid) {
+    if (urlValid && keyValid && supabaseUrl && supabaseAnonKey) {
       try {
         const client = createClient(supabaseUrl, supabaseAnonKey, {
           auth: {
@@ -80,15 +80,15 @@ export const supabase = (() => {
 // 接続テスト用の関数
 export const testSupabaseConnection = async () => {
   if (!supabase) {
-    console.log('Connection test failed: Supabase client not initialized');
+    console.error('Connection test failed: Supabase client not initialized');
     return { 
       success: false, 
       error: 'Supabaseクライアントが初期化されていません。環境変数を確認してください。',
       details: {
-        urlValid: isValidUrl(supabaseUrl),
-        keyValid: isValidSupabaseKey(supabaseAnonKey),
-        url: supabaseUrl ? `${supabaseUrl.substring(0, 10)}...` : 'なし',
-        keyExists: !!supabaseAnonKey
+        urlValid: supabaseUrl ? isValidUrl(supabaseUrl) : false,
+        keyValid: supabaseAnonKey ? isValidSupabaseKey(supabaseAnonKey) : false,
+        url: supabaseUrl ? `${supabaseUrl.substring(0, 15)}...` : 'なし',
+        keyLength: supabaseAnonKey ? supabaseAnonKey.length : 0
       }
     };
   }
@@ -98,15 +98,15 @@ export const testSupabaseConnection = async () => {
     console.log('Testing Supabase connection...');
     const { data, error } = await supabase.from('users').select('id').limit(1);
     
-    if (error) {
+    if (error) {      
       console.error('Connection test error:', error.message, error);
       
       // APIキーエラーの特別処理
-      if (error.message.includes('JWT') || error.message.includes('key') || error.message.includes('token')) {
+      if (error.message.includes('JWT') || error.message.includes('Invalid API key') || error.message.includes('key') || error.message.includes('token')) {
         console.error('API キーエラーが検出されました:', error.message);
         return { 
           success: false, 
-          error: 'APIキーが無効です', 
+          error: 'APIキーが無効または期限切れです', 
           details: error 
         };
       }
@@ -124,7 +124,7 @@ export const testSupabaseConnection = async () => {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : '不明なエラー',
-      details: error,
+      details: JSON.stringify(error),
       isConnectionError: true
     };
   }
