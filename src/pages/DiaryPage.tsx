@@ -237,7 +237,7 @@ const DiaryPage: React.FC = () => {
 
   const handleShare = () => {
     const username = currentUser?.lineUsername || 'ユーザー';
-    const shareText = `${username}の今日の感情日記 📝\n\n感情: ${formData.emotion}\n\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://ryksl1di.autosns.app/line`;
+    const shareText = `${username}の今日の感情日記 📝\n\n感情: ${formData.emotion}\n\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://namisapo.vercel.app/`;
     
     if (navigator.share) {
       // Web Share API が利用可能な場合
@@ -261,7 +261,7 @@ const DiaryPage: React.FC = () => {
   // Twitterでシェア
   const handleTwitterShare = () => {
     const username = currentUser?.lineUsername || 'ユーザー';
-    const shareText = encodeURIComponent(`${username}の今日の感情日記 📝\n\n感情: ${formData.emotion}\n\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://ryksl1di.autosns.app/line`);
+    const shareText = encodeURIComponent(`${username}の今日の感情日記 📝\n\n感情: ${formData.emotion}\n\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://namisapo.vercel.app/`);
     
     // Twitterシェア用URL
     const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}`;

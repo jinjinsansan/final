@@ -351,7 +351,7 @@ const App: React.FC = () => {
     const emotionFreq = getEmotionFrequency();
     const mostFrequentEmotion = emotionFreq.length > 0 ? `${emotionFreq[0][0]} (${emotionFreq[0][1]}回)` : 'なし';
     
-    const shareText = encodeURIComponent(`📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://ryksl1di.autosns.app/line`);
+    const shareText = encodeURIComponent(`📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://namisapo.vercel.app/`);
     
     // Twitterシェア用URL
     const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}`;
@@ -502,7 +502,7 @@ const App: React.FC = () => {
     const emotionFreq = getEmotionFrequency();
     const mostFrequentEmotion = emotionFreq.length > 0 ? `${emotionFreq[0][0]} (${emotionFreq[0][1]}回)` : 'なし';
     
-    const shareText = `📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://ryksl1di.autosns.app/line`;
+    const shareText = `📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://namisapo.vercel.app/`;
     
     if (navigator.share) {
       navigator.share({
