@@ -150,20 +150,24 @@ export const useAutoSync = () => {
   // 自動同期の有効/無効切り替え
   const toggleAutoSync = (enabled: boolean) => {
     localStorage.setItem('auto_sync_enabled', enabled.toString());
-    
+
     try {
       const user = getCurrentUser();
       logSecurityEvent('auto_sync_toggled', user?.lineUsername || 'system', `自動同期が${enabled ? '有効' : '無効'}になりました`);
     } catch (error) {
       console.error('セキュリティログ記録エラー:', error);
     }
-    
+
     setStatus(prev => ({ ...prev, isAutoSyncEnabled: enabled }));
-    
-    if (enabled && isConnected && currentUser) {
-      // 即座に同期を実行
-      performAutoSync(currentUser.id);
-    }
+
+    // 即座に同期を実行（非同期で）
+    setTimeout(() => {
+      if (enabled && isConnected && currentUser) {
+        performAutoSync(currentUser.id).catch(error => {
+          console.error('自動同期実行エラー:', error);
+        });
+      }
+    }, 0);
   };
 
   // 手動同期実行
@@ -191,12 +195,15 @@ export const useAutoSync = () => {
   // 定期同期の設定（5分間隔）
   useEffect(() => {    
     if (status.isAutoSyncEnabled && isConnected && currentUser) {
+      // 前回のタイマーをクリア
       if (syncTimeoutRef.current) {
         clearInterval(syncTimeoutRef.current);
       }
       
       syncTimeoutRef.current = setInterval(() => {
         performAutoSync(currentUser.id).catch(error => {
+          console.error('定期同期エラー:', error);
+        });
           console.error('定期同期エラー:', error);
         });
       }, 5 * 60 * 1000); // 5分
@@ -212,8 +219,10 @@ export const useAutoSync = () => {
   }, [status.isAutoSyncEnabled, isConnected, currentUser]);
 
   return {
-    status,
+    ...status,
     toggleAutoSync,
-    triggerManualSync
+    triggerManualSync,
+    isConnected,
+    currentUser
   };
 };

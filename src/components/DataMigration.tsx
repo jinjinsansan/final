@@ -183,8 +183,8 @@ const DataMigration: React.FC = () => {
 
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    if (!currentUser && !userExists) {
-      setMigrationStatus('エラー: Supabaseユーザーが設定されていません。下のボタンからユーザーを作成してください。');
+    if (!currentUser) {
+      setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
       setShowUserCreationButton(true);
       return;
     }
@@ -194,16 +194,8 @@ const DataMigration: React.FC = () => {
     setMigrationProgress(0);
 
     try {
-      // ユーザーIDを取得
-      const userId = currentUser ? currentUser.id : await getUserIdFromUsername();
-      if (!userId) {
-        throw new Error('ユーザーIDを取得できませんでした');
-      }
-      
       // 大量データ対応の移行処理
-      const success = await syncService.bulkMigrateLocalData(userId, (progress) => {
-        setMigrationProgress(progress);
-      });
+      const success = await syncService.bulkMigrateLocalData(currentUser.id, (progress) => setMigrationProgress(progress));
       
       if (success) {
         setMigrationStatus('移行が完了しました！');
@@ -221,25 +213,9 @@ const DataMigration: React.FC = () => {
     }
   };
 
-  // ユーザー名からユーザーIDを取得する関数
-  const getUserIdFromUsername = async (): Promise<string | null> => {
-    if (!isConnected) return null;
-    
-    const lineUsername = localStorage.getItem('line-username');
-    if (!lineUsername) return null;
-    
-    try {
-      const user = await userService.getUserByUsername(lineUsername);
-      return user?.id || null;
-    } catch (error) {
-      console.error('ユーザーID取得エラー:', error);
-      return null;
-    }
-  };
-
   const handleMigrateConsentsToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    if (!currentUser && !userExists) {
+    if (!currentUser) {
       setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
       setShowUserCreationButton(true);
       return;
@@ -267,7 +243,7 @@ const DataMigration: React.FC = () => {
 
   const handleSyncFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    if (!currentUser && !userExists) {
+    if (!currentUser) {
       setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
       setShowUserCreationButton(true);
       return;
@@ -296,7 +272,7 @@ const DataMigration: React.FC = () => {
 
   const handleSyncConsentsFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    if (!currentUser && !userExists) {
+    if (!currentUser) {
       setMigrationStatus('エラー: ユーザーが設定されていません。下のボタンからユーザーを作成してください。');
       setShowUserCreationButton(true);
       return;
