@@ -775,6 +775,7 @@ export const syncService = {
       
       // バッチ処理で効率的に保存（本番環境対応）
       const batchSize = 20; // 一度に50件ずつ処理
+      const totalBatches = Math.ceil(entries.length / batchSize);
       
       for (let i = 0; i < totalBatches; i++) {
         const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
