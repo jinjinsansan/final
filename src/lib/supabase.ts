@@ -189,8 +189,10 @@ export interface ConsentHistory {
 export const userService = {
   async createUser(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
-    
+
     try {
+      console.log('ユーザー作成開始:', lineUsername);
+      
       // まず既存ユーザーをチェック
       const existingUser = await this.getUserByUsername(lineUsername);
       if (existingUser) {
@@ -199,6 +201,8 @@ export const userService = {
       }
       
       // 新規ユーザー作成
+      console.log('新規ユーザーを作成します:', lineUsername);
+      
       const { data, error } = await supabase
         .from('users')
         .insert([{ 
@@ -206,9 +210,19 @@ export const userService = {
           created_at: new Date().toISOString()
         }])
         .select()
-        .single();
+        .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('ユーザー作成エラー (insert):', error);
+        throw error;
+      }
+      
+      if (!data) {
+        console.error('ユーザー作成エラー: データが返されませんでした');
+        return null;
+      }
+      
+      console.log('ユーザー作成成功:', data);
       return data;
     } catch (error) {
       console.error('ユーザー作成エラー:', error);
@@ -216,7 +230,14 @@ export const userService = {
       // 重複エラーの場合は既存ユーザーを返す
       if (error instanceof Error && error.message.includes('duplicate key')) {
         console.log('重複エラーのため既存ユーザーを取得します');
-        return await this.getUserByUsername(lineUsername);
+        try {
+          const existingUser = await this.getUserByUsername(lineUsername);
+          console.log('既存ユーザーを取得しました:', existingUser);
+          return existingUser;
+        } catch (getUserError) {
+          console.error('既存ユーザー取得エラー:', getUserError);
+          return null;
+        }
       }
       
       return null;
@@ -225,21 +246,27 @@ export const userService = {
 
   async getUserByUsername(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
-    
+
     try {
+      console.log('ユーザー検索:', lineUsername);
+      
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('line_username', lineUsername)
-        .single();
+        .maybeSingle();
       
       if (error) {
         // ユーザーが見つからない場合は null を返す
         if (error.code === 'PGRST116') {
+          console.log('ユーザーが見つかりません:', lineUsername);
           return null;
         }
+        console.error('ユーザー検索エラー:', error);
         throw error;
       }
+      
+      console.log('ユーザー検索結果:', data);
       return data;
     } catch (error) {
       console.error('ユーザー取得エラー:', error);

@@ -214,11 +214,14 @@ const DataMigration: React.FC = () => {
   const handleCreateUser = async () => {
     const lineUsername = localStorage.getItem('line-username');
     if (!lineUsername) {
-      alert('LINEユーザー名が設定されていません。');
+      alert('ユーザー名が設定されていません。');
       return;
     }
 
     try {
+      setMigrationStatus('ユーザー作成中...');
+      setMigrating(true);
+      
       // まず既存ユーザーをチェック
       const existingUser = await userService.getUserByUsername(lineUsername);
       if (existingUser) {
@@ -229,12 +232,19 @@ const DataMigration: React.FC = () => {
       
       // 新規ユーザー作成
       const user = await userService.createUser(lineUsername);
-      if (user) {
+      
+      if (!user) {
+        throw new Error('ユーザー作成に失敗しました。');
+      }
+      
+      // 成功メッセージを表示
+      setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
+      
+      // 少し待ってからリロード
+      setTimeout(() => {
         setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
         window.location.reload(); // ページをリロードして状態を更新
-      } else {
-        alert('ユーザー作成に失敗しました。');
-      }
+      }, 1500);
     } catch (error) {
       console.error('ユーザー作成エラー:', error);
       
@@ -249,6 +259,8 @@ const DataMigration: React.FC = () => {
       } else {
         alert('ユーザー作成中に不明なエラーが発生しました。');
       }
+    } finally {
+      setMigrating(false);
     }
   };
 

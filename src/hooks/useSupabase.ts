@@ -85,7 +85,10 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     if (!isConnected) return null;
 
+    setLoading(true);
     try {
+      console.log('ユーザー初期化開始:', lineUsername);
+      
       // 既存ユーザーを検索
       let user = await userService.getUserByUsername(lineUsername);
       
@@ -93,28 +96,51 @@ export const useSupabase = () => {
       if (user) {
         logSecurityEvent('supabase_user_found', lineUsername, 'Supabaseユーザーが見つかりました');
       } else {
-        logSecurityEvent('supabase_user_not_found', lineUsername, 'Supabaseユーザーが見つかりません');
+        console.log('Supabaseユーザーが見つかりません。新規作成を試みます:', lineUsername);
+        try {
+          logSecurityEvent('supabase_user_not_found', lineUsername, 'Supabaseユーザーが見つかりません');
+        } catch (logError) {
+          console.error('セキュリティログ記録エラー:', logError);
+        }
       }
       
       if (!user) {
         // 新規ユーザー作成
+        console.log('新規ユーザー作成を試みます:', lineUsername);
         user = await userService.createUser(lineUsername);
         
         if (user) {
-          logSecurityEvent('supabase_user_created', lineUsername, 'Supabaseユーザーを作成しました');
+          console.log('ユーザー作成成功:', user);
+          try {
+            logSecurityEvent('supabase_user_created', lineUsername, 'Supabaseユーザーを作成しました');
+          } catch (logError) {
+            console.error('セキュリティログ記録エラー:', logError);
+          }
+          
           // ローカルデータを移行
-          await syncService.migrateLocalData(user.id);
+          try {
+            await syncService.migrateLocalData(user.id);
+          } catch (syncError) {
+            console.error('データ移行エラー:', syncError);
+          }
         }
       } else {
         // 既存ユーザーの場合、Supabaseからローカルに同期
-        await syncService.syncToLocal(user.id);
+        try {
+          await syncService.syncToLocal(user.id);
+        } catch (syncError) {
+          console.error('データ同期エラー:', syncError);
+        }
       }
       
       setCurrentUser(user);
       return user;
     } catch (error) {
       console.error('ユーザー初期化エラー:', error);
+      setError(error instanceof Error ? error.message : '不明なエラー');
       return null;
+    } finally {
+      setLoading(false);
     }
   };
 
