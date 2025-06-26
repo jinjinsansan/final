@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Eye, X, User, Calendar, AlertTriangle, UserCheck, Edit3, Save, MessageSquare, ChevronLeft, ChevronRight, Database, Shield } from 'lucide-react';
 import AdvancedSearchFilter from './AdvancedSearchFilter';
+import { supabase } from '../lib/supabase';
 import CounselorManagement from './CounselorManagement';
 import MaintenanceController from './MaintenanceController';
 import DeviceAuthManagement from './DeviceAuthManagement';
@@ -30,6 +31,7 @@ const AdminPanel: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [allUserEntries, setAllUserEntries] = useState<JournalEntry[]>([]);
   const [selectedEmotion, setSelectedEmotion] = useState('');
   const [selectedUrgency, setSelectedUrgency] = useState('');
   const [selectedCounselor, setSelectedCounselor] = useState('');
@@ -68,6 +70,7 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     loadEntries();
+    loadAllUserEntries();
     
     // ログイン中のカウンセラー名を取得
     const counselorName = localStorage.getItem('current_counselor');
@@ -101,10 +104,87 @@ const AdminPanel: React.FC = () => {
     filterEntries();
   }, [entries, searchTerm, selectedEmotion, selectedUrgency, selectedCounselor, selectedDate]);
 
-  const loadEntries = async () => {
+  const loadEntries = () => {
     setLoading(true);
     try {
-      // ローカルストレージからデータを読み込み（デモ用）
+      // すべてのユーザーの日記を読み込む
+      loadAllUserEntries();
+    } catch (error) {
+      console.error('データ読み込みエラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // すべてのユーザーの日記を読み込む
+  const loadAllUserEntries = async () => {
+    setLoading(true);
+    try {
+      if (supabase) {
+        console.log('Supabaseからすべてのユーザーの日記を読み込み中...');
+        const { data, error } = await supabase
+          .from('diary_entries')
+          .select(`
+            *,
+            users (
+              id,
+              line_username
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(100);
+        
+        if (error) {
+          console.error('Supabaseからの日記読み込みエラー:', error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          console.log(`Supabaseから${data.length}件の日記を読み込みました`);
+          
+          // データを変換
+          const formattedEntries = data.map((entry: any) => ({
+            id: entry.id,
+            date: entry.date,
+            emotion: entry.emotion,
+            event: entry.event,
+            realization: entry.realization,
+            self_esteem_score: entry.self_esteem_score,
+            worthlessness_score: entry.worthlessness_score,
+            created_at: entry.created_at,
+            user: {
+              line_username: entry.users?.line_username || 'Unknown User'
+            },
+            assigned_counselor: entry.assigned_counselor || '未割り当て',
+            urgency_level: entry.urgency_level || 'medium',
+            counselor_memo: entry.counselor_memo || '',
+            is_visible_to_user: entry.is_visible_to_user || false,
+            counselor_name: entry.counselor_name || ''
+          }));
+          
+          setAllUserEntries(formattedEntries);
+          setEntries(formattedEntries); // 既存のエントリーリストも更新
+        } else {
+          console.log('Supabaseから日記が見つかりませんでした');
+          loadLocalEntries(); // フォールバックとしてローカルデータを読み込み
+        }
+      } else {
+        // Supabaseが利用できない場合はローカルデータを読み込み
+        loadLocalEntries();
+      }
+    } catch (error) {
+      console.error('すべてのユーザーの日記読み込みエラー:', error);
+      // エラーの場合はローカルデータを読み込み
+      loadLocalEntries();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ローカルストレージからデータを読み込む（フォールバック）
+  const loadLocalEntries = () => {
+    try {
+      console.log('ローカルストレージから日記データを読み込み中...');
       const localEntries = localStorage.getItem('journalEntries');
       if (localEntries) {
         const parsedEntries = JSON.parse(localEntries);
@@ -116,7 +196,7 @@ const AdminPanel: React.FC = () => {
           worthlessness_score: entry.worthlessnessScore || 50,
           created_at: entry.date,
           user: {
-            line_username: 'テストユーザー'
+            line_username: localStorage.getItem('line-username') || 'テストユーザー'
           },
           assigned_counselor: entry.assigned_counselor || '未割り当て',
           urgency_level: entry.urgency_level || 'medium',
@@ -126,11 +206,14 @@ const AdminPanel: React.FC = () => {
         }));
         
         setEntries(enhancedEntries);
+        console.log(`ローカルストレージから${enhancedEntries.length}件の日記を読み込みました`);
+      } else {
+        console.log('ローカルストレージに日記データが見つかりませんでした');
+        setEntries([]);
       }
     } catch (error) {
-      console.error('データ読み込みエラー:', error);
-    } finally {
-      setLoading(false);
+      console.error('ローカルデータ読み込みエラー:', error);
+      setEntries([]);
     }
   };
 
@@ -176,30 +259,106 @@ const AdminPanel: React.FC = () => {
   const handleSaveAssignment = (counselor: string) => {
     if (!assigningEntry) return;
 
+    try {
+      // Supabaseが利用可能な場合はSupabaseを更新
+      if (supabase) {
+        console.log('Supabaseに担当カウンセラーを保存中...');
+        supabase
+          .from('diary_entries')
+          .update({ assigned_counselor: counselor })
+          .eq('id', assigningEntry.id)
+          .then(({ error }) => {
+            if (error) {
+              console.error('Supabase担当カウンセラー更新エラー:', error);
+              // エラーの場合はローカルストレージにフォールバック
+              updateLocalAssignment(assigningEntry.id, counselor);
+            } else {
+              console.log('Supabaseに担当カウンセラーを保存しました');
+              // 成功したら状態を更新
+              setEntries(prev => prev.map(entry =>
+                entry.id === assigningEntry.id
+                  ? { ...entry, assigned_counselor: counselor }
+                  : entry
+              ));
+            }
+          });
+      } else {
+        // Supabaseが利用できない場合はローカルストレージのみ更新
+        updateLocalAssignment(assigningEntry.id, counselor);
+      }
+    } catch (error) {
+      console.error('担当カウンセラー更新エラー:', error);
+      // エラーの場合はローカルストレージにフォールバック
+      updateLocalAssignment(assigningEntry.id, counselor);
+    }
+
+    // モーダルを閉じる
+    setShowAssignModal(false);
+    setAssigningEntry(null);
+  };
+
+  // ローカルストレージの担当カウンセラーを更新する関数
+  const updateLocalAssignment = (entryId: string, counselor: string) => {
+    console.log('ローカルストレージに担当カウンセラーを保存中...');
     // ローカルストレージを更新
     const localEntries = localStorage.getItem('journalEntries');
     if (localEntries) {
       const parsedEntries = JSON.parse(localEntries);
       const updatedEntries = parsedEntries.map((entry: any) =>
-        entry.id === assigningEntry.id
+        entry.id === entryId
           ? { ...entry, assigned_counselor: counselor }
           : entry
       );
       localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+      
+      // 状態を更新
+      setEntries(prev => prev.map(entry =>
+        entry.id === entryId
+          ? { ...entry, assigned_counselor: counselor }
+          : entry
+      ));
+      console.log('ローカルストレージに担当カウンセラーを保存しました');
     }
-
-    // 状態を更新
-    setEntries(prev => prev.map(entry =>
-      entry.id === assigningEntry.id
-        ? { ...entry, assigned_counselor: counselor }
-        : entry
-    ));
-
-    setShowAssignModal(false);
-    setAssigningEntry(null);
   };
 
   const handleUpdateUrgency = (entryId: string, urgencyLevel: 'high' | 'medium' | 'low') => {
+    try {
+      // Supabaseが利用可能な場合はSupabaseを更新
+      if (supabase) {
+        console.log('Supabaseに緊急度を保存中...');
+        supabase
+          .from('diary_entries')
+          .update({ urgency_level: urgencyLevel })
+          .eq('id', entryId)
+          .then(({ error }) => {
+            if (error) {
+              console.error('Supabase緊急度更新エラー:', error);
+              // エラーの場合はローカルストレージにフォールバック
+              updateLocalUrgency(entryId, urgencyLevel);
+            } else {
+              console.log('Supabaseに緊急度を保存しました');
+              // 成功したら状態を更新
+              setEntries(prev => prev.map(entry =>
+                entry.id === entryId
+                  ? { ...entry, urgency_level: urgencyLevel }
+                  : entry
+              ));
+            }
+          });
+      } else {
+        // Supabaseが利用できない場合はローカルストレージのみ更新
+        updateLocalUrgency(entryId, urgencyLevel);
+      }
+    } catch (error) {
+      console.error('緊急度更新エラー:', error);
+      // エラーの場合はローカルストレージにフォールバック
+      updateLocalUrgency(entryId, urgencyLevel);
+    }
+  };
+
+  // ローカルストレージの緊急度を更新する関数
+  const updateLocalUrgency = (entryId: string, urgencyLevel: 'high' | 'medium' | 'low') => {
+    console.log('ローカルストレージに緊急度を保存中...');
     // ローカルストレージを更新
     const localEntries = localStorage.getItem('journalEntries');
     if (localEntries) {
@@ -210,14 +369,15 @@ const AdminPanel: React.FC = () => {
           : entry
       );
       localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+      
+      // 状態を更新
+      setEntries(prev => prev.map(entry =>
+        entry.id === entryId
+          ? { ...entry, urgency_level: urgencyLevel }
+          : entry
+      ));
+      console.log('ローカルストレージに緊急度を保存しました');
     }
-
-    // 状態を更新
-    setEntries(prev => prev.map(entry =>
-      entry.id === entryId
-        ? { ...entry, urgency_level: urgencyLevel }
-        : entry
-    ));
   };
 
   const handleEditMemo = (entryId: string, currentMemo: string, isVisibleToUser: boolean = false, counselorName: string = '') => {
@@ -232,6 +392,60 @@ const AdminPanel: React.FC = () => {
       return;
     }
     
+    try {
+      // Supabaseが利用可能な場合はSupabaseを更新
+      if (supabase) {
+        console.log('Supabaseにカウンセラーメモを保存中...');
+        supabase
+          .from('diary_entries')
+          .update({
+            counselor_memo: memoText,
+            is_visible_to_user: memoVisibleToUser,
+            counselor_name: memoVisibleToUser ? currentCounselor : null
+          })
+          .eq('id', entryId)
+          .then(({ error }) => {
+            if (error) {
+              console.error('Supabaseメモ保存エラー:', error);
+              // エラーの場合はローカルストレージにフォールバック
+              updateLocalMemo(entryId);
+            } else {
+              console.log('Supabaseにメモを保存しました');
+              // 成功したら状態を更新
+              setEntries(prev => prev.map(entry =>
+                entry.id === entryId
+                  ? { 
+                      ...entry, 
+                      counselor_memo: memoText,
+                      is_visible_to_user: memoVisibleToUser,
+                      counselor_name: memoVisibleToUser ? currentCounselor : entry.counselor_name
+                    }
+                  : entry
+              ));
+            }
+          });
+      } else {
+        // Supabaseが利用できない場合はローカルストレージのみ更新
+        updateLocalMemo(entryId);
+      }
+    } catch (error) {
+      console.error('メモ保存エラー:', error);
+      // エラーの場合はローカルストレージにフォールバック
+      updateLocalMemo(entryId);
+    }
+
+    // 編集状態をリセット
+    setEditingMemo(null);
+    setMemoText('');
+    setMemoVisibleToUser(false);
+    
+    // 保存成功メッセージ
+    alert(memoVisibleToUser ? 'メモを保存し、ユーザーに表示します' : 'メモを保存しました');
+  };
+
+  // ローカルストレージのメモを更新する関数
+  const updateLocalMemo = (entryId: string) => {
+    console.log('ローカルストレージにカウンセラーメモを保存中...');
     // ローカルストレージを更新
     const localEntries = localStorage.getItem('journalEntries');
     if (localEntries) {
@@ -247,26 +461,21 @@ const AdminPanel: React.FC = () => {
           : entry
       );
       localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+      
+      // 状態を更新
+      setEntries(prev => prev.map(entry =>
+        entry.id === entryId
+          ? { 
+              ...entry, 
+              counselor_memo: memoText,
+              is_visible_to_user: memoVisibleToUser,
+              counselor_name: memoVisibleToUser ? currentCounselor : entry.counselor_name
+            }
+          : entry
+      ));
+      console.log('ローカルストレージにメモを保存しました');
     }
-
-    // 状態を更新
-    setEntries(prev => prev.map(entry =>
-      entry.id === entryId
-        ? { 
-            ...entry, 
-            counselor_memo: memoText,
-            is_visible_to_user: memoVisibleToUser,
-            counselor_name: memoVisibleToUser ? currentCounselor : entry.counselor_name
-          }
-        : entry
-    ));
-
-    setEditingMemo(null);
-    setMemoText('');
-    setMemoVisibleToUser(false);
     
-    // 保存成功メッセージ
-    alert(memoVisibleToUser ? 'メモを保存し、ユーザーに表示します' : 'メモを保存しました');
   };
 
   const handleCancelMemo = () => {
