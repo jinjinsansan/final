@@ -6,7 +6,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
   try {
-    if (!url || url.trim() === '' || url.includes('your_supabase_project_url') || url.includes('your-supabase-anon-key')) {
+    if (!url || url.trim() === '' || url.includes('your_supabase_project_url') || url.includes('your-supabase-project-url')) {
       return false;
     }
     new URL(url);
@@ -19,8 +19,8 @@ const isValidUrl = (url: string): boolean => {
 const isValidSupabaseKey = (key: string): boolean => {
   return !!(key && 
     key.trim() !== '' && 
-    !key.includes('your_supabase_project_url') && 
-    !key.includes('your_supabase_anon_key') &&
+    !key.includes('your_supabase_anon_key') && 
+    !key.includes('your-supabase-anon-key') &&
     key.length > 20);
 };
 
