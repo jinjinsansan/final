@@ -204,8 +204,6 @@ export const useAutoSync = () => {
         performAutoSync(currentUser.id).catch(error => {
           console.error('定期同期エラー:', error);
         });
-          console.error('定期同期エラー:', error);
-        });
       }, 5 * 60 * 1000); // 5分
 
       return () => {
