@@ -3,6 +3,8 @@ import { supabase, userService, diaryService, syncService, testSupabaseConnectio
 import { getAuthSession, logSecurityEvent } from '../lib/deviceAuth';
 
 export const useSupabase = () => {
+  // 管理者モードフラグ - カウンセラーとしてログインしている場合はtrue
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -12,6 +14,14 @@ export const useSupabase = () => {
 
   useEffect(() => {
     checkConnection(true);
+    
+    // カウンセラーとしてログインしているかチェック
+    const counselorName = localStorage.getItem('current_counselor');
+    if (counselorName) {
+      setIsAdminMode(true);
+      console.log('管理者モードで動作中:', counselorName);
+    }
+    
   }, []);
 
   const checkConnection = async (isInitialCheck = false) => {
@@ -57,7 +67,7 @@ export const useSupabase = () => {
         setError(null);
         
         // 既存ユーザーの確認
-        const session = getAuthSession();
+        const session = !isAdminMode ? getAuthSession() : null;
         if (session) {
           await initializeUser(session.lineUsername);
         }
@@ -84,6 +94,12 @@ export const useSupabase = () => {
   };
 
   const initializeUser = async (lineUsername: string) => {
+    // 管理者モードの場合は初期化をスキップ
+    if (isAdminMode) {
+      console.log('管理者モードのため、ユーザー初期化をスキップします');
+      return { id: null, line_username: lineUsername.trim() };
+    }
+    
     if (!isConnected) {
       console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString());
       return { id: null, line_username: lineUsername.trim() };
@@ -291,6 +307,7 @@ export const useSupabase = () => {
 
   return {
     isConnected,
+    isAdminMode,
     currentUser,
     loading,
     error,

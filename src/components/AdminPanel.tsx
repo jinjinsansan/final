@@ -48,6 +48,9 @@ const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'diary' | 'search' | 'counselor' | 'maintenance' | 'device-auth' | 'security'>('diary');
   const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
 
+  // 管理者モードフラグ - カウンセラーとしてログインしている場合はtrue
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+
   const emotions = [
     '恐怖', '悲しみ', '怒り', '悔しい', '無価値感', '罪悪感', '寂しさ', '恥ずかしさ'
   ];
@@ -72,17 +75,21 @@ const AdminPanel: React.FC = () => {
     loadEntries();
     loadAllUserEntries();
     
-    // ログイン中のカウンセラー名を取得
+    // ログイン中のカウンセラー名を取得し、管理者モードを設定
     const counselorName = localStorage.getItem('current_counselor');
     if (counselorName) {
       // 古い形式のカウンセラー名を新しい形式に変換
       const newFormatName = convertCounselorNameFormat(counselorName);
       setCurrentCounselor(newFormatName);
       localStorage.setItem('current_counselor', newFormatName);
+      setIsAdminMode(true);
+      console.log('管理者モードで動作中:', newFormatName);
     } else {
       // デフォルトのカウンセラー名を設定（デモ用）
       setCurrentCounselor('心理カウンセラー仁');
       localStorage.setItem('current_counselor', '心理カウンセラー仁');
+      setIsAdminMode(true);
+      console.log('デフォルトカウンセラーとして管理者モードで動作中');
     }
   }, []);
 
@@ -104,15 +111,98 @@ const AdminPanel: React.FC = () => {
     filterEntries();
   }, [entries, searchTerm, selectedEmotion, selectedUrgency, selectedCounselor, selectedDate]);
 
-  const loadEntries = () => {
+  const loadEntries = async () => {
     setLoading(true);
     try {
-      // すべてのユーザーの日記を読み込む
-      loadAllUserEntries();
+      if (isAdminMode) {
+        // 管理者モードの場合は全ユーザーの日記を取得
+        try {
+          // Supabaseから全ユーザーの日記を取得
+          const { data: allEntries, error } = await supabase
+            .from('diary_entries')
+            .select(`
+              *,
+              users(line_username)
+            `)
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.error('Supabaseからの日記取得エラー:', error);
+            throw error;
+          }
+
+          if (allEntries && allEntries.length > 0) {
+            // データを適切な形式に変換
+            const formattedEntries = allEntries.map((entry: any) => ({
+              id: entry.id,
+              date: entry.date,
+              emotion: entry.emotion,
+              event: entry.event,
+              realization: entry.realization,
+              self_esteem_score: entry.self_esteem_score || 50,
+              worthlessness_score: entry.worthlessness_score || 50,
+              created_at: entry.created_at,
+              user: {
+                line_username: entry.users?.line_username || 'Unknown User'
+              },
+              assigned_counselor: entry.assigned_counselor || '未割り当て',
+              urgency_level: entry.urgency_level || 'medium',
+              counselor_memo: entry.counselor_memo || '',
+              is_visible_to_user: entry.is_visible_to_user || false,
+              counselor_name: entry.counselor_name || ''
+            }));
+
+            setEntries(formattedEntries);
+            console.log(`管理者モード: ${formattedEntries.length}件の日記を読み込みました`);
+          } else {
+            console.log('管理者モード: Supabaseに日記が見つかりませんでした');
+            setEntries([]);
+          }
+        } catch (supabaseError) {
+          console.error('Supabaseからのデータ取得エラー:', supabaseError);
+          
+          // エラー時はローカルデータをフォールバックとして使用
+          loadLocalEntries();
+        }
+      } else {
+        // 通常モードの場合はローカルデータのみ表示
+        loadLocalEntries();
+      }
     } catch (error) {
       console.error('データ読み込みエラー:', error);
+      loadLocalEntries(); // エラー時はローカルデータを使用
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ローカルストレージからデータを読み込む補助関数
+  const loadLocalEntries = () => {
+    const localEntries = localStorage.getItem('journalEntries');
+    if (localEntries) {
+      const parsedEntries = JSON.parse(localEntries);
+      
+      // 管理画面用にデータを拡張
+      const enhancedEntries = parsedEntries.map((entry: any) => ({
+        ...entry,
+        self_esteem_score: entry.selfEsteemScore || 50,
+        worthlessness_score: entry.worthlessnessScore || 50,
+        created_at: entry.date,
+        user: {
+          line_username: localStorage.getItem('line-username') || 'テストユーザー'
+        },
+        assigned_counselor: entry.assigned_counselor || '未割り当て',
+        urgency_level: entry.urgency_level || 'medium',
+        counselor_memo: entry.counselor_memo || '',
+        is_visible_to_user: entry.is_visible_to_user || false,
+        counselor_name: entry.counselor_name || ''
+      }));
+      
+      setEntries(enhancedEntries);
+      console.log(`ローカルモード: ${enhancedEntries.length}件の日記を読み込みました`);
+    } else {
+      setEntries([]);
+      console.log('ローカルモード: 日記が見つかりませんでした');
     }
   };
 
@@ -256,45 +346,56 @@ const AdminPanel: React.FC = () => {
     setShowAssignModal(true);
   };
 
+  // 担当カウンセラーの割り当て
   const handleSaveAssignment = (counselor: string) => {
     if (!assigningEntry) return;
 
     try {
-      // Supabaseが利用可能な場合はSupabaseを更新
-      if (supabase) {
-        console.log('Supabaseに担当カウンセラーを保存中...');
+      if (isAdminMode) {
+        // 管理者モードの場合はSupabaseを更新
         supabase
           .from('diary_entries')
           .update({ assigned_counselor: counselor })
           .eq('id', assigningEntry.id)
           .then(({ error }) => {
             if (error) {
-              console.error('Supabase担当カウンセラー更新エラー:', error);
-              // エラーの場合はローカルストレージにフォールバック
-              updateLocalAssignment(assigningEntry.id, counselor);
-            } else {
-              console.log('Supabaseに担当カウンセラーを保存しました');
-              // 成功したら状態を更新
-              setEntries(prev => prev.map(entry =>
-                entry.id === assigningEntry.id
-                  ? { ...entry, assigned_counselor: counselor }
-                  : entry
-              ));
+              console.error('担当者割り当てエラー:', error);
+              return;
             }
+            
+            // 状態を更新
+            setEntries(prev => prev.map(entry =>
+              entry.id === assigningEntry.id
+                ? { ...entry, assigned_counselor: counselor }
+                : entry
+            ));
           });
       } else {
-        // Supabaseが利用できない場合はローカルストレージのみ更新
-        updateLocalAssignment(assigningEntry.id, counselor);
-      }
-    } catch (error) {
-      console.error('担当カウンセラー更新エラー:', error);
-      // エラーの場合はローカルストレージにフォールバック
-      updateLocalAssignment(assigningEntry.id, counselor);
-    }
+        // 通常モードの場合はローカルストレージを更新
+        const localEntries = localStorage.getItem('journalEntries');
+        if (localEntries) {
+          const parsedEntries = JSON.parse(localEntries);
+          const updatedEntries = parsedEntries.map((entry: any) =>
+            entry.id === assigningEntry.id
+              ? { ...entry, assigned_counselor: counselor }
+              : entry
+          );
+          localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+        }
 
-    // モーダルを閉じる
-    setShowAssignModal(false);
-    setAssigningEntry(null);
+        // 状態を更新
+        setEntries(prev => prev.map(entry =>
+          entry.id === assigningEntry.id
+            ? { ...entry, assigned_counselor: counselor }
+            : entry
+        ));
+      }
+
+      setShowAssignModal(false);
+      setAssigningEntry(null);
+    } catch (error) {
+      console.error('担当者割り当てエラー:', error);
+    }
   };
 
   // ローカルストレージの担当カウンセラーを更新する関数
@@ -321,38 +422,50 @@ const AdminPanel: React.FC = () => {
     }
   };
 
+  // 緊急度の更新
   const handleUpdateUrgency = (entryId: string, urgencyLevel: 'high' | 'medium' | 'low') => {
     try {
-      // Supabaseが利用可能な場合はSupabaseを更新
-      if (supabase) {
-        console.log('Supabaseに緊急度を保存中...');
+      if (isAdminMode) {
+        // 管理者モードの場合はSupabaseを更新
         supabase
           .from('diary_entries')
           .update({ urgency_level: urgencyLevel })
           .eq('id', entryId)
           .then(({ error }) => {
             if (error) {
-              console.error('Supabase緊急度更新エラー:', error);
-              // エラーの場合はローカルストレージにフォールバック
-              updateLocalUrgency(entryId, urgencyLevel);
-            } else {
-              console.log('Supabaseに緊急度を保存しました');
-              // 成功したら状態を更新
-              setEntries(prev => prev.map(entry =>
-                entry.id === entryId
-                  ? { ...entry, urgency_level: urgencyLevel }
-                  : entry
-              ));
+              console.error('緊急度更新エラー:', error);
+              return;
             }
+            
+            // 状態を更新
+            setEntries(prev => prev.map(entry =>
+              entry.id === entryId
+                ? { ...entry, urgency_level: urgencyLevel }
+                : entry
+            ));
           });
       } else {
-        // Supabaseが利用できない場合はローカルストレージのみ更新
-        updateLocalUrgency(entryId, urgencyLevel);
+        // 通常モードの場合はローカルストレージを更新
+        const localEntries = localStorage.getItem('journalEntries');
+        if (localEntries) {
+          const parsedEntries = JSON.parse(localEntries);
+          const updatedEntries = parsedEntries.map((entry: any) =>
+            entry.id === entryId
+              ? { ...entry, urgency_level: urgencyLevel }
+              : entry
+          );
+          localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+        }
+
+        // 状態を更新
+        setEntries(prev => prev.map(entry =>
+          entry.id === entryId
+            ? { ...entry, urgency_level: urgencyLevel }
+            : entry
+        ));
       }
     } catch (error) {
       console.error('緊急度更新エラー:', error);
-      // エラーの場合はローカルストレージにフォールバック
-      updateLocalUrgency(entryId, urgencyLevel);
     }
   };
 
@@ -393,54 +506,85 @@ const AdminPanel: React.FC = () => {
     }
     
     try {
-      // Supabaseが利用可能な場合はSupabaseを更新
-      if (supabase) {
-        console.log('Supabaseにカウンセラーメモを保存中...');
+      if (isAdminMode) {
+        // 管理者モードの場合はSupabaseを更新
+        const updateData = {
+          counselor_memo: memoText,
+          is_visible_to_user: memoVisibleToUser,
+          counselor_name: memoVisibleToUser ? currentCounselor : null
+        };
+        
         supabase
           .from('diary_entries')
-          .update({
-            counselor_memo: memoText,
-            is_visible_to_user: memoVisibleToUser,
-            counselor_name: memoVisibleToUser ? currentCounselor : null
-          })
+          .update(updateData)
           .eq('id', entryId)
           .then(({ error }) => {
             if (error) {
-              console.error('Supabaseメモ保存エラー:', error);
-              // エラーの場合はローカルストレージにフォールバック
-              updateLocalMemo(entryId);
-            } else {
-              console.log('Supabaseにメモを保存しました');
-              // 成功したら状態を更新
-              setEntries(prev => prev.map(entry =>
-                entry.id === entryId
-                  ? { 
-                      ...entry, 
-                      counselor_memo: memoText,
-                      is_visible_to_user: memoVisibleToUser,
-                      counselor_name: memoVisibleToUser ? currentCounselor : entry.counselor_name
-                    }
-                  : entry
-              ));
+              console.error('メモ更新エラー:', error);
+              alert('メモの保存に失敗しました。もう一度お試しください。');
+              return;
             }
+            
+            // 状態を更新
+            setEntries(prev => prev.map(entry =>
+              entry.id === entryId
+                ? { 
+                    ...entry, 
+                    counselor_memo: memoText,
+                    is_visible_to_user: memoVisibleToUser,
+                    counselor_name: memoVisibleToUser ? currentCounselor : entry.counselor_name
+                  }
+                : entry
+            ));
+            
+            setEditingMemo(null);
+            setMemoText('');
+            setMemoVisibleToUser(false);
+            
+            // 保存成功メッセージ
+            alert(memoVisibleToUser ? 'メモを保存し、ユーザーに表示します' : 'メモを保存しました');
           });
       } else {
-        // Supabaseが利用できない場合はローカルストレージのみ更新
-        updateLocalMemo(entryId);
+        // 通常モードの場合はローカルストレージを更新
+        const localEntries = localStorage.getItem('journalEntries');
+        if (localEntries) {
+          const parsedEntries = JSON.parse(localEntries);
+          const updatedEntries = parsedEntries.map((entry: any) =>
+            entry.id === entryId
+              ? { 
+                  ...entry, 
+                  counselor_memo: memoText,
+                  is_visible_to_user: memoVisibleToUser,
+                  counselor_name: memoVisibleToUser ? currentCounselor : entry.counselor_name
+                }
+              : entry
+          );
+          localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+        }
+
+        // 状態を更新
+        setEntries(prev => prev.map(entry =>
+          entry.id === entryId
+            ? { 
+                ...entry, 
+                counselor_memo: memoText,
+                is_visible_to_user: memoVisibleToUser,
+                counselor_name: memoVisibleToUser ? currentCounselor : entry.counselor_name
+              }
+            : entry
+        ));
+        
+        setEditingMemo(null);
+        setMemoText('');
+        setMemoVisibleToUser(false);
+        
+        // 保存成功メッセージ
+        alert(memoVisibleToUser ? 'メモを保存し、ユーザーに表示します' : 'メモを保存しました');
       }
     } catch (error) {
       console.error('メモ保存エラー:', error);
-      // エラーの場合はローカルストレージにフォールバック
-      updateLocalMemo(entryId);
+      alert('メモの保存に失敗しました。もう一度お試しください。');
     }
-
-    // 編集状態をリセット
-    setEditingMemo(null);
-    setMemoText('');
-    setMemoVisibleToUser(false);
-    
-    // 保存成功メッセージ
-    alert(memoVisibleToUser ? 'メモを保存し、ユーザーに表示します' : 'メモを保存しました');
   };
 
   // ローカルストレージのメモを更新する関数
@@ -744,6 +888,17 @@ const AdminPanel: React.FC = () => {
     <div className="w-full max-w-7xl mx-auto space-y-6 px-4">
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h1 className="text-2xl font-jp-bold text-gray-900 mb-6">管理画面</h1>
+
+        {/* 管理者モード表示 */}
+        <div className="mb-4">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-green-100 text-green-800 border border-green-200">
+            <Shield className="w-4 h-4" />
+            <span>{isAdminMode ? '管理者モード' : 'ローカルモード'}</span>
+            {currentCounselor && (
+              <span className="ml-1">({currentCounselor})</span>
+            )}
+          </div>
+        </div>
 
         {/* タブナビゲーション */}
         <div className="border-b border-gray-200 mb-6">

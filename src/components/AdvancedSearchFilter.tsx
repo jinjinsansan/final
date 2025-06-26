@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, X, Calendar, User, AlertTriangle, Tag, ChevronDown, ChevronUp, RotateCcw, Download, Eye } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface SearchFilters {
   keyword: string;
@@ -49,6 +50,7 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   onViewEntry
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',
     emotion: '',
@@ -71,6 +73,7 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>(entries);
   const [savedSearches, setSavedSearches] = useState<Array<{id: string, name: string, filters: SearchFilters}>>([]);
   const [searchName, setSearchName] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showSaveSearch, setShowSaveSearch] = useState(false);
 
   const emotions = [
@@ -96,6 +99,15 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   useEffect(() => {
     applyFilters();
   }, [filters, entries]);
+  
+  useEffect(() => {
+    // カウンセラーとしてログインしているかチェック
+    const counselorName = localStorage.getItem('current_counselor');
+    if (counselorName) {
+      setIsAdminMode(true);
+      console.log('管理者モードで動作中:', counselorName);
+    }
+  }, []);
 
   useEffect(() => {
     // 保存された検索条件を読み込み
@@ -104,6 +116,45 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
       setSavedSearches(JSON.parse(saved));
     }
   }, []);
+
+  // Supabaseから全ユーザーの日記を検索
+  const searchAllDiaries = async () => {
+    if (!isAdminMode || !supabase) return;
+    
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('diary_entries')
+        .select(`
+          *,
+          users(line_username)
+        `);
+      
+      // 検索条件を適用
+      if (filters.keyword) {
+        query = query.or(`event.ilike.%${filters.keyword}%,realization.ilike.%${filters.keyword}%,counselor_memo.ilike.%${filters.keyword}%`);
+      }
+      
+      if (filters.emotion) {
+        query = query.eq('emotion', filters.emotion);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Supabase検索エラー:', error);
+        return;
+      }
+      
+      // 検索結果を処理
+      // ここで結果を処理して表示形式に変換
+      
+    } catch (error) {
+      console.error('検索エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const applyFilters = () => {
     let filtered = [...entries];
@@ -234,6 +285,13 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
     }
   };
 
+  // 管理者モードの場合はSupabaseから検索
+  const handleSearch = () => {
+    if (isAdminMode) {
+      searchAllDiaries();
+    }
+  };
+
   const exportResults = () => {
     // UTF-8 BOMを追加して文字化けを防ぐ
     const BOM = '\uFEFF';
@@ -310,6 +368,15 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* 管理者モード表示 */}
+      {isAdminMode && (
+        <div className="bg-green-50 rounded-lg p-3 border border-green-200 mb-4">
+          <div className="flex items-center space-x-2 text-green-800">
+            <User className="w-4 h-4" />
+            <span className="text-sm font-jp-medium">管理者モード: 全ユーザーの日記を検索できます</span>
+          </div>
+        </div>
+      )}
       {/* 検索ヘッダー */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0 mb-6">

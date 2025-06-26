@@ -6,7 +6,7 @@ import AutoSyncSettings from './AutoSyncSettings';
 import DataBackupRecovery from './DataBackupRecovery';
 
 const DataMigration: React.FC = () => {
-  const { isConnected, currentUser, loading, error, retryConnection, initializeUser } = useSupabase();
+  const { isConnected, currentUser, loading, error, retryConnection } = useSupabase();
   const [migrating, setMigrating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [migrationStatus, setMigrationStatus] = useState<string>('');
@@ -27,14 +27,24 @@ const DataMigration: React.FC = () => {
     diaryStats: null
   });
   const [migrationProgress, setMigrationProgress] = useState(0);
+  // 管理者モードフラグ - カウンセラーとしてログインしている場合はtrue
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
 
   React.useEffect(() => {
     checkDataCounts();
-    if (isConnected) {
+    if (isConnected && supabase) {
       loadStats();
     }
   }, [isConnected, currentUser]);
 
+  React.useEffect(() => {
+    // カウンセラーとしてログインしているかチェック
+    const counselorName = localStorage.getItem('current_counselor');
+    if (counselorName) {
+      setIsAdminMode(true);
+      console.log('管理者モードで動作中:', counselorName);
+    }
+  }, []);
   const loadStats = async () => {
     if (!isConnected) return;
     
@@ -52,6 +62,7 @@ const DataMigration: React.FC = () => {
 
   const checkDataCounts = () => {
     // ローカルデータ数をチェック
+    console.log('データ数チェック - 管理者モード:', isAdminMode);
     const lineUsername = localStorage.getItem('line-username');
     if (lineUsername && isConnected) {
       console.log('ユーザー存在確認を開始:', lineUsername);
@@ -99,14 +110,28 @@ const DataMigration: React.FC = () => {
       }).catch(() => {
         console.error('Supabase同意履歴数取得エラー');
         setSupabaseConsentCount(0);
-      });
+      }); 
       
-      // Supabaseの日記データ数を取得
-      console.log('Supabase日記データ数を確認中...', currentUser.id);
-      supabase?.from('diary_entries')
-        .select('id', { count: 'exact' })
-        .eq('user_id', currentUser.id)
-        .then(({ count }) => {
+      if (isAdminMode) {
+        // 管理者モードの場合は全ユーザーの日記数を取得
+        supabase.from('diary_entries')
+          .select('id', { count: 'exact' })
+          .then(({ count, error }) => {
+            if (error) {
+              console.error('全日記数取得エラー:', error);
+              return;
+            }
+            console.log('全ユーザーの日記数:', count || 0);
+            setSupabaseDataCount(count || 0);
+          })
+          .catch(() => setSupabaseDataCount(0));
+      } else if (currentUser) {
+        // 通常モードの場合は現在のユーザーの日記数のみ取得
+        supabase.from('diary_entries')
+          .select('id', { count: 'exact' }) 
+          .eq('user_id', currentUser.id)
+          .then(({ count, error }) => setSupabaseDataCount(count || 0))
+          .catch(() => setSupabaseDataCount(0));
           console.log('Supabase日記データ数:', count || 0);
           setSupabaseDataCount(count || 0);
         })
@@ -119,7 +144,7 @@ const DataMigration: React.FC = () => {
 
   const handleCreateUser = async () => {
     const lineUsername = localStorage.getItem('line-username');
-    if (!lineUsername) {
+    if (!lineUsername || !isConnected) {
       setMigrationStatus('エラー: ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してください。');
       return;
     }
@@ -144,17 +169,6 @@ const DataMigration: React.FC = () => {
           await initializeUser(lineUsername);
         }
         
-        
-        // 既存ユーザーの場合は、現在のユーザー状態を更新
-        if (isConnected) {
-          try {
-            if (initializeUser) {
-              const user = await initializeUser(lineUsername);
-              setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
-              setTimeout(() => {
-                window.location.reload();
-              }, 2000);
-            } else {
               setMigrationStatus('ユーザー初期化関数が利用できません。ページを再読み込みしてください。');
               setTimeout(() => {
                 window.location.reload();
@@ -162,7 +176,6 @@ const DataMigration: React.FC = () => {
             }
           } catch (initError) {
             console.error('ユーザー初期化エラー:', initError);
-            setMigrationStatus('ユーザー情報の更新に失敗しました。ページを再読み込みしてください。');
           }
         }
         return;
@@ -180,11 +193,6 @@ const DataMigration: React.FC = () => {
       console.log('ユーザー作成成功:', user);
       localStorage.setItem('supabase_user_id', user.id);
       // 成功メッセージを表示
-      setMigrationStatus('ユーザーが作成されました！ページを再読み込みします...');
-      setUserExists(true);
-      
-      // 現在のユーザーを設定
-      if (isConnected) {
         await initializeUser(lineUsername);
       }
       
@@ -192,7 +200,6 @@ const DataMigration: React.FC = () => {
       setTimeout(() => {
         window.location.reload(); // ページをリロードして状態を更新
       }, 2000);
-    } catch (error) {
       console.error('ユーザー作成エラー:', error);
       let errorMessage = 'ユーザー作成中にエラーが発生しました。';
       
@@ -200,7 +207,6 @@ const DataMigration: React.FC = () => {
       if (error instanceof Error) {
         setUserCreationError(error.message);
         errorMessage += ` ${error.message}`;
-        console.log('エラーメッセージ:', error.message);
         
         // 重複キーエラーの場合
         if (error.message.includes('duplicate key') || error.message.includes('already exists')) {
@@ -208,7 +214,6 @@ const DataMigration: React.FC = () => {
           setMigrationStatus('このユーザー名は既に登録されています。ページを再読み込みします...');
           setUserExists(true);
           
-          // 現在のユーザーを設定
           if (isConnected) {
             await initializeUser(lineUsername);
           }
@@ -231,7 +236,7 @@ const DataMigration: React.FC = () => {
 
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
     console.log('データ移行開始 - ユーザーID:', userId);
     
     // ユーザーIDが見つからない場合、ユーザー名から再取得を試みる
@@ -256,6 +261,19 @@ const DataMigration: React.FC = () => {
       setShowUserCreationButton(true);
       return;
     }
+    
+    // 管理者モードの場合は全ユーザーのデータを移行
+    if (isAdminMode) {
+      setMigrationStatus('管理者モード: 全ユーザーのデータを移行します。この操作には時間がかかる場合があります。');
+      
+      // ここで全ユーザーのデータ移行処理を実装
+      // 例: 全ユーザーのローカルデータをSupabaseに移行する処理
+      
+      // 注意: この実装は複雑になるため、実際のプロジェクトでは
+      // 専用の関数を作成することをお勧めします
+      
+      return;
+    }
 
     setMigrating(true);
     setMigrationStatus(`ローカルデータをSupabaseに移行中... (ユーザーID: ${userId.substring(0, 8)}...)`);
@@ -263,7 +281,7 @@ const DataMigration: React.FC = () => {
 
     try {
       const shortUserId = typeof userId === 'string' ? userId.substring(0, 8) : 'unknown';
-      console.log(`ローカルデータをSupabaseに移行中... (${shortUserId}...)`);
+      console.log(`ユーザーのローカルデータをSupabaseに移行中... (${shortUserId}...)`);
       setMigrationStatus(`ローカルデータをSupabaseに移行中... (${shortUserId}...)`);
       
       // 大量データ対応の移行処理
@@ -273,7 +291,7 @@ const DataMigration: React.FC = () => {
       });
       
       if (success) {
-        console.log('日記データの移行が完了しました！');
+        console.log('ユーザーの日記データの移行が完了しました！');
         setMigrationStatus('日記データの移行が完了しました！ページを再読み込みしてください。');
         checkDataCounts();
         loadStats();
@@ -283,7 +301,7 @@ const DataMigration: React.FC = () => {
           window.location.reload();
         }, 3000);
       } else {
-        console.log('移行に失敗しました。');
+        console.log('ユーザーデータの移行に失敗しました。');
         setMigrationStatus('移行に失敗しました。');
       }
     } catch (error) {
@@ -295,7 +313,7 @@ const DataMigration: React.FC = () => {
     }
   };
 
-  // 保存されたユーザーIDを使用して移行する
+  // 保存されたユーザーIDを使用して移行する（非管理者モード用）
   const handleMigrateWithSavedUserId = async (userId: string) => {
     setMigrating(true);
     setMigrationStatus(`保存されたユーザーID(${userId.substring(0, 8)}...)を使用してデータを移行中...`);
@@ -324,7 +342,7 @@ const DataMigration: React.FC = () => {
     }
   };
 
-  // ユーザーセッションを復元する
+  // ユーザーセッションを復元する（非管理者モード用）
   const handleRecoverUserSession = async () => {
     const lineUsername = localStorage.getItem('line-username');
     if (!lineUsername || !isConnected || !initializeUser) {
@@ -356,7 +374,7 @@ const DataMigration: React.FC = () => {
 
   const handleMigrateConsentsToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
     console.log('同意履歴移行開始 - ユーザーID:', userId);
     
     // ユーザーIDが見つからない場合、ユーザー名から再取得を試みる
@@ -379,6 +397,13 @@ const DataMigration: React.FC = () => {
     if (!userId) {
       setMigrationStatus('エラー: ユーザーIDが見つかりません。ユーザーを作成してください。');
       setShowUserCreationButton(true);
+      return;
+    }
+    
+    // 管理者モードの場合は全ユーザーの同意履歴を移行
+    if (isAdminMode) {
+      setMigrationStatus('管理者モード: 全ユーザーの同意履歴を移行します。この操作には時間がかかる場合があります。');
+      // ここで全ユーザーの同意履歴移行処理を実装
       return;
     }
 
@@ -413,7 +438,7 @@ const DataMigration: React.FC = () => {
 
   const handleSyncFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
     if (!userId) {
       setMigrationStatus('エラー: ユーザーIDが見つかりません。ユーザーを作成してください。');
       setShowUserCreationButton(true);
@@ -450,7 +475,7 @@ const DataMigration: React.FC = () => {
 
   const handleSyncConsentsFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
-    const userId = currentUser?.id || localStorage.getItem('supabase_user_id');
+    let userId = currentUser?.id || localStorage.getItem('supabase_user_id');
     if (!userId) {
       setMigrationStatus('エラー: ユーザーIDが見つかりません。ユーザーを作成してください。');
       setShowUserCreationButton(true);
@@ -560,6 +585,16 @@ const DataMigration: React.FC = () => {
         <div className="flex items-center space-x-3 mb-6">
           <Database className="w-8 h-8 text-blue-600" /> 
           <h1 className="text-2xl font-jp-bold text-gray-900">データ管理</h1>
+          
+          {/* 管理者モード表示 */}
+          {isAdminMode && (
+            <div className="ml-4">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-green-100 text-green-800 border border-green-200">
+                <Shield className="w-4 h-4" />
+                <span>管理者モード</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* タブナビゲーション */}

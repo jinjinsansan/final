@@ -51,13 +51,14 @@ const App: React.FC = () => {
     password: ''
   });
   const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [authState, setAuthState] = useState<'none' | 'login' | 'register'>('none');
   const [showUserDataManagement, setShowUserDataManagement] = useState(false);
 
   const [dataLoading, setDataLoading] = useState(true);
   const { isMaintenanceMode, isAdminBypass, config: maintenanceConfig, loading: maintenanceLoading } = useMaintenanceStatus();
   const { isConnected, currentUser, initializeUser } = useSupabase();
-  const { isAutoSyncEnabled } = useAutoSync();
+  const { isAutoSyncEnabled, toggleAutoSync } = useAutoSync();
 
   const [formData, setFormData] = useState({
     emotion: '',
@@ -77,6 +78,14 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // カウンセラーとしてログインしているかチェック
+    const counselorName = localStorage.getItem('current_counselor');
+    if (counselorName) {
+      setIsAdminMode(true);
+      console.log('管理者モードで動作中:', counselorName);
+    }
+  }, []);
+  useEffect(() => {
     const consentGiven = localStorage.getItem('privacyConsentGiven');
     const savedUsername = localStorage.getItem('line-username');
     const savedUserId = localStorage.getItem('supabase_user_id');
@@ -87,7 +96,7 @@ const App: React.FC = () => {
     if (consentGiven === 'true') {
       setShowPrivacyConsent(false);
       
-      // 認証状態をチェック
+      // 認証状態をチェック（管理者モードでない場合のみ）
       if (isAuthenticated()) {
         // 認証済みの場合は使い方ページへ
         const user = getCurrentUser();
@@ -95,7 +104,7 @@ const App: React.FC = () => {
           setLineUsername(user.lineUsername);
           // Supabaseユーザーを初期化
           if (isConnected && initializeUser) {
-            initializeUser(user.lineUsername);
+            !isAdminMode && initializeUser(user.lineUsername);
             console.log('認証済みユーザーでSupabaseを初期化:', user.lineUsername);
           }
           // 既にページが選択されている場合は変更しない
@@ -109,7 +118,7 @@ const App: React.FC = () => {
         // Supabaseユーザーを初期化（遅延実行）
         if (isConnected && initializeUser) {
           console.log('保存されたユーザー名でSupabaseユーザーを初期化:', savedUsername);
-          setTimeout(() => {
+          !isAdminMode && setTimeout(() => {
             initializeUser(savedUsername);
           }, 500);
         }
@@ -119,7 +128,7 @@ const App: React.FC = () => {
         }
       }
     }
-  }, [isConnected, initializeUser, currentPage]);
+  }, [isConnected, initializeUser, currentPage, isAdminMode]);
 
   // テストデータ生成関数
   const generateTestData = () => {
@@ -243,7 +252,7 @@ const App: React.FC = () => {
     setCurrentCounselor(counselor.name);
     localStorage.setItem('current_counselor', counselor.name);
     setIsAdmin(true);
-    setShowCounselorLogin(false);
+    setIsAdminMode(true);
     setCurrentPage('admin');
     setCounselorCredentials({ email: '', password: '' });
   };
@@ -252,6 +261,7 @@ const App: React.FC = () => {
   const handleCounselorLogout = () => {
     setCurrentCounselor(null);
     localStorage.removeItem('current_counselor');
+    setIsAdminMode(false);
     setIsAdmin(false);
     setCurrentPage('how-to');
   };
@@ -259,6 +269,12 @@ const App: React.FC = () => {
   // カウンセラーログイン画面表示
   const handleShowCounselorLogin = () => {
     setShowCounselorLogin(true);
+  };
+  
+  // 自動同期の有効/無効を切り替え
+  const handleToggleAutoSync = (enabled: boolean) => {
+    console.log('自動同期を切り替え:', enabled ? '有効' : '無効');
+    toggleAutoSync(enabled);
   };
 
   const getEmotionFrequency = () => {
@@ -1117,10 +1133,10 @@ const App: React.FC = () => {
                   <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium ${
                     isConnected 
                       ? 'bg-green-100 text-green-800 border border-green-200' 
-                      : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                      : 'bg-yellow-100 text-yellow-800 border border-yellow-200' 
                   }`}>
                     <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                    <span>Supabase: {isConnected ? '接続済み' : 'ローカルモード'}</span>
+                    <span>Supabase: {isConnected ? '接続済み' : 'ローカルモード'}{isAdminMode ? ' (管理者)' : ''}</span>
                     {currentUser && (
                       <span className="text-xs">({currentUser.line_username})</span>
                     )}
@@ -1131,12 +1147,16 @@ const App: React.FC = () => {
                       <span>{currentCounselor}</span>
                     </div>
                   )}
-                  {isAutoSyncEnabled && (
-                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-purple-100 text-purple-800 border border-purple-200">
-                      <RefreshCw className="w-3 h-3" />
-                      <span>自動同期有効</span>
-                    </div>
-                  )}
+                  <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-purple-100 text-purple-800 border border-purple-200">
+                    <RefreshCw className="w-3 h-3" />
+                    <span>自動同期: {isAutoSyncEnabled ? '有効' : '無効'}</span>
+                    <button 
+                      onClick={() => handleToggleAutoSync(!isAutoSyncEnabled)}
+                      className="ml-2 text-xs bg-white px-2 py-0.5 rounded-full border border-purple-300 hover:bg-purple-50"
+                    >
+                      {isAutoSyncEnabled ? '無効化' : '有効化'}
+                    </button>
+                  </div>
                   {isMaintenanceMode && isAdminBypass && (
                     <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
                       <AlertTriangle className="w-3 h-3" />
