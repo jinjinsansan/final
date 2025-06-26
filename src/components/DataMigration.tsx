@@ -388,8 +388,8 @@ const DataMigration: React.FC = () => {
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="font-jp-medium text-gray-900 ml-3">
+                  <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} mr-3`}></div>
+                  <span className="font-jp-medium text-gray-900">
                     Supabase接続状態: {isConnected ? '接続済み' : '未接続'}
                   </span>
                 </div>
@@ -406,7 +406,7 @@ const DataMigration: React.FC = () => {
               {error && (
                 <div className="mt-2 bg-red-50 rounded-lg p-3 border border-red-200 animate-pulse">
                   <div className="flex items-start space-x-2">
-                    <AlertTriangle className="w-4 h-4 text-red-600" />
+                    <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <span className="text-sm text-red-800 font-jp-medium">{error}</span>
                       <p className="text-xs text-red-600 mt-1">
@@ -428,18 +428,20 @@ const DataMigration: React.FC = () => {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-                    <div className="flex-1 text-sm font-jp-medium text-yellow-800 space-y-2">
-                      <p>Supabaseに接続できません。ローカルモードで動作中です。</p>
-                      <p className="text-xs">
+                    <div className="flex-1">
+                      <p className="text-sm font-jp-medium text-yellow-800">Supabaseに接続できません。ローカルモードで動作中です。</p>
+                      <p className="text-xs text-yellow-700 mt-1">
                         ローカルモードではデータはブラウザ内に保存され、クラウドと同期されません。
                       </p>
-                      <button 
-                        onClick={retryConnection}
-                        className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs mt-1"
-                      >
-                        接続を再試行
-                      </button>
                     </div>
+                  </div>
+                  <div className="mt-2 text-center">
+                    <button 
+                      onClick={retryConnection}
+                      className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs"
+                    >
+                      接続を再試行
+                    </button>
                   </div>
                 </div>
               )}
@@ -449,7 +451,7 @@ const DataMigration: React.FC = () => {
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <h3 className="font-jp-semibold text-gray-900 mb-3 flex items-center space-x-2">
                 <Users className="w-5 h-5" />
-                <span>ユーザー情報</span>
+                <span>Supabaseユーザー情報</span>
               </h3>
               
               {currentUser || userExists ? (
@@ -481,17 +483,30 @@ const DataMigration: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                    <span className="text-sm font-jp-normal text-gray-700">
-                      Supabaseユーザーが作成されていません
+                    <span className="text-sm font-jp-medium text-gray-700">
+                      Supabaseユーザーが未作成
                     </span>
                   </div>
                   {isConnected && (
-                    <button
-                      onClick={handleCreateUser}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors"
-                    >
-                      ユーザーを作成
-                    </button>
+                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                      <p className="text-sm text-blue-800 mb-2">
+                        Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
+                      </p>
+                      <button
+                        onClick={handleCreateUser}
+                        disabled={migrating}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors w-full"
+                      >
+                        {migrating ? (
+                          <div className="flex items-center justify-center">
+                            <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                            <span>作成中...</span>
+                          </div>
+                        ) : (
+                          'Supabaseユーザーを作成'
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -599,9 +614,9 @@ const DataMigration: React.FC = () => {
               {/* ステータス表示 */}
               {migrationStatus && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                 <div className="flex items-center space-x-2 mb-2">
-                    <RefreshCw className={`w-4 h-4 ${(migrating || syncing) ? 'animate-spin text-blue-600' : 'text-green-600'}`} />
-                    <span className="text-sm font-jp-normal text-gray-700">{migrationStatus}</span>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <RefreshCw className={`w-4 h-4 ${(migrating || syncing) ? 'animate-spin text-blue-600' : 'text-green-600'} flex-shrink-0`} />
+                    <span className="text-sm font-jp-medium text-gray-700">{migrationStatus}</span>
                   </div>
                  
                  {/* 進捗バー */}
