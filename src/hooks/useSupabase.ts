@@ -151,6 +151,7 @@ export const useSupabase = () => {
             } catch (syncError) {
               console.error('データ移行エラー:', syncError);
             }
+          }
           try {
             console.log('ユーザー作成エラー後に再検索を試みます');
             user = await userService.getUserByUsername(lineUsername.trim());
