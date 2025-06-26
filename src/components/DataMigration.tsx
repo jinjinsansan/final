@@ -16,6 +16,7 @@ const DataMigration: React.FC = () => {
   const [supabaseConsentCount, setSupabaseConsentCount] = useState(0);
   const [userExists, setUserExists] = useState(false);
   const [activeTab, setActiveTab] = useState<'manual' | 'auto' | 'backup'>('auto');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [stats, setStats] = useState<{
     userStats: { total: number; today: number; thisWeek: number } | null;
     diaryStats: { total: number; today: number; thisWeek: number; byEmotion: Record<string, number> } | null;
@@ -214,11 +215,12 @@ const DataMigration: React.FC = () => {
   const handleCreateUser = async () => {
     const lineUsername = localStorage.getItem('line-username');
     if (!lineUsername) {
-      alert('ユーザー名が設定されていません。プライバシーポリシーに同意して、ユーザー名を設定してください。');
+      alert('ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してユーザー名を設定してください。');
       return;
     }
 
     try {
+      setIsCreatingUser(true);
       setMigrationStatus('ユーザー作成中...');
       setMigrating(true);
       console.log(`ユーザー作成開始: ${lineUsername}`);
@@ -227,7 +229,8 @@ const DataMigration: React.FC = () => {
       const existingUser = await userService.getUserByUsername(lineUsername);
       if (existingUser) {
         console.log('既存ユーザーが見つかりました:', existingUser);
-        setMigrationStatus('ユーザーは既に存在します。データ移行が可能になりました。');
+        setMigrationStatus('ユーザーは既に存在します！データ移行が可能になりました。');
+        setUserExists(true);
         setTimeout(() => {
           window.location.reload();
         }, 1500);
@@ -246,6 +249,7 @@ const DataMigration: React.FC = () => {
       console.log('ユーザー作成成功:', user);
       // 成功メッセージを表示
       setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
+      setUserExists(true);
       
       // 少し待ってからリロード
       setTimeout(() => {
@@ -264,6 +268,7 @@ const DataMigration: React.FC = () => {
         if (error.message.includes('duplicate key') || error.message.includes('already exists')) {
           console.log('重複エラーを検出しました - 既存ユーザーを使用します');
           setMigrationStatus('このユーザー名は既に登録されています。既存のユーザーを使用します。');
+          setUserExists(true);
           setTimeout(() => {
             window.location.reload();
           }, 1500);
@@ -275,6 +280,7 @@ const DataMigration: React.FC = () => {
       setMigrationStatus(`エラー: ${errorMessage}`);
     } finally {
       setMigrating(false);
+      setIsCreatingUser(false);
     }
   };
 
@@ -402,29 +408,37 @@ const DataMigration: React.FC = () => {
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} mr-3`}></div>
+                  <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} mr-3 flex-shrink-0`}></div>
                   <span className="font-jp-medium text-gray-900">
-                    Supabaseユーザーが設定されていません
+                    Supabase接続状態: {isConnected ? '接続済み' : '未接続'}
                   </span>
                 </div>
                 {!isConnected && (
                   <button 
                     onClick={retryConnection}
+                    disabled={loading}
                     className="ml-auto px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-jp-medium"
                   >
-                    接続を再試行
+                    {loading ? (
+                      <div className="flex items-center space-x-1">
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        <span>接続中...</span>
+                      </div>
+                    ) : (
+                      '接続を再試行'
+                    )}
                   </button>
                 )}
               </div>
               
               {error && (
-                <div className="mt-2 bg-red-50 rounded-lg p-3 border border-red-200 animate-pulse">
+                <div className="mt-2 bg-red-50 rounded-lg p-3 border border-red-200">
                   <div className="flex items-start space-x-2">
                     <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <span className="text-sm text-red-800 font-jp-medium">{error}</span>
                       <p className="text-xs text-red-600 mt-1">
-                        環境変数の設定を確認してください。正しいAPIキーが設定されていることを確認してください。
+                        環境変数の設定を確認してください。.envファイルに正しいSupabase URLとAPIキーが設定されていることを確認してください。
                       </p>
                     </div>
                   </div>
@@ -441,29 +455,32 @@ const DataMigration: React.FC = () => {
               {!isConnected && !loading && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                    <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                     <span className="text-sm font-jp-medium text-yellow-800">
                       Supabaseに接続できません。ローカルモードで動作中です。
                     </span>
                   </div>
-                  <p className="text-xs text-yellow-700 mt-1 ml-7">
+                  <p className="text-xs text-yellow-700 mt-2 ml-6">
                     ローカルモードではデータはブラウザ内に保存され、クラウドと同期されません。
                   </p>
-                  <p className="text-sm text-blue-800 mb-3 ml-7">
-                    Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
-                    ユーザー作成には数秒かかる場合があります。
-                  </p>
-                  <div className="mt-2 text-center">
+                  <div className="mt-3 text-center">
                     <button 
                       onClick={retryConnection}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors w-full"
+                      disabled={loading}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors"
                     >
-                      接続を再試行
+                      {loading ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>接続中...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center space-x-2">
+                          <RefreshCw className="w-4 h-4" />
+                          <span>接続を再試行</span>
+                        </div>
+                      )}
                     </button>
-                    <p className="text-sm text-blue-800 mb-3">
-                      Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
-                      ユーザー作成には数秒かかる場合があります。
-                    </p>
                   </div>
                 </div>
               )}
@@ -473,7 +490,7 @@ const DataMigration: React.FC = () => {
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <h3 className="font-jp-semibold text-gray-900 mb-3 flex items-center space-x-2">
                 <Users className="w-5 h-5" />
-                <span>Supabaseユーザー情報</span>
+                <span>ユーザー情報</span>
               </h3>
               
               {currentUser || userExists ? (
@@ -504,22 +521,22 @@ const DataMigration: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                    <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                     <span className="text-sm font-jp-medium text-gray-700">
                       Supabaseユーザーが未作成
                     </span>
                   </div>
                   {isConnected && (
                     <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                      <p className="text-sm text-blue-800 mb-2">
+                      <p className="text-sm text-blue-800 mb-3">
                         Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
                       </p>
                       <button
                         onClick={handleCreateUser}
-                        disabled={migrating}
+                        disabled={isCreatingUser || migrating}
                         className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors w-full"
                       >
-                        {migrating ? (
+                        {isCreatingUser || migrating ? (
                           <div className="flex items-center justify-center">
                             <RefreshCw className="w-4 h-4 animate-spin mr-2" />
                             <span>作成中...</span>
@@ -637,15 +654,13 @@ const DataMigration: React.FC = () => {
               {migrationStatus && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="flex items-center space-x-2 mb-2">
-                    <RefreshCw 
-                      className={`w-4 h-4 flex-shrink-0 ${
-                        (migrating || syncing) 
-                          ? 'animate-spin text-blue-600' 
-                          : migrationStatus.includes('エラー') 
-                            ? 'text-red-600' 
-                            : 'text-green-600'
-                      }`} 
-                    />
+                    {(migrating || syncing) ? (
+                      <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin text-blue-600" />
+                    ) : migrationStatus.includes('エラー') ? (
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-600" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-600" />
+                    )}
                     <span className={`text-sm font-jp-medium ${
                       migrationStatus.includes('エラー') 
                         ? 'text-red-700' 

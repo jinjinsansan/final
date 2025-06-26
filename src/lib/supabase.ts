@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// 環境変数のデバッグ情報（詳細）
-console.log('Supabase URL:', !!supabaseUrl, supabaseUrl ? `(${supabaseUrl.substring(0, 15)}...)` : 'なし');
-console.log('Supabase Key:', !!supabaseAnonKey, supabaseAnonKey ? `(長さ: ${supabaseAnonKey.length})` : 'なし');
+// 環境変数のデバッグ情報（最小限）
+console.log('Supabase URL設定:', !!supabaseUrl);
+console.log('Supabase Key設定:', !!supabaseAnonKey);
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
@@ -31,20 +31,13 @@ const isValidSupabaseKey = (key: string): boolean => {
 // 本番環境での詳細な検証
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
-  console.log('URL missing:', !supabaseUrl, 'Value:', supabaseUrl);
-  console.log('Key missing:', !supabaseAnonKey, 'Length:', supabaseAnonKey?.length || 0);
 } else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
   console.warn('Supabase環境変数が無効です。設定を確認してください。');
-  console.log('URL valid:', isValidUrl(supabaseUrl));
-  console.log('Key valid:', isValidSupabaseKey(supabaseAnonKey));
-  console.log('URL:', supabaseUrl ? `${supabaseUrl.substring(0, 15)}...` : 'undefined');
-  console.log('Key length:', supabaseAnonKey ? supabaseAnonKey.length : 0);
 }
 
 // Supabaseクライアントの作成
 export const supabase = (() => {
   try {
-    console.log('Supabaseクライアント初期化開始...', new Date().toISOString());
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Supabase URL または API キーが設定されていません');
       return null;
@@ -53,10 +46,7 @@ export const supabase = (() => {
     const urlValid = isValidUrl(supabaseUrl);
     const keyValid = isValidSupabaseKey(supabaseAnonKey);
     
-    console.log('Supabaseクライアント作成 - URL有効:', urlValid, 'キー有効:', keyValid);
-      
     if (urlValid && keyValid && supabaseUrl && supabaseAnonKey) {
-      console.log('Supabaseクライアント作成中 - URL:', supabaseUrl.substring(0, 20) + '...', 'キー長:', supabaseAnonKey.length);
       try {
         const client = createClient(supabaseUrl, supabaseAnonKey, {
           auth: {
@@ -71,7 +61,7 @@ export const supabase = (() => {
         return null;
       }
     }
-    console.log('Supabaseクライアント作成失敗: URLまたはキーが無効です');
+    console.error('Supabaseクライアント作成失敗: URLまたはキーが無効です');
     return null;
   } catch (error) {
     console.error('Supabaseクライアント作成エラー:', error instanceof Error ? error.message : error);
@@ -82,7 +72,7 @@ export const supabase = (() => {
 // 接続テスト用の関数
 export const testSupabaseConnection = async () => {
   if (!supabase) {
-    console.error('接続テスト失敗: Supabaseクライアントが未初期化');
+    console.warn('接続テスト失敗: Supabaseクライアントが未初期化');
     return { 
       success: false,
       error: 'Supabaseクライアントが初期化されていません',
@@ -836,7 +826,6 @@ export const syncService = {
           self_esteem_score: entry.selfEsteemScore || 50,
           worthlessness_score: entry.worthlessnessScore || 50
         }));
-        console.log(`バッチ ${i+1}/${totalBatches} 処理中 - ${batch.length}件`);
         
         try {
           const { error } = await supabase
