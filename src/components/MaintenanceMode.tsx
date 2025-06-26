@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Clock, RefreshCw, Wrench, Heart, CheckCircle, Info } from 'lucide-react';
-import { getAuthSession } from '../lib/deviceAuth';
+import { AlertTriangle, Clock, RefreshCw, Wrench, Heart, CheckCircle, Info, Upload, Shield } from 'lucide-react';
 import { getAuthSession } from '../lib/deviceAuth';
 
 interface MaintenanceConfig {
@@ -17,7 +16,6 @@ interface MaintenanceConfig {
 interface MaintenanceModeProps {
   config: MaintenanceConfig;
   onAdminLogin?: () => void;
-  onAdminLogin?: () => void;
   onRetry?: () => void;
 }
 
@@ -31,9 +29,6 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
   const [backupData, setBackupData] = useState<File | null>(null);
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
     const updateTime = () => {
@@ -181,27 +176,6 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
       console.error('バックアップ復元エラー:', error);
       setRestoreStatus('バックアップの復元に失敗しました。');
       setRestoreLoading(false);
-    }
-  };
-
-  // 管理者ログイン処理
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // 管理者パスワードをチェック（実際の実装ではより安全な方法を使用）
-    if (adminPassword === 'counselor123') {
-      // 管理者としてログイン
-      localStorage.setItem('current_counselor', '管理者（緊急アクセス）');
-      
-      // 親コンポーネントに通知
-      if (onAdminLogin) {
-        onAdminLogin();
-      } else {
-        // 通知がない場合はページをリロード
-        window.location.reload();
-      }
-    } else {
-      setLoginError('パスワードが正しくありません');
     }
   };
 
@@ -407,7 +381,7 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
               onClick={() => setShowBackupRestore(!showBackupRestore)}
               className="flex items-center space-x-2 bg-purple-100 hover:bg-purple-200 text-purple-800 px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors mx-auto"
             >
-              <RefreshCw className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
               <span>バックアップから復元</span>
             </button>
           </div>
@@ -514,8 +488,9 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
             <p className="text-xs text-gray-500 font-jp-normal">
               一般社団法人NAMIDAサポート協会 | かんじょうにっき
             </p>
-            <p className="text-xs text-gray-400 font-jp-normal mt-1 mb-4">
+            <p className="text-xs text-gray-400 font-jp-normal mt-1">
               ご不便をおかけして申し訳ございません
+            </p>
           </div>
         </div>
       </div>
