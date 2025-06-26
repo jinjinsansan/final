@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// 環境変数から値を取得し、undefined や null の場合は空文字列にする
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // 環境変数のデバッグ情報（開発環境のみ）
 if (import.meta.env.DEV) {
@@ -12,7 +13,8 @@ if (import.meta.env.DEV) {
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
   try {
-    if (!url || url.trim() === '' || url === 'undefined' || url.includes('your_supabase') || url === 'https://undefined') {
+    if (!url || url.trim() === '' || url === 'undefined' || url.includes('your_supabase') || 
+        url === 'https://undefined' || url.startsWith('https://undefined')) {
       return false;
     }
     new URL(url);
@@ -27,7 +29,7 @@ const isValidSupabaseKey = (key: string): boolean => {
     key.trim() !== '' && 
     key !== 'undefined' &&
     !key.includes('your_supabase') &&
-    key.length > 20);
+    key.length > 10); // キーの最小長を20から10に変更
 };
 
 // 本番環境での詳細な検証
@@ -49,7 +51,7 @@ export const supabase = (() => {
     const urlValid = isValidUrl(supabaseUrl);
     const keyValid = isValidSupabaseKey(supabaseAnonKey);
     
-    if (urlValid && keyValid && supabaseUrl && supabaseAnonKey) {
+    if (urlValid && keyValid) {
       try {
         const client = createClient(supabaseUrl, supabaseAnonKey, {
           auth: {
@@ -63,9 +65,15 @@ export const supabase = (() => {
         console.error('Supabaseクライアント作成中のエラー:', createError);
         return null;
       }
+    } else {
+      console.error('Supabaseクライアント作成失敗: URLまたはキーが無効です', {
+        urlValid,
+        keyValid,
+        urlLength: supabaseUrl.length,
+        keyLength: supabaseAnonKey.length
+      });
+      return null;
     }
-    console.error('Supabaseクライアント作成失敗: URLまたはキーが無効です');
-    return null;
   } catch (error) {
     console.error('Supabaseクライアント作成エラー:', error instanceof Error ? error.message : error);
     return null;
@@ -80,10 +88,10 @@ export const testSupabaseConnection = async () => {
       success: false,
       error: 'Supabaseクライアントが初期化されていません',
       details: {
-        urlValid: supabaseUrl ? isValidUrl(supabaseUrl) : false,
-        keyValid: supabaseAnonKey ? isValidSupabaseKey(supabaseAnonKey) : false,
-        url: supabaseUrl || 'なし',
-        keyLength: supabaseAnonKey ? supabaseAnonKey.length : 0
+        urlValid: isValidUrl(supabaseUrl),
+        keyValid: isValidSupabaseKey(supabaseAnonKey),
+        url: supabaseUrl.substring(0, 10) + '...',
+        keyLength: supabaseAnonKey.length
       }
     };
   }
@@ -93,35 +101,44 @@ export const testSupabaseConnection = async () => {
     if (import.meta.env.DEV) {
       console.log('Supabase接続テスト中...', new Date().toISOString());
     }
+
+    try {
+      const { data, error } = await supabase.from('users').select('id').limit(1);
     
-    const { data, error } = await supabase.from('users').select('id').limit(1);
-    
-    if (error) {      
-      console.error('接続テストエラー:', error.message, error);
+      if (error) {      
+        console.error('接続テストエラー:', error.message, error);
       
-      // APIキーエラーの特別処理
-      if (error.message.includes('JWT') || error.message.includes('Invalid API key') || error.message.includes('key') || error.message.includes('token')) {
-        console.error('APIキーエラーが検出されました:', error.message);
+        // APIキーエラーの特別処理
+        if (error.message.includes('JWT') || error.message.includes('Invalid API key') || error.message.includes('key') || error.message.includes('token')) {
+          console.error('APIキーエラーが検出されました:', error.message);
         
-        // エラーメッセージの詳細をログ
-        if (error.details) console.error('エラー詳細:', error.details);
-        if (error.hint) console.error('エラーヒント:', error.hint);
+          // エラーメッセージの詳細をログ
+          if (error.details) console.error('エラー詳細:', error.details);
+          if (error.hint) console.error('エラーヒント:', error.hint);
         
+          return { 
+            success: false,
+            error: 'APIキーが無効です',
+            details: error 
+          };
+        }
+      
         return { 
-          success: false,
-          error: 'APIキーが無効です',
+          success: false, 
+          error: error.message, 
           details: error 
         };
       }
-      
+      console.log('Supabase接続テスト成功');
+      return { success: true, data };
+    } catch (queryError) {
+      console.error('Supabase接続テスト中のクエリエラー:', queryError);
       return { 
         success: false, 
-        error: error.message, 
-        details: error 
+        error: queryError instanceof Error ? queryError.message : '不明なクエリエラー',
+        details: queryError
       };
     }
-    console.log('Supabase接続テスト成功');
-    return { success: true, data };
   } catch (error) {
     console.error('接続テスト例外:', error);
     return { 
@@ -190,8 +207,12 @@ export interface ConsentHistory {
 
 // ユーザー管理関数
 export const userService = {
-  async createUser(lineUsername: string): Promise<User | null> {
+  async createUser(lineUsername: string | null): Promise<User | null> {
     if (!supabase) return null;
+    if (!lineUsername) {
+      console.error('ユーザー名が指定されていません');
+      return null;
+    }
 
     console.log(`ユーザー作成開始 (userService): "${lineUsername}" - ${new Date().toISOString()}`);
     try {
@@ -260,8 +281,12 @@ export const userService = {
     }
   },
 
-  async getUserByUsername(lineUsername: string): Promise<User | null> {
+  async getUserByUsername(lineUsername: string | null): Promise<User | null> {
     if (!supabase) return null;
+    if (!lineUsername) {
+      console.error('ユーザー名が指定されていません');
+      return null;
+    }
 
     console.log(`ユーザー検索開始 (userService): "${lineUsername}" - ${new Date().toISOString()}`);
     try {
@@ -577,8 +602,12 @@ export const counselorService = {
 
 // 同意履歴管理関数
 export const consentService = {
-  async createConsentRecord(record: Omit<ConsentHistory, 'id' | 'created_at'>): Promise<ConsentHistory | null> {
+  async createConsentRecord(record: Omit<ConsentHistory, 'id' | 'created_at'> | null): Promise<ConsentHistory | null> {
     if (!supabase) return null;
+    if (!record) {
+      console.error('同意履歴レコードが指定されていません');
+      return null;
+    }
     
     try {
       const { data, error } = await supabase
@@ -612,8 +641,12 @@ export const consentService = {
     }
   },
 
-  async getConsentHistoryByUsername(lineUsername: string): Promise<ConsentHistory | null> {
+  async getConsentHistoryByUsername(lineUsername: string | null): Promise<ConsentHistory | null> {
     if (!supabase) return null;
+    if (!lineUsername) {
+      console.error('ユーザー名が指定されていません');
+      return null;
+    }
     
     try {
       const { data, error } = await supabase
@@ -634,8 +667,12 @@ export const consentService = {
 // データ同期ユーティリティ
 export const syncService = {
   // ローカルストレージからSupabaseへデータを移行
-  async migrateLocalData(userId: string): Promise<boolean> {
+  async migrateLocalData(userId: string | null): Promise<boolean> {
     if (!supabase) return false;
+    if (!userId) {
+      console.error('ユーザーIDが指定されていません');
+      return false;
+    }
 
     console.log(`データ移行開始 (syncService): ユーザーID: ${userId} - ${new Date().toISOString()}`);
     try {
@@ -694,8 +731,12 @@ export const syncService = {
   },
 
   // Supabaseからローカルストレージにデータを同期
-  async syncToLocal(userId: string): Promise<boolean> {
+  async syncToLocal(userId: string | null): Promise<boolean> {
     if (!supabase) return false;
+    if (!userId) {
+      console.error('ユーザーIDが指定されていません');
+      return false;
+    }
     
     try {
       const entries = await diaryService.getUserEntries(userId);
@@ -796,8 +837,12 @@ export const syncService = {
   },
 
   // 本番環境用：大量データの効率的な同期
-  async bulkMigrateLocalData(userId: string, progressCallback?: (progress: number) => void): Promise<boolean> {
+  async bulkMigrateLocalData(userId: string | null, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
+    if (!userId) {
+      console.error('ユーザーIDが指定されていません');
+      return false;
+    }
 
     console.log(`大量データ移行開始 (bulkMigrateLocalData): ユーザーID: ${userId} - ${new Date().toISOString()}`);
     try {
