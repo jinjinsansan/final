@@ -208,23 +208,29 @@ export interface ConsentHistory {
 // ユーザー管理関数
 export const userService = {
   async createUser(lineUsername: string | null): Promise<User | null> {
-    if (!supabase) return null;
+    if (!supabase) {
+      console.error('createUser: Supabaseクライアントが初期化されていません');
+      return null;
+    }
     if (!lineUsername) {
       console.error('ユーザー名が指定されていません');
       return null;
     }
 
-    console.log(`ユーザー作成開始 (userService): "${lineUsername}" - ${new Date().toISOString()}`);
+    const timestamp = new Date().toISOString();
+    console.log(`ユーザー作成開始 (userService): "${lineUsername}" - ${timestamp}`);
     try {
       // まず既存ユーザーをチェック
       const existingUser = await this.getUserByUsername(lineUsername);
       if (existingUser) {
-        console.log(`ユーザーは既に存在します: "${lineUsername}" - ID: ${existingUser.id}`);
+        console.log(`ユーザーは既に存在します: "${lineUsername}" - ID: ${existingUser.id} - ${timestamp}`);
+        // ユーザーIDをローカルストレージに保存
+        localStorage.setItem('supabase_user_id', existingUser.id);
         return existingUser;
       }
       
       // 新規ユーザー作成
-      console.log(`新規ユーザーを作成します - username: "${lineUsername}" - ${new Date().toISOString()}`);
+      console.log(`新規ユーザーを作成します - username: "${lineUsername}" - ${timestamp}`);
 
       // 重要: ここでupsertを使用して、重複エラーを回避
       const { data, error } = await supabase
@@ -255,24 +261,30 @@ export const userService = {
       }
       
       if (!data) {
-        console.error(`ユーザー作成エラー: "${lineUsername}" - データが返されませんでした - ${new Date().toISOString()}`);
+        console.error(`ユーザー作成エラー: "${lineUsername}" - データが返されませんでした - ${timestamp}`);
         return null;
       }
       
-      console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${data.id} - ${new Date().toISOString()}`);
+      console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${data.id} - ${timestamp}`);
+      // ユーザーIDをローカルストレージに保存
+      localStorage.setItem('supabase_user_id', data.id);
       return data;
     } catch (error) {
-      console.error(`ユーザー作成エラー: "${lineUsername}"`, error);
+      console.error(`ユーザー作成エラー: "${lineUsername}" - ${timestamp}`, error);
       
       // 重複エラーの場合は既存ユーザーを返す
       if (error instanceof Error && error.message.includes('duplicate key')) {
-        console.log(`重複エラーのため既存ユーザーを取得します: "${lineUsername}"`);
+        console.log(`重複エラーのため既存ユーザーを取得します: "${lineUsername}" - ${timestamp}`);
         try {
           const existingUser = await this.getUserByUsername(lineUsername);
-          console.log(`既存ユーザーを取得しました: "${lineUsername}" - ID: ${existingUser?.id || 'null'}`);
+          console.log(`既存ユーザーを取得しました: "${lineUsername}" - ID: ${existingUser?.id || 'null'} - ${timestamp}`);
+          if (existingUser) {
+            // ユーザーIDをローカルストレージに保存
+            localStorage.setItem('supabase_user_id', existingUser.id);
+          }
           return existingUser;
         } catch (getUserError) {
-          console.error(`既存ユーザー取得エラー: "${lineUsername}"`, getUserError);
+          console.error(`既存ユーザー取得エラー: "${lineUsername}" - ${timestamp}`, getUserError);
           return null;
         }
       }
@@ -828,18 +840,26 @@ export const syncService = {
   // 同意履歴をSupabaseに同期
   async syncConsentHistories(): Promise<boolean> {
     if (!supabase) return false;
+    
+    // ユーザー名を取得
+    const lineUsername = localStorage.getItem('line-username');
+    if (!lineUsername) {
+      console.error('同意履歴同期エラー: ユーザー名が設定されていません');
+      return false;
+    }
 
-    console.log('同意履歴の同期を開始 - ' + new Date().toISOString());
+    const timestamp = new Date().toISOString();
+    console.log(`同意履歴の同期を開始 - ユーザー: ${lineUsername} - ${timestamp}`);
     try {
       // ローカルストレージから同意履歴を取得
       const localHistories = localStorage.getItem('consent_histories');
       if (!localHistories) {
-        console.log('ローカル同意履歴が見つかりません - 同期スキップ');
+        console.log(`ローカル同意履歴が見つかりません - 同期スキップ - ${timestamp}`);
         return true;
       }
 
       const histories = JSON.parse(localHistories);
-      console.log(`同期する同意履歴数: ${histories.length}`);
+      console.log(`同期する同意履歴数: ${histories.length} - ${timestamp}`);
       
       let successCount = 0;
       let errorCount = 0;
@@ -847,7 +867,7 @@ export const syncService = {
       // Supabaseに保存
       for (let i = 0; i < histories.length; i++) {
         try {
-          console.log(`同意履歴を処理中: ${histories[i].line_username} - ${histories[i].consent_date}`);
+          console.log(`同意履歴を処理中 [${i+1}/${histories.length}]: ${histories[i].line_username} - ${histories[i].consent_date}`);
           
           // 既存の記録をチェック
           const { data: existing, error: checkError } = await supabase
@@ -863,7 +883,7 @@ export const syncService = {
           }
           
           if (!existing || existing.length === 0) {
-            console.log(`新規同意履歴を作成: ${histories[i].line_username}`);
+            console.log(`新規同意履歴を作成: ${histories[i].line_username} - ${histories[i].consent_date}`);
             const { error: insertError } = await supabase
               .from('consent_histories')
               .insert({
@@ -879,9 +899,10 @@ export const syncService = {
               errorCount++;
             } else {
               successCount++;
+              console.log(`同意履歴を作成しました: ${histories[i].line_username}`);
             }
           } else {
-            console.log(`同意履歴は既に存在します: ${histories[i].line_username}`);
+            console.log(`同意履歴は既に存在します: ${histories[i].line_username} - ${histories[i].consent_date}`);
             successCount++;
           }
         } catch (historyError) {
@@ -890,7 +911,7 @@ export const syncService = {
         }
       }
       
-      console.log(`同意履歴の同期が完了しました - 成功=${successCount}, 失敗=${errorCount}, 合計=${histories.length}`);
+      console.log(`同意履歴の同期が完了しました - 成功=${successCount}, 失敗=${errorCount}, 合計=${histories.length} - ${new Date().toISOString()}`);
       return successCount > 0 || histories.length === 0;
     } catch (error) {
       console.error('同意履歴同期エラー:', error);
@@ -935,12 +956,13 @@ export const syncService = {
   // 本番環境用：大量データの効率的な同期
   async bulkMigrateLocalData(userId: string | null, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
-    if (!userId) {
+    if (!userId || userId.trim() === '') {
       console.error('ユーザーIDが指定されていません - 大量データ移行をスキップします');
       return false;
     }
 
-    console.log(`大量データ移行開始 (bulkMigrateLocalData): ユーザーID: ${userId} - ${new Date().toISOString()}`);
+    const startTime = new Date().toISOString();
+    console.log(`大量データ移行開始 (bulkMigrateLocalData): ユーザーID: ${userId} - ${startTime}`);
     try {
       const localEntries = localStorage.getItem('journalEntries');
       if (!localEntries) {
@@ -960,13 +982,15 @@ export const syncService = {
       // バッチ処理のサイズと総数を計算
       const batchSize = 20; // 一度に20件ずつ処理
       const totalBatches = Math.ceil(entries.length / batchSize);
+      console.log(`総バッチ数: ${totalBatches} (バッチサイズ: ${batchSize}件) - ${new Date().toISOString()}`);
       let successCount = 0;
       let errorCount = 0;
+      let skippedCount = 0;
       
       // バッチ処理でデータを移行
       for (let i = 0; i < totalBatches; i++) {
         const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
-        console.log(`バッチ ${i+1}/${totalBatches} 処理中 - ${batch.length}件`);
+        console.log(`バッチ ${i+1}/${totalBatches} 処理中 - ${batch.length}件 - ${new Date().toISOString()}`);
         
         const insertData = batch.map((entry: any) => ({
           user_id: userId,
@@ -985,6 +1009,7 @@ export const syncService = {
           // 一つずつ処理して、エラーが発生しても続行する
           for (const data of insertData) {
             try {
+              console.log(`エントリー処理中: ${data.date} - ${data.emotion}`);
               // 既存エントリーの重複チェック
               const { data: existing, error: checkError } = await supabase
                 .from('diary_entries')
@@ -1000,6 +1025,7 @@ export const syncService = {
               }
               
               if (!existing || existing.length === 0) {
+                console.log(`新規エントリーを作成: ${data.date} - ${data.emotion}`);
                 const { error: insertError } = await supabase
                   .from('diary_entries')
                   .insert(data);
@@ -1009,10 +1035,11 @@ export const syncService = {
                   errorCount++;
                 } else {
                   successCount++;
+                  console.log(`エントリーを作成しました: ${data.date} - ${data.emotion}`);
                 }
               } else {
-                console.log(`エントリーは既に存在します: ${data.date} - ${data.emotion}`);
-                successCount++;
+                console.log(`エントリーは既に存在します (スキップ): ${data.date} - ${data.emotion}`);
+                skippedCount++;
               }
             } catch (itemError) {
               console.error('エントリー処理エラー:', itemError);
@@ -1038,12 +1065,20 @@ export const syncService = {
       }
 
       // 進捗コールバックが提供されている場合は100%完了を通知
-      if (progressCallback) {
+      if (progressCallback && totalBatches > 0) {
         progressCallback(100);
       }
       
       // 完了メッセージ
-      console.log(`ローカルデータの移行が完了しました - 成功=${successCount}, 失敗=${errorCount}, 合計=${entries.length}`);
+      const endTime = new Date().toISOString();
+      console.log(`ローカルデータの移行が完了しました - 成功=${successCount}, 失敗=${errorCount}, スキップ=${skippedCount}, 合計=${entries.length} - 開始:${startTime} 終了:${endTime}`);
+      
+      // スキップされたエントリーが多い場合でも成功として扱う
+      if (successCount === 0 && errorCount === 0 && skippedCount > 0) {
+        console.log(`すべてのエントリー(${skippedCount}件)は既に存在しているため、移行は成功とみなします`);
+        return true;
+      }
+      
       return successCount > 0 || entries.length === 0;
     } catch (error) {
       console.error(`データ移行エラー - ユーザーID: ${userId}`, error);
