@@ -150,14 +150,14 @@ export const useAutoSync = () => {
   // 自動同期の有効/無効切り替え
   const toggleAutoSync = (enabled: boolean) => {
     localStorage.setItem('auto_sync_enabled', enabled.toString());
-    
+
     try {
       const user = getCurrentUser();
       logSecurityEvent('auto_sync_toggled', user?.lineUsername || 'system', `自動同期が${enabled ? '有効' : '無効'}になりました`);
     } catch (error) {
       console.error('セキュリティログ記録エラー:', error);
     }
-    
+
     setStatus(prev => ({ ...prev, isAutoSyncEnabled: enabled }));
     
     if (enabled && isConnected && currentUser) {
@@ -172,10 +172,12 @@ export const useAutoSync = () => {
 
     try {
       if (!isConnected || !currentUser) {
-        throw new Error('Supabaseに接続されていないか、ユーザーが設定されていません');
-      }
-      
-      await performAutoSync(currentUser.id);
+
+    // 即座に同期を実行（非同期で）
+    if (enabled && isConnected && currentUser) {
+      performAutoSync(currentUser.id).catch(error => {
+        console.error('自動同期実行エラー:', error);
+      });
       
       try {
         const user = getCurrentUser();
