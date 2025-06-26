@@ -237,40 +237,15 @@ const DiaryPage: React.FC = () => {
 
   const handleShare = () => {
     const username = currentUser?.lineUsername || 'ユーザー';
+    
+    // 気づきの一部を含める（プライバシーに配慮して最初の20文字まで）
+    const realizationPreview = formData.realization.trim() ? 
+      (formData.realization.length > 20 ? formData.realization.substring(0, 20) + '...' : formData.realization) : 
+      '';
+    
     // 日記内容の一部を含める（プライバシーに配慮して最初の20文字まで）
     const eventPreview = formData.event.trim() ? 
       (formData.event.length > 20 ? formData.event.substring(0, 20) + '...' : formData.event) : 
-      '';
-    const eventPreview = formData.event.trim() ? 
-      (formData.event.length > 20 ? formData.event.substring(0, 20) + '...' : formData.event) : 
-      '';
-    
-    // 気づきの一部を含める（プライバシーに配慮して最初の20文字まで）
-    const realizationPreview = formData.realization.trim() ? 
-      (formData.realization.length > 20 ? formData.realization.substring(0, 20) + '...' : formData.realization) : 
-      '';
-    
-    // 感情に対応する絵文字を追加
-    const emotionEmoji = getEmotionEmoji(formData.emotion);
-    
-    let shareText = `${username}の今日の感情日記 📝\n\n${emotionEmoji} 感情: ${formData.emotion}`;
-    
-    // 内容があれば追加
-    if (eventPreview) {
-      shareText += `\n\n💭 出来事: ${eventPreview}`;
-    }
-    
-    // 気づきがあれば追加
-    if (realizationPreview) {
-      shareText += `\n\n✨ 気づき: ${realizationPreview}`;
-    }
-    
-    // ハッシュタグとURLを追加
-    shareText += `\n\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://namisapo.vercel.app/`;
-    
-    // 気づきの一部を含める（プライバシーに配慮して最初の20文字まで）
-    const realizationPreview = formData.realization.trim() ? 
-      (formData.realization.length > 20 ? formData.realization.substring(0, 20) + '...' : formData.realization) : 
       '';
     
     // 感情に対応する絵文字を追加
@@ -308,62 +283,6 @@ const DiaryPage: React.FC = () => {
         prompt('以下のテキストをコピーしてSNSでシェアしてください:', shareText);
       });
     }
-  };
-
-  // 感情に対応する絵文字を取得
-  const getEmotionEmoji = (emotion: string): string => {
-    const emojiMap: { [key: string]: string } = {
-      '恐怖': '😨',
-      '悲しみ': '😢',
-      '怒り': '😠',
-      '悔しい': '😣',
-      '無価値感': '😔',
-      '罪悪感': '😓',
-      '寂しさ': '🥺',
-      '恥ずかしさ': '😳'
-    };
-    return emojiMap[emotion] || '📝';
-  };
-
-  // Twitterでシェア
-  const handleTwitterShare = () => {
-    const username = currentUser?.lineUsername || 'ユーザー';
-    
-    // 日記内容の一部を含める（プライバシーに配慮して最初の20文字まで）
-    const eventPreview = formData.event.trim() ? 
-      (formData.event.length > 20 ? formData.event.substring(0, 20) + '...' : formData.event) : 
-      '';
-    
-    // 気づきの一部を含める（プライバシーに配慮して最初の20文字まで）
-    const realizationPreview = formData.realization.trim() ? 
-      (formData.realization.length > 20 ? formData.realization.substring(0, 20) + '...' : formData.realization) : 
-      '';
-    
-    // 感情に対応する絵文字を追加
-    const emotionEmoji = getEmotionEmoji(formData.emotion);
-    
-    let shareText = `${username}の今日の感情日記 📝\n\n${emotionEmoji} 感情: ${formData.emotion}`;
-    
-    // 内容があれば追加
-    if (eventPreview) {
-      shareText += `\n\n💭 出来事: ${eventPreview}`;
-    }
-    
-    // 気づきがあれば追加
-    if (realizationPreview) {
-      shareText += `\n\n✨ 気づき: ${realizationPreview}`;
-    }
-    
-    // ハッシュタグとURLを追加
-    shareText += `\n\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://namisapo.vercel.app/`;
-    
-    const encodedShareText = encodeURIComponent(shareText);
-    
-    // Twitterシェア用URL
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodedShareText}`;
-    
-    // 新しいウィンドウでTwitterシェアを開く
-    window.open(twitterUrl, '_blank');
   };
 
   // 感情に対応する絵文字を取得
@@ -840,27 +759,6 @@ const DiaryPage: React.FC = () => {
           </div>
         )}
         
-        {/* シェアプレビュー（日記内容がある場合のみ表示） */}
-        {formData.event.trim() && (
-          <div className="w-full bg-blue-50 rounded-lg p-4 border border-blue-200 mb-4">
-            <h3 className="font-jp-bold text-gray-900 mb-2 flex items-center">
-              <Share2 className="w-4 h-4 mr-2 text-blue-600" />
-              シェアプレビュー
-            </h3>
-            <div className="bg-white rounded-lg p-3 border border-gray-200 text-sm">
-              <p className="font-jp-medium mb-2">{currentUser?.lineUsername || 'ユーザー'}の今日の感情日記 📝</p>
-              <p className="mb-1">{getEmotionEmoji(formData.emotion)} 感情: {formData.emotion}</p>
-              {formData.event.trim() && (
-                <p className="mb-1">💭 出来事: {formData.event.length > 20 ? formData.event.substring(0, 20) + '...' : formData.event}</p>
-              )}
-              {formData.realization.trim() && (
-                <p className="mb-1">✨ 気づき: {formData.realization.length > 20 ? formData.realization.substring(0, 20) + '...' : formData.realization}</p>
-              )}
-              <p className="text-gray-500 text-xs mt-2">#かんじょうにっき #感情日記 #自己肯定感</p>
-            </div>
-          </div>
-        )}
-        
         <button
           onClick={handleSubmit}
           disabled={saving}
@@ -886,17 +784,6 @@ const DiaryPage: React.FC = () => {
         >
           <Share2 className="w-5 h-5" />
           <span>SNSでシェア</span>
-        </button>
-        
-        <button
-          onClick={formData.event.trim() ? handleTwitterShare : () => alert('日記を入力してから共有してください')}
-          disabled={saving}
-          className={`w-full sm:w-auto ${formData.event.trim() ? 'bg-black hover:bg-gray-800' : 'bg-gray-400 cursor-not-allowed'} text-white px-6 sm:px-8 py-3 rounded-lg font-jp-medium transition-colors shadow-md hover:shadow-lg flex items-center justify-center space-x-2`}
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-          </svg>
-          <span>Xでシェア</span>
         </button>
         
         <button
