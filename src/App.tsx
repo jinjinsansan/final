@@ -79,8 +79,9 @@ const App: React.FC = () => {
   useEffect(() => {
     const consentGiven = localStorage.getItem('privacyConsentGiven');
     const savedUsername = localStorage.getItem('line-username');
+    const savedUserId = localStorage.getItem('supabase_user_id');
     
-    console.log('アプリ初期化 - 同意状態:', consentGiven, '保存ユーザー名:', savedUsername);
+    console.log('アプリ初期化 - 同意状態:', consentGiven, '保存ユーザー名:', savedUsername, '保存ユーザーID:', savedUserId);
     console.log('現在のページ:', currentPage);
     
     if (consentGiven === 'true') {
@@ -95,6 +96,7 @@ const App: React.FC = () => {
           // Supabaseユーザーを初期化
           if (isConnected && initializeUser) {
             initializeUser(user.lineUsername);
+            console.log('認証済みユーザーでSupabaseを初期化:', user.lineUsername);
           }
           // 既にページが選択されている場合は変更しない
           if (currentPage === 'home') {
@@ -107,7 +109,9 @@ const App: React.FC = () => {
         // Supabaseユーザーを初期化（遅延実行）
         if (isConnected && initializeUser) {
           console.log('保存されたユーザー名でSupabaseユーザーを初期化:', savedUsername);
-          initializeUser(savedUsername);
+          setTimeout(() => {
+            initializeUser(savedUsername);
+          }, 500);
         }
         // 既にページが選択されている場合は変更しない
         if (currentPage === 'home') {
@@ -916,7 +920,7 @@ const App: React.FC = () => {
                   <button
                     onClick={() => {
                       setCurrentPage('home');
-                      console.log('ホームページに移動');
+                      window.location.reload(); // ホームに戻る際に完全リロード
                     }}
                     className="flex items-center space-x-2 text-gray-900 hover:text-blue-600 transition-colors mr-2"
                   >

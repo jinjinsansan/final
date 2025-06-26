@@ -125,6 +125,9 @@ export const useAutoSync = () => {
   // 自動同期実行
   const performAutoSync = async (userId: string) => {
     try {
+      console.log(`自動同期: データ同期を開始します - ユーザーID: ${userId}`);
+      setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
+      
       // ローカルデータの存在確認
       const localEntries = localStorage.getItem('journalEntries');
       const localConsents = localStorage.getItem('consent_histories');
@@ -135,6 +138,7 @@ export const useAutoSync = () => {
       if (localEntries) {
         const entries = JSON.parse(localEntries);
         if (entries.length > 0) {
+          console.log(`自動同期: ${entries.length}件の日記データを同期します`);
           await syncService.migrateLocalData(userId);
           syncPerformed = true;
           if (import.meta.env.DEV) {
@@ -147,6 +151,7 @@ export const useAutoSync = () => {
       if (localConsents) {
         const consents = JSON.parse(localConsents);
         if (consents.length > 0) {
+          console.log(`自動同期: ${consents.length}件の同意履歴を同期します`);
           await syncService.syncConsentHistories();
           syncPerformed = true;
           if (import.meta.env.DEV) {
@@ -158,6 +163,7 @@ export const useAutoSync = () => {
       if (syncPerformed) {
         const now = new Date().toISOString();
         localStorage.setItem('last_sync_time', now);
+        console.log(`自動同期: 同期が完了しました - ${now}`);
         
         try {
           logSecurityEvent('auto_sync_completed', userId, '自動同期が完了しました');
@@ -166,12 +172,15 @@ export const useAutoSync = () => {
         }
         
         setStatus(prev => ({ ...prev, lastSyncTime: now }));
+      } else {
+        console.log('自動同期: 同期するデータがありませんでした');
       }
 
     } catch (error) {
       console.error('自動同期エラー:', error);
       setStatus(prev => ({ 
         ...prev, 
+        syncInProgress: false,
         syncError: error instanceof Error ? error.message : '同期に失敗しました'
       }));
     }
