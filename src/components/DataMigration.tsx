@@ -446,15 +446,18 @@ const DataMigration: React.FC = () => {
                       <p className="text-sm font-jp-medium text-yellow-800">Supabaseに接続できません。ローカルモードで動作中です。</p>
                       <p className="text-xs text-yellow-700 mt-1">
                         ローカルモードではデータはブラウザ内に保存され、クラウドと同期されません。
+                      </p>
                     <p className="text-sm text-blue-800 mb-3">
                       Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
                       ユーザー作成には数秒かかる場合があります。
+                    </p>
                   </div>
                   <div className="mt-2 text-center">
                     <button 
                       onClick={retryConnection}
                       className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors w-full"
-                        'ユーザーを作成してデータ同期を有効化'
+                    >
+                      {/* 'ユーザーを作成してデータ同期を有効化' */}
                       接続を再試行
                     </button>
                   </div>
@@ -510,7 +513,7 @@ const DataMigration: React.FC = () => {
                       <button
                         onClick={handleCreateUser}
                         disabled={migrating}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors w-full"
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors w-full"
                       >
                         {migrating ? (
                           <div className="flex items-center justify-center">
