@@ -55,7 +55,7 @@ const App: React.FC = () => {
   const [showUserDataManagement, setShowUserDataManagement] = useState(false);
 
   const [dataLoading, setDataLoading] = useState(true);
-  const { isMaintenanceMode, config: maintenanceConfig, loading: maintenanceLoading } = useMaintenanceStatus();
+  const { isMaintenanceMode, isAdminBypass, config: maintenanceConfig, loading: maintenanceLoading } = useMaintenanceStatus();
   const { isConnected, currentUser, initializeUser } = useSupabase();
   const { isAutoSyncEnabled } = useAutoSync();
 
@@ -889,7 +889,8 @@ const App: React.FC = () => {
     );
   }
 
-  if (isMaintenanceMode && maintenanceConfig) {
+  // メンテナンスモードかつ管理者でない場合のみメンテナンス画面を表示
+  if (isMaintenanceMode && !isAdminBypass && maintenanceConfig) {
     return <MaintenanceMode config={maintenanceConfig} />;
   }
 
@@ -1112,10 +1113,28 @@ const App: React.FC = () => {
                   {isAutoSyncEnabled && (
                     <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-purple-100 text-purple-800 border border-purple-200">
                       <RefreshCw className="w-3 h-3" />
-                      <span>自動同期: 有効</span>
+                      <span>自動同期有効</span>
+                    </div>
+                  )}
+                  {isMaintenanceMode && isAdminBypass && (
+                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
+                      <AlertTriangle className="w-3 h-3" />
+                      <span>メンテナンスモード中（管理者アクセス）</span>
+                    </div>
+                  )}
+                  {isMaintenanceMode && isAdminBypass && (
+                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
+                      <AlertTriangle className="w-3 h-3" />
+                      <span>メンテナンスモード中（管理者アクセス）</span>
                     </div>
                   )}
                 </div>
+                {isMaintenanceMode && isAdminBypass && (
+                  <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
+                    <AlertTriangle className="w-3 h-3" />
+                    <span>メンテナンスモード中（管理者アクセス）</span>
+                  </div>
+                )}
               </div>
             )}
             {renderContent()}

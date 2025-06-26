@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuthSession } from '../lib/deviceAuth';
 
 interface MaintenanceConfig {
   isEnabled: boolean;
@@ -21,6 +22,7 @@ interface MaintenanceStatus {
 export const useMaintenanceStatus = () => {
   const [status, setStatus] = useState<MaintenanceStatus>({
     isMaintenanceMode: false,
+    isAdminBypass: false,
     config: null,
     loading: true,
     error: null
@@ -28,6 +30,9 @@ export const useMaintenanceStatus = () => {
 
   const checkMaintenanceStatus = async (showLoading = false) => {
     try {
+      // 管理者バイパスチェック
+      const isAdmin = checkAdminStatus();
+      
       setStatus(prev => ({ ...prev, loading: showLoading, error: null }));
 
       // 1. 環境変数をチェック
@@ -37,7 +42,9 @@ export const useMaintenanceStatus = () => {
 
       if (envMaintenanceMode) {
         setStatus(prev => ({
+          ...prev,
           isMaintenanceMode: true,
+          isAdminBypass: isAdmin,
           config: {
             isEnabled: true,
             message: envMaintenanceMessage,
@@ -47,8 +54,7 @@ export const useMaintenanceStatus = () => {
             affectedFeatures: ['日記作成', '検索機能', 'データ同期'],
             contactInfo: 'info@namisapo.com'
           },
-          loading: false,
-          error: null
+          loading: false
         }));
         return;
       }
@@ -67,6 +73,7 @@ export const useMaintenanceStatus = () => {
           if (remoteConfig.isEnabled) {
             setStatus(prev => ({
               isMaintenanceMode: true,
+              isAdminBypass: isAdmin,
               config: remoteConfig,
               loading: false,
               error: null
@@ -84,12 +91,13 @@ export const useMaintenanceStatus = () => {
         try {
           const parsedConfig = JSON.parse(localConfig);
           if (parsedConfig.isEnabled) {
-            setStatus(prev => ({
+            setStatus({
               isMaintenanceMode: true,
+              isAdminBypass: isAdmin,
               config: parsedConfig,
               loading: false,
               error: null
-            }));
+            });
             return;
           }
         } catch (parseError) {
@@ -99,20 +107,57 @@ export const useMaintenanceStatus = () => {
 
       // 4. メンテナンスモードではない
       setStatus(prev => ({
+        ...prev,
         isMaintenanceMode: false,
+        isAdminBypass: false,
         config: null,
-        loading: false,
-        error: null
+        loading: false
       }));
 
     } catch (error) {
       console.error('メンテナンス状態の確認に失敗:', error);
       setStatus(prev => ({
         isMaintenanceMode: false,
+        isAdminBypass: false,
         config: null,
         loading: false,
         error: error instanceof Error ? error.message : '不明なエラー'
       }));
+    }
+  };
+
+  // 管理者ステータスをチェック
+  const checkAdminStatus = (): boolean => {
+    try {
+      // 1. 現在のカウンセラー名をチェック
+      const currentCounselor = localStorage.getItem('current_counselor');
+      if (currentCounselor) {
+        return true;
+      }
+      
+      // 2. 認証セッションをチェック
+      const session = getAuthSession();
+      if (session) {
+        // 管理者ユーザー名リスト（実際の実装ではデータベースから取得するべき）
+        const adminUsernames = [
+          'jin@namisapo.com',
+          'aoi@namisapo.com',
+          'asami@namisapo.com',
+          'shu@namisapo.com',
+          'yucha@namisapo.com',
+          'sammy@namisapo.com'
+        ];
+        
+        // ユーザー名が管理者リストに含まれているかチェック
+        if (adminUsernames.includes(session.lineUsername)) {
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('管理者ステータスチェックエラー:', error);
+      return false;
     }
   };
 
@@ -135,6 +180,18 @@ export const useMaintenanceStatus = () => {
   // 開発・テスト用：ローカルでメンテナンスモードを設定
   const setLocalMaintenanceMode = (config: MaintenanceConfig) => {
     localStorage.setItem('maintenance_config', JSON.stringify(config));
+    
+    // 管理者バイパスを設定
+    const isAdmin = checkAdminStatus();
+    
+    // 状態を更新
+    setStatus(prev => ({
+      ...prev,
+      isMaintenanceMode: true,
+      isAdminBypass: isAdmin,
+      config
+    }));
+    
     checkMaintenanceStatus(true);
   };
 
@@ -146,6 +203,7 @@ export const useMaintenanceStatus = () => {
 
   return {
     ...status,
+    isAdminBypass: status.isAdminBypass,
     refreshStatus,
     setLocalMaintenanceMode,
     clearLocalMaintenanceMode
