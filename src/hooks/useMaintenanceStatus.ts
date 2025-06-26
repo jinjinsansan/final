@@ -14,6 +14,7 @@ interface MaintenanceConfig {
 
 interface MaintenanceStatus {
   isMaintenanceMode: boolean;
+  isAdminBypass: boolean;
   config: MaintenanceConfig | null;
   loading: boolean;
   error: string | null;
@@ -22,6 +23,7 @@ interface MaintenanceStatus {
 export const useMaintenanceStatus = () => {
   const [status, setStatus] = useState<MaintenanceStatus>({
     isMaintenanceMode: false,
+    isAdminBypass: false,
     isAdminBypass: false,
     config: null,
     loading: true,
@@ -203,7 +205,6 @@ export const useMaintenanceStatus = () => {
 
   return {
     ...status,
-    isAdminBypass: status.isAdminBypass,
     refreshStatus,
     setLocalMaintenanceMode,
     clearLocalMaintenanceMode

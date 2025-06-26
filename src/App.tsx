@@ -1119,22 +1119,10 @@ const App: React.FC = () => {
                   {isMaintenanceMode && isAdminBypass && (
                     <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
                       <AlertTriangle className="w-3 h-3" />
-                      <span>メンテナンスモード中（管理者アクセス）</span>
-                    </div>
-                  )}
-                  {isMaintenanceMode && isAdminBypass && (
-                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
-                      <AlertTriangle className="w-3 h-3" />
-                      <span>メンテナンスモード中（管理者アクセス）</span>
+                      <span>メンテナンス中（管理者）</span>
                     </div>
                   )}
                 </div>
-                {isMaintenanceMode && isAdminBypass && (
-                  <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-jp-medium bg-red-100 text-red-800 border border-red-200">
-                    <AlertTriangle className="w-3 h-3" />
-                    <span>メンテナンスモード中（管理者アクセス）</span>
-                  </div>
-                )}
               </div>
             )}
             {renderContent()}
