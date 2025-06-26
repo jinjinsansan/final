@@ -85,27 +85,26 @@ export const useSupabase = () => {
 
   const initializeUser = async (lineUsername: string) => {
     if (!isConnected) {
-      console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします');
+      console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString());
       return null;
     }
 
-    console.log(`ユーザー初期化開始: "${lineUsername}" - ${new Date().toISOString()}`);
+    const startTime = new Date().toISOString();
+    console.log(`ユーザー初期化開始: "${lineUsername}" - ${startTime}`);
     
     // 既に初期化中の場合は処理をスキップ
     if (loading) {
-      console.log('別の初期化処理が進行中のため、スキップします');
+      console.log('別の初期化処理が進行中のため、スキップします', new Date().toISOString());
       return null;
     }
     
     setLoading(true);
+    setError(null);
     
     try {
       // 既存ユーザーを検索
       let user = await userService.getUserByUsername(lineUsername);
-      console.log('ユーザー検索結果:', user ? 'ユーザーが見つかりました' : 'ユーザーが見つかりませんでした');
-      
-      // 明示的にローディング状態を設定
-      setLoading(true);
+      console.log('ユーザー検索結果:', user ? `ユーザーが見つかりました: ${user.id}` : 'ユーザーが見つかりませんでした', new Date().toISOString());
       
       // セキュリティイベントをログ
       if (user) {
@@ -126,7 +125,7 @@ export const useSupabase = () => {
       
       if (!user) {
         // 新規ユーザー作成
-        console.log(`新規ユーザー作成を試みます: "${lineUsername}" - ${new Date().toISOString()}`);
+        console.log(`新規ユーザー作成を試みます: "${lineUsername}" - ${startTime}`);
         try {
           user = await userService.createUser(lineUsername);
         } catch (createError) {
@@ -179,10 +178,13 @@ export const useSupabase = () => {
       // 明示的にユーザー情報を更新
       if (user) {
         setCurrentUser(user);
-        setError(null);
-        console.log('currentUserを更新しました:', user);
+        console.log('currentUserを更新しました:', user.id, new Date().toISOString());
+        
+        // ローカルストレージにユーザーIDを保存
+        localStorage.setItem('supabase_user_id', user.id);
       } else {
         console.error('ユーザー情報が取得できませんでした');
+        setError('ユーザー情報の取得に失敗しました');
       }
       
       return user;
@@ -191,11 +193,10 @@ export const useSupabase = () => {
       setError(error instanceof Error ? error.message : '不明なエラー');
       return null;
     } finally {
-      console.log(`ユーザー初期化完了: "${lineUsername}" - ${new Date().toISOString()}`);
-      setTimeout(() => {
-        setLoading(false);
-        console.log('ローディング状態を解除しました');
-      }, 500); // 少し遅延させてUI更新を確実にする
+      const endTime = new Date().toISOString();
+      console.log(`ユーザー初期化完了: "${lineUsername}" - ${endTime}`);
+      setLoading(false);
+      console.log('ローディング状態を解除しました', new Date().toISOString());
     }
   };
 

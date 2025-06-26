@@ -673,11 +673,12 @@ export const syncService = {
   async migrateLocalData(userId: string | null): Promise<boolean> {
     if (!supabase) return false;
     if (!userId) {
-      console.error('ユーザーIDが指定されていません - 移行をスキップします');
+      console.error('migrateLocalData: ユーザーIDが指定されていません - 移行をスキップします');
       return false;
     }
 
-    console.log(`データ移行開始 (syncService): ユーザーID: ${userId} - ${new Date().toISOString()}`);
+    const startTime = new Date().toISOString();
+    console.log(`データ移行開始 (syncService): ユーザーID: ${userId} - ${startTime}`);
     try {
       // ローカルストレージから日記データを取得
       const localEntries = localStorage.getItem('journalEntries');
@@ -698,6 +699,7 @@ export const syncService = {
       let successCount = 0;
       let errorCount = 0;
       let skippedCount = 0;
+      let totalProcessed = 0;
       
       for (const entry of entries) {
         try {
@@ -731,19 +733,26 @@ export const syncService = {
           
           if (!existing || existing.length === 0) {
             // 新規エントリーの挿入
-            const { error: insertError } = await supabase
+            const { data: insertedData, error: insertError } = await supabase
               .from('diary_entries')
-              .insert(entryData);
+              .insert(entryData)
+              .select();
             
             if (insertError) {
               console.warn('エントリー作成エラー:', insertError);
               errorCount++;
             } else {
               successCount++;
+              console.log(`エントリーを作成しました: ${entryData.date} - ${entryData.emotion}`);
             }
           } else {
             console.log(`エントリーは既に存在します: ${entry.date} - ${entry.emotion}`);
             skippedCount++;
+          }
+          
+          totalProcessed++;
+          if (totalProcessed % 5 === 0) {
+            console.log(`進捗: ${totalProcessed}/${entries.length} 処理完了`);
           }
         } catch (entryError) {
           console.warn('エントリー移行スキップ:', entry.id, entryError);
@@ -753,6 +762,7 @@ export const syncService = {
       }
       
       console.log(`ローカルデータの移行が完了しました - 成功=${successCount}, 失敗=${errorCount}, 合計=${entries.length}`);
+      console.log(`処理時間: ${new Date().toISOString()} - 開始: ${startTime}`);
       
       if (successCount === 0 && errorCount === 0 && skippedCount > 0) {
         console.log(`すべてのエントリー(${skippedCount}件)は既に存在しています。新規移行は不要です。`);
@@ -768,10 +778,12 @@ export const syncService = {
   // Supabaseからローカルストレージにデータを同期
   async syncToLocal(userId: string | null): Promise<boolean> {
     if (!supabase) return false;
-    if (!userId) {
-      console.error('ユーザーIDが指定されていません');
+    if (!userId || userId.trim() === '') {
+      console.error('syncToLocal: ユーザーIDが指定されていません');
       return false;
     }
+    
+    console.log(`Supabaseからローカルへの同期を開始: ユーザーID: ${userId} - ${new Date().toISOString()}`);
     
     try {
       const { data: entries, error } = await supabase
@@ -782,6 +794,7 @@ export const syncService = {
       
       if (error) {
         console.error('Supabaseからのデータ取得エラー:', error);
+        console.error('エラー詳細:', error.message, error.details);
         throw error;
       }
       
@@ -800,10 +813,14 @@ export const syncService = {
       }));
       
       localStorage.setItem('journalEntries', JSON.stringify(localFormat));
-      console.log('Supabaseからローカルへの同期が完了しました');
+      console.log(`Supabaseからローカルへの同期が完了しました: ${localFormat.length}件のエントリーを同期`);
       return true;
     } catch (error) {
       console.error('同期エラー:', error);
+      if (error instanceof Error) {
+        console.error('エラーメッセージ:', error.message);
+        console.error('エラースタック:', error.stack);
+      }
       throw error;
     }
   },
@@ -933,7 +950,7 @@ export const syncService = {
       
       const entries = JSON.parse(localEntries);
       
-      if (entries.length === 0) {
+      if (!entries || entries.length === 0) {
         console.log('ローカルデータが空です - 移行スキップ');
         return true;
       }
@@ -1030,6 +1047,10 @@ export const syncService = {
       return successCount > 0 || entries.length === 0;
     } catch (error) {
       console.error(`データ移行エラー - ユーザーID: ${userId}`, error);
+      if (error instanceof Error) {
+        console.error('エラーメッセージ:', error.message);
+        console.error('エラースタック:', error.stack);
+      }
       return false;
     }
   }
