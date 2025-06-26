@@ -285,7 +285,6 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
               一般社団法人NAMIDAサポート協会 | かんじょうにっき
             </p>
             <p className="text-xs text-gray-400 font-jp-normal mt-1 mb-4">
-              ご不便をおかけして申し訳ございません
             </p>
           </div>
         </div>
