@@ -124,9 +124,15 @@ const DataMigration: React.FC = () => {
       const existingUser = await userService.getUserByUsername(lineUsername);
       if (existingUser) {
         console.log('既存ユーザーが見つかりました:', existingUser);
-        setMigrationStatus('ユーザーは既に存在します！データ移行が可能になりました。');
+        setMigrationStatus('ユーザーは既に存在します！ページを再読み込みします...');
         localStorage.setItem('supabase_user_id', existingUser.id);
         setUserExists(true);
+        
+        // 現在のユーザーを設定
+        if (isConnected) {
+          await initializeUser(lineUsername);
+        }
+        
         
         // 既存ユーザーの場合は、現在のユーザー状態を更新
         if (isConnected) {
@@ -163,8 +169,13 @@ const DataMigration: React.FC = () => {
       console.log('ユーザー作成成功:', user);
       localStorage.setItem('supabase_user_id', user.id);
       // 成功メッセージを表示
-      setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
+      setMigrationStatus('ユーザーが作成されました！ページを再読み込みします...');
       setUserExists(true);
+      
+      // 現在のユーザーを設定
+      if (isConnected) {
+        await initializeUser(lineUsername);
+      }
       
       // 少し待ってからリロード
       setTimeout(() => {
@@ -183,11 +194,17 @@ const DataMigration: React.FC = () => {
         // 重複キーエラーの場合
         if (error.message.includes('duplicate key') || error.message.includes('already exists')) {
           console.log('重複エラーを検出しました - 既存ユーザーを使用します');
-          setMigrationStatus('このユーザー名は既に登録されています。既存のユーザーを使用します。');
+          setMigrationStatus('このユーザー名は既に登録されています。ページを再読み込みします...');
           setUserExists(true);
+          
+          // 現在のユーザーを設定
+          if (isConnected) {
+            await initializeUser(lineUsername);
+          }
+          
           setTimeout(() => {
             window.location.reload();
-          }, 1500);
+          }, 2000);
           return;
         }
       }
@@ -204,7 +221,7 @@ const DataMigration: React.FC = () => {
   const handleMigrateToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      // ローカルストレージからユーザーIDを取得して使用
+      setMigrationStatus('エラー: ユーザーが設定されていません。「Supabaseユーザーを作成」ボタンをクリックしてください。');
       const savedUserId = localStorage.getItem('supabase_user_id');
       if (savedUserId) {
         await handleMigrateWithSavedUserId(savedUserId);
@@ -311,7 +328,7 @@ const DataMigration: React.FC = () => {
   const handleMigrateConsentsToSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      // ユーザーセッションを回復
+      setMigrationStatus('エラー: ユーザーが設定されていません。「Supabaseユーザーを作成」ボタンをクリックしてください。');
       await handleRecoverUserSession();
       return;
     }
@@ -344,7 +361,7 @@ const DataMigration: React.FC = () => {
   const handleSyncFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      // ユーザーセッションを回復
+      setMigrationStatus('エラー: ユーザーが設定されていません。「Supabaseユーザーを作成」ボタンをクリックしてください。');
       await handleRecoverUserSession();
       return;
     }
@@ -378,7 +395,7 @@ const DataMigration: React.FC = () => {
   const handleSyncConsentsFromSupabase = async () => {
     // ユーザーが設定されていない場合は処理を中止
     if (!currentUser) {
-      // ユーザーセッションを回復
+      setMigrationStatus('エラー: ユーザーが設定されていません。「Supabaseユーザーを作成」ボタンをクリックしてください。');
       await handleRecoverUserSession();
       return;
     }

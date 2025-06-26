@@ -86,7 +86,7 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     if (!isConnected) {
       console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString());
-      setError('Supabaseに接続されていません。接続を確立してから再度お試しください。');
+      return null; 
       return null;
     }
 
@@ -115,6 +115,9 @@ export const useSupabase = () => {
         } catch (logError) {
           console.error('セキュリティログ記録エラー:', logError);
         }
+        
+        // ユーザーが見つかった場合は現在のユーザーとして設定
+        setCurrentUser(user);
       } else {
         console.log(`Supabaseユーザーが見つかりません: "${lineUsername}" - 新規作成を試みます`);
         try {
@@ -125,15 +128,29 @@ export const useSupabase = () => {
       }
       
       if (!user) {
-        // 新規ユーザー作成
-        console.log(`新規ユーザー作成を試みます: "${lineUsername}" - ${startTime}`);
         try {
-          user = await userService.createUser(lineUsername.trim());
-        } catch (createError) {
-          console.error('ユーザー作成エラー (initializeUser):', createError);
+          // 新規ユーザー作成
+          console.log(`新規ユーザー作成を試みます: "${lineUsername}" - ${new Date().toISOString()}`);
+          user = await userService.createUser(lineUsername);
           
-          // 作成エラーの場合、もう一度ユーザー検索を試みる
-          // (同時作成などで競合が発生した可能性がある)
+          if (user) {
+            setCurrentUser(user);
+            console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${user.id}`);
+            
+            try {
+              logSecurityEvent('supabase_user_created', lineUsername, 'Supabaseユーザーを作成しました');
+            } catch (logError) {
+              console.error('セキュリティログ記録エラー:', logError);
+            }
+            
+            // ローカルデータを移行
+            try {
+              console.log(`ローカルデータの移行を開始: "${lineUsername}" - ID: ${user.id}`);
+              await syncService.migrateLocalData(user.id);
+              console.log(`ローカルデータの移行が完了しました: "${lineUsername}"`);
+            } catch (syncError) {
+              console.error('データ移行エラー:', syncError);
+            }
           try {
             console.log('ユーザー作成エラー後に再検索を試みます');
             user = await userService.getUserByUsername(lineUsername.trim());
@@ -160,6 +177,9 @@ export const useSupabase = () => {
           } catch (syncError) {
             console.error('データ移行エラー:', syncError);
           }
+        } catch (createError) {
+          console.error(`ユーザー作成エラー: "${lineUsername}"`, createError);
+          setError(createError instanceof Error ? createError.message : '不明なエラー');
         }
       } else {
         // 既存ユーザーの場合、Supabaseからローカルに同期
@@ -188,7 +208,6 @@ export const useSupabase = () => {
         console.error('ユーザー情報が取得できませんでした');
         setError('ユーザー情報の取得に失敗しました');
       }
-      
       return user;
     } catch (error) {
       console.error(`ユーザー初期化エラー: ${lineUsername}`, error);

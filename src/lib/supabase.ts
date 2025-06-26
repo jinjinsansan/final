@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 環境変数から値を取得し、undefined や null の場合は空文字列にする
-const supabaseUrl = 'https://afojjlfuwglzukzinpzx.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmb2pqbGZ1d2dsenVremlucHp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDc4MzEsImV4cCI6MjA2NjE4MzgzMX0.ovSwuxvBL5gHtW4XdDkipz9QxWL_njAkr7VQgy1uVRY';
+// 環境変数から値を取得
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://afojjlfuwglzukzinpzx.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmb2pqbGZ1d2dsenVremlucHp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDc4MzEsImV4cCI6MjA2NjE4MzgzMX0.ovSwuxvBL5gHtW4XdDkipz9QxWL_njAkr7VQgy1uVRY';
 
 // 環境変数のデバッグ情報（開発環境のみ）
 if (import.meta.env.DEV) {
@@ -213,7 +213,7 @@ export const userService = {
       return null;
     }
     if (!lineUsername) {
-      console.error('ユーザー名が指定されていません');
+      console.error('ユーザー作成エラー: ユーザー名が指定されていません');
       return null;
     }
 
@@ -223,7 +223,7 @@ export const userService = {
       // まず既存ユーザーをチェック
       const existingUser = await this.getUserByUsername(lineUsername);
       if (existingUser) {
-        console.log(`ユーザーは既に存在します: "${lineUsername}" - ID: ${existingUser.id} - ${timestamp}`);
+        console.log(`ユーザーは既に存在します: "${lineUsername}" - ID: ${existingUser.id} - 既存ユーザーを返します - ${timestamp}`);
         // ユーザーIDをローカルストレージに保存
         localStorage.setItem('supabase_user_id', existingUser.id);
         return existingUser;
@@ -296,7 +296,7 @@ export const userService = {
   async getUserByUsername(lineUsername: string | null): Promise<User | null> {
     if (!supabase) return null;
     if (!lineUsername) {
-      console.error('getUserByUsername: ユーザー名が指定されていません');
+      console.error('ユーザー検索エラー: ユーザー名が指定されていません');
       return null;
     }
 
@@ -314,7 +314,7 @@ export const userService = {
       if (error) {
         // ユーザーが見つからない場合は null を返す
         if (error.code === 'PGRST116' || error.message.includes('No rows found')) {
-          console.log(`ユーザーが見つかりません: "${lineUsername}" - ${timestamp}`);
+          console.log(`ユーザー検索結果: "${lineUsername}" - ユーザーが見つかりません - ${timestamp}`);
           return null;
         }
         console.error(`ユーザー検索エラー: "${lineUsername}" - ${timestamp}`, error);
@@ -685,7 +685,7 @@ export const syncService = {
   async migrateLocalData(userId: string | null): Promise<boolean> {
     if (!supabase) return false;
     if (!userId) {
-      console.error('migrateLocalData: ユーザーIDが指定されていません - 移行をスキップします');
+      console.error('データ移行エラー: ユーザーIDが指定されていません');
       return false;
     }
 
@@ -695,17 +695,17 @@ export const syncService = {
       // ローカルストレージから日記データを取得
       const localEntries = localStorage.getItem('journalEntries');
       if (!localEntries) {
-        console.log('ローカルデータが見つかりません - 移行スキップ');
+        console.log('データ移行: ローカルデータが見つかりません - 移行スキップ');
         return true;
       }
       
       const entries = JSON.parse(localEntries);
       if (entries.length === 0) {
-        console.log('ローカルデータが空です - 移行スキップ');
+        console.log('データ移行: ローカルデータが空です - 移行スキップ');
         return true;
       }
       
-      console.log(`移行するエントリー数: ${entries.length}`);
+      console.log(`データ移行: 移行するエントリー数: ${entries.length}`);
       
       // 各エントリーを処理
       let successCount = 0;
@@ -791,7 +791,7 @@ export const syncService = {
   async syncToLocal(userId: string | null): Promise<boolean> {
     if (!supabase) return false;
     if (!userId || userId.trim() === '') {
-      console.error('syncToLocal: ユーザーIDが指定されていません');
+      console.error('データ同期エラー: ユーザーIDが指定されていません');
       return false;
     }
     
@@ -849,17 +849,17 @@ export const syncService = {
     }
 
     const timestamp = new Date().toISOString();
-    console.log(`同意履歴の同期を開始 - ユーザー: ${lineUsername} - ${timestamp}`);
+    console.log('同意履歴の同期を開始: ' + timestamp);
     try {
       // ローカルストレージから同意履歴を取得
       const localHistories = localStorage.getItem('consent_histories');
       if (!localHistories) {
-        console.log(`ローカル同意履歴が見つかりません - 同期スキップ - ${timestamp}`);
+        console.log('同意履歴同期: ローカル同意履歴が見つかりません - 同期スキップ');
         return true;
       }
 
       const histories = JSON.parse(localHistories);
-      console.log(`同期する同意履歴数: ${histories.length} - ${timestamp}`);
+      console.log(`同意履歴同期: 同期する同意履歴数: ${histories.length}`);
       
       let successCount = 0;
       let errorCount = 0;
@@ -923,6 +923,8 @@ export const syncService = {
   async syncConsentHistoriesToLocal(): Promise<boolean> {
     if (!supabase) return false;
     
+    console.log('Supabaseから同意履歴の同期を開始: ' + new Date().toISOString());
+    
     try {
       const { data: histories, error } = await supabase
         .from('consent_histories')
@@ -945,7 +947,7 @@ export const syncService = {
       }));
       
       localStorage.setItem('consent_histories', JSON.stringify(localFormat));
-      console.log('同意履歴のローカル同期が完了しました');
+      console.log('同意履歴のローカル同期が完了しました: ' + new Date().toISOString());
       return true;
     } catch (error) {
       console.error('同意履歴ローカル同期エラー:', error);
@@ -957,7 +959,7 @@ export const syncService = {
   async bulkMigrateLocalData(userId: string | null, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
     if (!userId || userId.trim() === '') {
-      console.error('ユーザーIDが指定されていません - 大量データ移行をスキップします');
+      console.error('データ移行エラー: ユーザーIDが指定されていません');
       return false;
     }
 
