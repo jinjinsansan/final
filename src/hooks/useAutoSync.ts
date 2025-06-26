@@ -128,6 +128,16 @@ export const useAutoSync = () => {
   // 自動同期実行
   const performAutoSync = async (userId: string) => {
     try {
+      if (!userId || typeof userId !== 'string') {
+        console.error('自動同期エラー: 無効なユーザーID:', userId);
+        setStatus(prev => ({ 
+          ...prev, 
+          syncInProgress: false,
+          syncError: '無効なユーザーID'
+        }));
+        return;
+      }
+      
       console.log(`自動同期: データ同期を開始します - ユーザーID: ${userId}`, new Date().toISOString());
       setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
       
@@ -135,7 +145,8 @@ export const useAutoSync = () => {
       const localEntries = localStorage.getItem('journalEntries');
       const localConsents = localStorage.getItem('consent_histories');
       
-      let syncPerformed = false;
+      let diarySync = false;
+      let consentSync = false;
 
       // 日記データの同期
       if (localEntries) {
@@ -143,7 +154,7 @@ export const useAutoSync = () => {
         if (entries.length > 0) {
           console.log(`自動同期: ${entries.length}件の日記データを同期します`, new Date().toISOString());
           await syncService.migrateLocalData(userId);
-          syncPerformed = true;
+          diarySync = true;
           if (import.meta.env.DEV) {
             console.log('日記データを自動同期しました');
           }
@@ -156,17 +167,17 @@ export const useAutoSync = () => {
         if (consents.length > 0) {
           console.log(`自動同期: ${consents.length}件の同意履歴を同期します`, new Date().toISOString());
           await syncService.syncConsentHistories();
-          syncPerformed = true;
+          consentSync = true;
           if (import.meta.env.DEV) {
             console.log('同意履歴を自動同期しました');
           }
         }
       }
 
-      if (syncPerformed) {
+      if (diarySync || consentSync) {
         const now = new Date().toISOString();
         localStorage.setItem('last_sync_time', now);
-        console.log(`自動同期: 同期が完了しました - ${now}`, new Date().toISOString());
+        console.log(`自動同期: 同期が完了しました - 日記: ${diarySync ? '成功' : '未実行'}, 同意履歴: ${consentSync ? '成功' : '未実行'} - ${now}`);
         
         try {
           logSecurityEvent('auto_sync_completed', userId, '自動同期が完了しました');
@@ -215,6 +226,7 @@ export const useAutoSync = () => {
   // 手動同期実行
   const triggerManualSync = async () => {
     setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
+    console.log('手動同期を開始します');
 
     try {
       if (!isConnected || !currentUser) {
@@ -222,7 +234,7 @@ export const useAutoSync = () => {
       }
       
       await performAutoSync(currentUser.id);
-      console.log('手動同期が完了しました', new Date().toISOString());
+      console.log('手動同期が完了しました - ユーザーID:', currentUser.id, new Date().toISOString());
       
       try {
         const user = getCurrentUser();

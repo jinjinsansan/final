@@ -874,6 +874,7 @@ export const syncService = {
   // 同意履歴をSupabaseに同期
   async syncConsentHistories(): Promise<boolean> {
     if (!supabase) return false;
+    const startTime = new Date().toISOString();
     
     console.log('同意履歴の同期を開始 - ' + new Date().toISOString());
     
@@ -889,12 +890,14 @@ export const syncService = {
       const localHistories = localStorage.getItem('consent_histories');
       if (!localHistories) {
         console.log('同意履歴同期: ローカル同意履歴が見つかりません - 同期スキップ');
+        console.log('同意履歴同期: 成功として返します（データなし）');
         return true;
       } 
 
       const histories = JSON.parse(localHistories);
       if (!Array.isArray(histories) || histories.length === 0) {
         console.log('同意履歴同期: 同期する同意履歴がありません - 同期スキップ');
+        console.log('同意履歴同期: 成功として返します（空配列）');
         return true;
       }
       
@@ -907,8 +910,14 @@ export const syncService = {
       for (let i = 0; i < histories.length; i++) {
         try {
           const history = histories[i];
-          if (!history || typeof history !== 'object' || !history.line_username || !history.consent_date) {
-            console.warn(`無効な同意履歴データをスキップします [${i+1}/${histories.length}]`);
+          if (!history || typeof history !== 'object') {
+            console.warn(`無効な同意履歴データをスキップします [${i+1}/${histories.length}]: ${JSON.stringify(history)}`);
+            errorCount++;
+            continue;
+          }
+          
+          if (!history.line_username || !history.consent_date) {
+            console.warn(`必須フィールドが不足している同意履歴データをスキップします [${i+1}/${histories.length}]: ${JSON.stringify(history)}`);
             errorCount++;
             continue;
           }
@@ -918,7 +927,7 @@ export const syncService = {
           // 既存の記録をチェック（同じユーザー名と同意日時の組み合わせ）
           const { data: existing, error: checkError } = await supabase
             .from('consent_histories')
-            .select('id')
+            .select('id, line_username, consent_date')
             .eq('line_username', history.line_username)
             .eq('consent_date', history.consent_date);
           
@@ -930,12 +939,23 @@ export const syncService = {
           
           if (!existing || existing.length === 0) {
             console.log(`新規同意履歴を作成: ${history.line_username}`);
+            
+            // 同意日時が文字列でない場合は変換
+            let consentDate = history.consent_date;
+            if (typeof consentDate !== 'string') {
+              try {
+                consentDate = new Date(consentDate).toISOString();
+              } catch (dateError) {
+                console.warn(`同意日時の変換に失敗しました: ${consentDate}`, dateError);
+                consentDate = new Date().toISOString(); // フォールバック
+              }
+            }
 
             // 同意履歴データの準備
             const consentData = {
               line_username: history.line_username,
               consent_given: history.consent_given === true,
-              consent_date: history.consent_date,
+              consent_date: consentDate,
               ip_address: history.ip_address || 'unknown',
               user_agent: history.user_agent || 'unknown'
             }; 
@@ -947,6 +967,7 @@ export const syncService = {
             
             if (insertError) {
               console.warn('同意履歴作成エラー:', insertError, consentData);
+              console.warn('エラー詳細:', insertError.message, insertError.details);
               errorCount++; 
             } else {
               successCount++;
@@ -958,7 +979,7 @@ export const syncService = {
           }
            
            // レート制限を回避するための待機
-           await new Promise(resolve => setTimeout(resolve, 100));
+           await new Promise(resolve => setTimeout(resolve, 300));
         } catch (historyError) {
           console.error(`同意履歴処理エラー [${i+1}/${histories.length}]:`, historyError);
           errorCount++;
@@ -967,7 +988,11 @@ export const syncService = {
       
       const endTime = new Date().toISOString();
       console.log(`同意履歴の同期が完了しました - 成功=${successCount}, 失敗=${errorCount}, 合計=${histories.length} - 開始時刻: ${startTime}, 終了時刻: ${endTime}`);
-      return successCount > 0 || histories.length === 0;
+      
+      // 成功条件を緩和: 1件でも成功したか、すべてスキップされた場合は成功
+      const isSuccess = successCount > 0 || histories.length === 0;
+      console.log(`同意履歴同期の結果: ${isSuccess ? '成功' : '失敗'}`);
+      return isSuccess;
     } catch (error) {
       console.error('同意履歴同期エラー:', error);
       if (error instanceof Error) {
@@ -1028,7 +1053,7 @@ export const syncService = {
   // 本番環境用：大量データの効率的な同期
   async bulkMigrateLocalData(userId: string | null, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
-    if (!userId) {
+    if (!userId || typeof userId !== 'string') {
       console.error('データ移行エラー: ユーザーIDが指定されていません');
       return false;
     }
@@ -1039,6 +1064,7 @@ export const syncService = {
       const localEntries = localStorage.getItem('journalEntries');
       if (!localEntries) {
         console.log('ローカルデータが見つかりません - 移行スキップ');
+        console.log('移行成功として返します（データなし）');
         if (progressCallback) progressCallback(100);
         return true;
       }
@@ -1048,12 +1074,14 @@ export const syncService = {
         entries = JSON.parse(localEntries);
       } catch (parseError) {
         console.error('ローカルデータの解析に失敗しました:', parseError);
+        console.log('移行失敗として返します（解析エラー）');
         if (progressCallback) progressCallback(100);
         return false;
       }
       
       if (!entries || entries.length === 0) {
         console.log('ローカルデータが空です - 移行スキップ');
+        console.log('移行成功として返します（空データ）');
         if (progressCallback) progressCallback(100);
         return true;
       }
@@ -1156,6 +1184,7 @@ export const syncService = {
       // 進捗コールバックが提供されている場合は100%完了を通知
       if (progressCallback && totalBatches > 0) {
         progressCallback(100);
+        console.log('進捗100%を通知しました');
       }
       
       // 完了メッセージ
@@ -1166,7 +1195,8 @@ export const syncService = {
       // スキップされたエントリーが多い場合でも成功として扱う
       if (successCount === 0 && errorCount === 0 && skippedCount > 0) {
         console.log(`すべてのエントリー(${skippedCount}件)は既に存在しているため、移行は成功とみなします`);
-        return true;
+        console.log('移行成功として返します（すべてスキップ）');
+        return true; 
       }
       
       // 成功条件を緩和: 1件でも成功したか、すべてスキップされた場合は成功
@@ -1176,6 +1206,7 @@ export const syncService = {
       if (error instanceof Error) {
         console.error('エラーメッセージ:', error.message);
         console.error('エラースタック:', error.stack);
+        console.log('移行失敗として返します（例外発生）');
       }
       return false;
     }
