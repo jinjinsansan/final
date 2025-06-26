@@ -210,6 +210,7 @@ export const userService = {
   async createUser(lineUsername: string | null): Promise<User | null> {
     if (!supabase) {
       console.error('createUser: Supabaseクライアントが初期化されていません');
+      console.error('createUser: Supabaseクライアントが初期化されていません');
       return null;
     }
     if (!lineUsername) {
@@ -268,6 +269,8 @@ export const userService = {
       console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${data.id} - ${timestamp}`);
       // ユーザーIDをローカルストレージに保存
       localStorage.setItem('supabase_user_id', data.id);
+      // ユーザーIDをローカルストレージに保存
+      localStorage.setItem('supabase_user_id', data.id);
       return data;
     } catch (error) {
       console.error(`ユーザー作成エラー: "${lineUsername}" - ${timestamp}`, error);
@@ -278,6 +281,10 @@ export const userService = {
         try {
           const existingUser = await this.getUserByUsername(lineUsername);
           console.log(`既存ユーザーを取得しました: "${lineUsername}" - ID: ${existingUser?.id || 'null'} - ${timestamp}`);
+          if (existingUser) {
+            // ユーザーIDをローカルストレージに保存
+            localStorage.setItem('supabase_user_id', existingUser.id);
+          }
           if (existingUser) {
             // ユーザーIDをローカルストレージに保存
             localStorage.setItem('supabase_user_id', existingUser.id);
@@ -297,9 +304,10 @@ export const userService = {
     if (!supabase) return null;
     if (!lineUsername) {
       console.error('ユーザー検索エラー: ユーザー名が指定されていません');
-      return null;
+      console.error('ユーザー検索エラー: ユーザー名が指定されていません');
     }
 
+    const timestamp = new Date().toISOString();
     const timestamp = new Date().toISOString();
     console.log(`ユーザー検索開始 (userService): "${lineUsername}" - ${timestamp}`);
     try {
@@ -308,6 +316,8 @@ export const userService = {
         .select('*')
         .eq('line_username', lineUsername)
         .maybeSingle();
+      
+      console.log(`ユーザー検索クエリ実行完了: "${lineUsername}" - ${new Date().toISOString()}`);
       
       console.log(`ユーザー検索クエリ実行完了: "${lineUsername}" - ${new Date().toISOString()}`);
       
@@ -651,17 +661,20 @@ export const consentService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('同意履歴取得エラー:', error);
+    const timestamp = new Date().toISOString();
+    console.log(`ユーザー作成開始 (userService): "${lineUsername}" - ${timestamp}`);
       return [];
     }
   },
 
-  async getConsentHistoryByUsername(lineUsername: string | null): Promise<ConsentHistory | null> {
+        console.log(`ユーザーは既に存在します: "${lineUsername}" - ID: ${existingUser.id} - 既存ユーザーを返します - ${timestamp}`);
+        // ユーザーIDをローカルストレージに保存
+        localStorage.setItem('supabase_user_id', existingUser.id);
     if (!supabase) return null;
     if (!lineUsername) {
-      console.error('ユーザー名が指定されていません');
+      console.error('ユーザー作成エラー: ユーザー名が指定されていません');
       return null;
-    }
+      console.log(`新規ユーザーを作成します - username: "${lineUsername}" - ${timestamp}`);
     
     try {
       const { data, error } = await supabase
