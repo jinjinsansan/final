@@ -345,9 +345,10 @@ const App: React.FC = () => {
   };
 
   // Twitterでシェア
-  const handleTwitterShareWorthlessness = (period: string, data: any[], emotionFreq: [string, number][]) => {
+  const handleTwitterShareWorthlessness = (period: string, data: any[]) => {
     const periodText = period === 'week' ? '1週間' : period === 'month' ? '1ヶ月' : '全期間';
     const recordCount = data.length;
+    const emotionFreq = getEmotionFrequency();
     const mostFrequentEmotion = emotionFreq.length > 0 ? `${emotionFreq[0][0]} (${emotionFreq[0][1]}回)` : 'なし';
     
     const shareText = encodeURIComponent(`📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://namisapo.vercel.app/`);
@@ -357,61 +358,6 @@ const App: React.FC = () => {
     
     // 新しいウィンドウでTwitterシェアを開く
     window.open(twitterUrl, '_blank');
-  };
-
-  const handleShareWorthlessness = (period: string, data: any[]) => {
-    const periodText = period === 'week' ? '1週間' : period === 'month' ? '1ヶ月' : '全期間';
-    const recordCount = data.length;
-    const emotionFreq = getEmotionFrequency();
-    const mostFrequentEmotion = emotionFreq.length > 0 ? `${getEmotionEmoji(emotionFreq[0][0])} ${emotionFreq[0][0]} (${emotionFreq[0][1]}回)` : 'なし';
-    
-    // 無価値感の変化を計算（データがある場合）
-    let trendText = '';
-    if (data.length >= 2) {
-      const firstScore = data[0].worthlessness;
-      const lastScore = data[data.length - 1].worthlessness;
-      const diff = lastScore - firstScore;
-      
-      if (diff < 0) {
-        trendText = `\n📉 無価値感スコア: ${Math.abs(diff)}ポイント減少`;
-      } else if (diff > 0) {
-        trendText = `\n📈 無価値感スコア: ${diff}ポイント上昇`;
-      } else {
-        trendText = `\n📊 無価値感スコア: 変化なし`;
-      }
-    }
-    
-    const shareText = `📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}${trendText}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://namisapo.vercel.app/`;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: 'かんじょうにっき - 無価値感推移',
-        text: shareText,
-      }).catch((error) => {
-        console.log('シェアがキャンセルされました:', error);
-      });
-    } else {
-      navigator.clipboard.writeText(shareText).then(() => {
-        alert('シェア用テキストをクリップボードにコピーしました！\nSNSに貼り付けてシェアしてください。');
-      }).catch(() => {
-        prompt('以下のテキストをコピーしてSNSでシェアしてください:', shareText);
-      });
-    }
-  };
-
-  // 感情に対応する絵文字を取得
-  const getEmotionEmoji = (emotion: string): string => {
-    const emojiMap: { [key: string]: string } = {
-      '恐怖': '😨',
-      '悲しみ': '😢',
-      '怒り': '😠',
-      '悔しい': '😣',
-      '無価値感': '😔',
-      '罪悪感': '😓',
-      '寂しさ': '🥺',
-      '恥ずかしさ': '😳'
-    };
-    return emojiMap[emotion] || '📝';
   };
 
   const renderWorthlessnessChart = (data: any[]) => {
@@ -548,6 +494,30 @@ const App: React.FC = () => {
         </div>
       </div>
     );
+  };
+
+  const handleShareWorthlessness = (period: string, data: any[]) => {
+    const periodText = period === 'week' ? '1週間' : period === 'month' ? '1ヶ月' : '全期間';
+    const recordCount = data.length;
+    const emotionFreq = getEmotionFrequency();
+    const mostFrequentEmotion = emotionFreq.length > 0 ? `${emotionFreq[0][0]} (${emotionFreq[0][1]}回)` : 'なし';
+    
+    const shareText = `📊 無価値感推移レポート（${periodText}）\n\n📝 記録数: ${recordCount}件\n😔 最も多い感情: ${mostFrequentEmotion}\n\n#かんじょうにっき #感情日記 #無価値感推移\n\nhttps://namisapo.vercel.app/`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'かんじょうにっき - 無価値感推移',
+        text: shareText,
+      }).catch((error) => {
+        console.log('シェアがキャンセルされました:', error);
+      });
+    } else {
+      navigator.clipboard.writeText(shareText).then(() => {
+        alert('シェア用テキストをクリップボードにコピーしました！\nSNSに貼り付けてシェアしてください。');
+      }).catch(() => {
+        prompt('以下のテキストをコピーしてSNSでシェアしてください:', shareText);
+      });
+    }
   };
 
   // カウンセラーログインモーダル
@@ -802,7 +772,7 @@ const App: React.FC = () => {
                       <span>SNSでシェア</span>
                     </button>
                     <button
-                      onClick={() => handleTwitterShareWorthlessness(emotionPeriod, filteredData, emotionFrequency)}
+                      onClick={() => handleTwitterShareWorthlessness(emotionPeriod, filteredData)}
                       className="flex items-center space-x-2 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors"
                     >
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
