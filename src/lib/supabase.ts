@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // 環境変数から値を取得し、undefined や null の場合は空文字列にする
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = 'https://afojjlfuwglzukzinpzx.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmb2pqbGZ1d2dsenVremlucHp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDc4MzEsImV4cCI6MjA2NjE4MzgzMX0.ovSwuxvBL5gHtW4XdDkipz9QxWL_njAkr7VQgy1uVRY';
 
 // 環境変数のデバッグ情報（開発環境のみ）
 if (import.meta.env.DEV) {
@@ -318,12 +318,27 @@ export const userService = {
 
   // 本番環境用：ユーザー統計取得
   async getUserStats(): Promise<{ total: number; today: number; thisWeek: number } | null> {
-    // 開発環境用のモック統計
-    return {
-      total: 10,
-      today: 2,
-      thisWeek: 5
-    };
+    if (!supabase) return null;
+    
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      
+      const [totalResult, todayResult, weekResult] = await Promise.all([
+        supabase.from('users').select('id', { count: 'exact' }),
+        supabase.from('users').select('id', { count: 'exact' }).gte('created_at', today),
+        supabase.from('users').select('id', { count: 'exact' }).gte('created_at', weekAgo)
+      ]);
+      
+      return {
+        total: totalResult.count || 0,
+        today: todayResult.count || 0,
+        thisWeek: weekResult.count || 0
+      };
+    } catch (error) {
+      console.error('ユーザー統計取得エラー:', error);
+      return null;
+    }
   }
 };
 

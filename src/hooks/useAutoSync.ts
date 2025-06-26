@@ -148,7 +148,7 @@ export const useAutoSync = () => {
   };
 
   // 自動同期の有効/無効切り替え
-  const toggleAutoSync = async (enabled: boolean) => {
+  const toggleAutoSync = (enabled: boolean) => {
     localStorage.setItem('auto_sync_enabled', enabled.toString());
     
     try {
@@ -162,7 +162,7 @@ export const useAutoSync = () => {
     
     if (enabled && isConnected && currentUser) {
       // 即座に同期を実行
-      await performAutoSync(currentUser.id);
+      performAutoSync(currentUser.id);
     }
   };
 

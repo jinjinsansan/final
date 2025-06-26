@@ -57,9 +57,13 @@ const DataMigration: React.FC = () => {
   const checkDataCounts = () => {
     // ローカルデータ数をチェック
     const lineUsername = localStorage.getItem('line-username');
-    if (lineUsername) {
-      // 開発環境では常にユーザーが存在すると仮定
-      setUserExists(true);
+    if (lineUsername && isConnected) {
+      // ユーザーの存在確認
+      userService.getUserByUsername(lineUsername).then(user => {
+        setUserExists(!!user);
+      }).catch(() => {
+        setUserExists(false);
+      });
     }
     
     const localEntries = localStorage.getItem('journalEntries');
@@ -83,9 +87,23 @@ const DataMigration: React.FC = () => {
     setSupabaseDataCount(0);
     setSupabaseConsentCount(0);
     
-    // 開発環境用のモックデータ
-    setSupabaseDataCount(3);
-    setSupabaseConsentCount(1);
+    if (isConnected) {
+      // Supabaseの同意履歴数を取得
+      consentService.getAllConsentHistories().then(histories => {
+        setSupabaseConsentCount(histories.length);
+      }).catch(() => {
+        setSupabaseConsentCount(0);
+      });
+      
+      // Supabaseの日記データ数を取得
+      if (currentUser) {
+        supabase?.from('diary_entries')
+          .select('id', { count: 'exact' })
+          .eq('user_id', currentUser.id)
+          .then(({ count }) => setSupabaseDataCount(count || 0))
+          .catch(() => setSupabaseDataCount(0));
+      }
+    }
   };
 
   const handleCreateUser = async () => {
@@ -102,7 +120,29 @@ const DataMigration: React.FC = () => {
       setMigrating(true);
       console.log(`ユーザー作成開始: ${lineUsername}`);
 
-      // 開発環境用のモックユーザー作成
+      // まず既存ユーザーをチェック
+      const existingUser = await userService.getUserByUsername(lineUsername);
+      if (existingUser) {
+        console.log('既存ユーザーが見つかりました:', existingUser);
+        setMigrationStatus('ユーザーは既に存在します！データ移行が可能になりました。');
+        setUserExists(true);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+        return;
+      }
+      
+      // 新規ユーザー作成
+      console.log('新規ユーザーを作成します:', lineUsername);
+      const user = await userService.createUser(lineUsername);
+      
+      if (!user) {
+        console.error('ユーザー作成に失敗しました - nullが返されました');
+        throw new Error('ユーザー作成に失敗しました。');
+      }
+      
+      console.log('ユーザー作成成功:', user);
+      // 成功メッセージを表示
       setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
       setUserExists(true);
       
@@ -135,16 +175,6 @@ const DataMigration: React.FC = () => {
       // エラーメッセージを表示
       setMigrationStatus(`エラー: ${errorMessage}`);
       setUserCreationError(errorMessage);
-      
-      // エラー後も少し待ってからリロード（開発環境用）
-      setTimeout(() => {
-        setMigrationStatus('ユーザーが作成されました！データ移行が可能になりました。');
-        setUserExists(true);
-        
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-      }, 2000);
     } finally {
       setMigrating(false);
       setIsCreatingUser(false);
@@ -163,19 +193,7 @@ const DataMigration: React.FC = () => {
     setMigrationStatus('ローカルデータをSupabaseに移行中...');
     setMigrationProgress(0);
 
-    try {
-      // 開発環境用のモック移行処理
-      // 進捗をシミュレート
-      for (let i = 0; i <= 100; i += 20) {
-        setMigrationProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-      
-      setMigrationStatus('移行が完了しました！');
-      checkDataCounts();
-      loadStats();
-      
-      /*
+    try {      
       // 大量データ対応の移行処理
       const success = await syncService.bulkMigrateLocalData(
         currentUser.id,
@@ -189,7 +207,6 @@ const DataMigration: React.FC = () => {
       } else {
         setMigrationStatus('移行に失敗しました。');
       }
-      */
     } catch (error) {
       console.error('移行エラー:', error);
       setMigrationStatus('移行中にエラーが発生しました。');
@@ -211,9 +228,7 @@ const DataMigration: React.FC = () => {
     setMigrationStatus('同意履歴をSupabaseに移行中...');
 
     try {
-      // 開発環境用のモック同期処理
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const success = true;
+      const success = await syncService.syncConsentHistories();
       
       if (success) {
         setMigrationStatus('同意履歴の移行が完了しました！');
@@ -241,9 +256,7 @@ const DataMigration: React.FC = () => {
     setMigrationStatus('Supabaseからローカルに同期中...');
 
     try {
-      // 開発環境用のモック同期処理
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const success = true;
+      const success = await syncService.syncToLocal(currentUser.id);
       
       if (success) {
         setMigrationStatus('同期が完了しました！');
@@ -272,9 +285,7 @@ const DataMigration: React.FC = () => {
     setMigrationStatus('Supabaseから同意履歴を同期中...');
 
     try {
-      // 開発環境用のモック同期処理
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const success = true;
+      const success = await syncService.syncConsentHistoriesToLocal();
       
       if (success) {
         setMigrationStatus('同意履歴の同期が完了しました！');
