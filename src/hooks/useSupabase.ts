@@ -12,12 +12,23 @@ export const useSupabase = () => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastAttemptTime, setLastAttemptTime] = useState(0);
 
   useEffect(() => {
     checkConnection(true);
   }, []);
 
   const checkConnection = async (isInitialCheck = false) => {
+    const now = Date.now();
+    // 最後の接続試行から3秒以上経過している場合のみ実行
+    if (!isInitialCheck && now - lastAttemptTime < 3000) {
+      console.log('接続チェックをスキップ: 前回の試行から3秒経過していません');
+      return;
+    }
+    
+    setLastAttemptTime(now);
     const now = Date.now();
     // 最後の接続試行から3秒以上経過している場合のみ実行
     if (!isInitialCheck && now - lastAttemptTime < 3000) {
@@ -44,9 +55,14 @@ export const useSupabase = () => {
       setError(null);
     }
     
+    if (isInitialCheck) {
+      setError(null);
+    }
+    
     if (!supabase) {
       console.log('Supabase未設定 - ローカルモードで動作');
       setIsConnected(false);
+      setError('Supabase接続エラー: 設定が見つかりません');
       setError('Supabase接続エラー: 設定が見つかりません');
       setError('Supabase接続エラー: 設定が見つかりません');
       setLoading(false);
@@ -55,13 +71,20 @@ export const useSupabase = () => {
     
     try {
       // 新しい接続テスト関数を使用
-      // 新しい接続テスト関数を使用
+      console.log(`Checking Supabase connection... (attempt: ${retryCount + 1})`);
+      const result = await testSupabaseConnection();
       console.log(`Checking Supabase connection... (attempt: ${retryCount + 1})`);
       const result = await testSupabaseConnection();
       
       if (!result.success) {
         console.error('Supabase接続エラー:', result.error, result.details);
         setIsConnected(false);
+
+        if (result.error === 'APIキーが無効です') {
+          setError('接続エラー: APIキーが無効です');
+        } else {
+          setError(`${result.error}`);
+        }
 
         if (result.error === 'APIキーが無効です') {
           setError('接続エラー: APIキーが無効です');
@@ -88,9 +111,22 @@ export const useSupabase = () => {
       console.error('接続チェックエラー:', error);
       setError(error instanceof Error ? error.message : '不明なエラー');
       setError(error instanceof Error ? error.message : '不明なエラー');
+      setError(error instanceof Error ? error.message : '不明なエラー');
       setIsConnected(false);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // 接続を再試行する関数
+  const retryConnection = () => {
+    if (retryCount < 5) {
+      console.log(`接続を再試行します... (${retryCount + 1}/5)`);
+      setRetryCount(prev => prev + 1);
+      setError(null);
+      checkConnection(false);
+    } else {
+      setError('接続の再試行回数が上限に達しました。しばらく時間をおいてから再度お試しください。');
     }
   };
   
@@ -123,7 +159,10 @@ export const useSupabase = () => {
 
     setLoading(true);
     setLoading(true);
+    setLoading(true);
     try {
+      console.log('ユーザー初期化開始:', lineUsername);
+      
       console.log('ユーザー初期化開始:', lineUsername);
       
       console.log('ユーザー初期化開始:', lineUsername);
@@ -137,6 +176,7 @@ export const useSupabase = () => {
       } else {
         console.log('Supabaseユーザーが見つかりません。新規作成を試みます:', lineUsername);
         console.log('Supabaseユーザーが見つかりません。新規作成を試みます:', lineUsername);
+        console.log('Supabaseユーザーが見つかりません。新規作成を試みます:', lineUsername);
         try {
           logSecurityEvent('supabase_user_not_found', lineUsername, 'Supabaseユーザーが見つかりません');
         } catch (logError) {
@@ -148,9 +188,11 @@ export const useSupabase = () => {
         // 新規ユーザー作成
         console.log('新規ユーザー作成を試みます:', lineUsername);
         console.log('新規ユーザー作成を試みます:', lineUsername);
+        console.log('新規ユーザー作成を試みます:', lineUsername);
         user = await userService.createUser(lineUsername);
         
         if (user) {
+          console.log('ユーザー作成成功:', user);
           console.log('ユーザー作成成功:', user);
           console.log('ユーザー作成成功:', user);
           try {
@@ -189,7 +231,10 @@ export const useSupabase = () => {
       console.error('ユーザー初期化エラー:', error);
       setError(error instanceof Error ? error.message : '不明なエラー');
       setError(error instanceof Error ? error.message : '不明なエラー');
+      setError(error instanceof Error ? error.message : '不明なエラー');
       return null;
+    } finally {
+      setLoading(false);
     } finally {
       setLoading(false);
     } finally {
@@ -288,11 +333,16 @@ export const useSupabase = () => {
     error,
     retryConnection,
     retryCount,
+    error,
+    retryConnection,
+    retryCount,
     initializeUser,
     saveEntry,
     updateEntry,
     deleteEntry,
     checkConnection,
+    retryConnection,
+    retryCount
     retryConnection,
     retryCount
   };
