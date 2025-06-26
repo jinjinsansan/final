@@ -60,8 +60,10 @@
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# LINE認証設定
-# LINE認証は削除済み
+# メンテナンスモード設定（オプション）
+VITE_MAINTENANCE_MODE=false
+VITE_MAINTENANCE_MESSAGE=システムメンテナンス中です
+VITE_MAINTENANCE_END_TIME=2025-01-22T10:00:00Z
 ```
 
 ## 🌟 実装済み機能一覧
