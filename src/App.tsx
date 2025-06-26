@@ -56,7 +56,7 @@ const App: React.FC = () => {
 
   const [dataLoading, setDataLoading] = useState(true);
   const { isMaintenanceMode, config: maintenanceConfig, loading: maintenanceLoading } = useMaintenanceStatus();
-  const { isConnected, currentUser, initializeUser } = useSupabase();
+  const { isConnected, currentUser, initializeUser, loading: supabaseLoading } = useSupabase();
   const { isAutoSyncEnabled } = useAutoSync();
 
   const [formData, setFormData] = useState({
@@ -77,35 +77,39 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const consentGiven = localStorage.getItem('privacyConsentGiven');
-    const savedUsername = localStorage.getItem('line-username');
-    
-    if (consentGiven === 'true') {
-      setShowPrivacyConsent(false);
+    try {
+      const consentGiven = localStorage.getItem('privacyConsentGiven');
+      const savedUsername = localStorage.getItem('line-username');
       
-      // 認証状態をチェック
-      if (isAuthenticated()) {
-        // 認証済みの場合は使い方ページへ
-        const user = getCurrentUser();
-        if (user) {
-          setLineUsername(user.lineUsername);
+      if (consentGiven === 'true') {
+        setShowPrivacyConsent(false);
+        
+        // 認証状態をチェック
+        if (isAuthenticated()) {
+          // 認証済みの場合は使い方ページへ
+          const user = getCurrentUser();
+          if (user) {
+            setLineUsername(user.lineUsername);
+            // Supabaseユーザーを初期化
+            if (isConnected && !supabaseLoading) {
+              initializeUser(user.lineUsername);
+            }
+            setCurrentPage('how-to');
+          }
+        } else if (savedUsername) {
+          // 未認証だがユーザー名がある場合はそのまま使用
+          setLineUsername(savedUsername);
           // Supabaseユーザーを初期化
-          if (isConnected) {
-            initializeUser(user.lineUsername);
+          if (isConnected && !supabaseLoading) {
+            initializeUser(savedUsername);
           }
           setCurrentPage('how-to');
         }
-      } else if (savedUsername) {
-        // 未認証だがユーザー名がある場合はそのまま使用
-        setLineUsername(savedUsername);
-        // Supabaseユーザーを初期化
-        if (isConnected) {
-          initializeUser(savedUsername);
-        }
-        setCurrentPage('how-to');
       }
+    } catch (error) {
+      console.error('初期化エラー:', error);
     }
-  }, [isConnected]);
+  }, [isConnected, supabaseLoading]);
 
   // テストデータ生成関数
   const generateTestData = () => {

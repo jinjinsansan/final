@@ -14,11 +14,18 @@ export const useSupabase = () => {
   const checkConnection = async () => {
     setLoading(true);
     
+    if (!supabase) {
+      console.log('Supabase未設定 - ローカルモードで動作');
+      setIsConnected(false);
+      setLoading(false);
+      return;
+    }
+    
     try {
       // 新しい接続テスト関数を使用
       const result = await testSupabaseConnection();
       if (!result.success) {
-        console.error('Supabase接続エラー:', result.error);
+        console.error('Supabase接続エラー:', result.error, result.details);
         setIsConnected(false);
       } else {
         console.log('Supabase接続成功');

@@ -1,13 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
 // 環境変数から値を取得
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
   try {
-    if (!url || url.trim() === '') {
+    if (!url || url.trim() === '' || url === 'undefined') {
       return false;
     }
     new URL(url);
@@ -18,34 +18,57 @@ const isValidUrl = (url: string): boolean => {
 };
 
 const isValidSupabaseKey = (key: string): boolean => {
-  return !!(key && key.trim() !== '');
+  return !!(key && key.trim() !== '' && key !== 'undefined' && key.length > 20);
 };
 
 // 本番環境での詳細な検証
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
 } else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
-  console.warn('Supabase環境変数が無効です。設定を確認してください。');
-  console.log('URL:', supabaseUrl ? 'あり' : 'なし');
-  console.log('Key:', supabaseAnonKey ? 'あり' : 'なし');
+  console.warn('Supabase環境変数が無効です。設定を確認してください。', {
+    urlValid: isValidUrl(supabaseUrl),
+    keyValid: isValidSupabaseKey(supabaseAnonKey),
+    urlLength: supabaseUrl?.length || 0,
+    keyLength: supabaseAnonKey?.length || 0
+  });
 }
 
 // Supabaseクライアントの作成
-export const supabase = (isValidUrl(supabaseUrl) && isValidSupabaseKey(supabaseAnonKey))
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      }
-    })
-  : null;
+export const supabase = (() => {
+  try {
+    if (isValidUrl(supabaseUrl) && isValidSupabaseKey(supabaseAnonKey)) {
+      return createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+        }
+      });
+    }
+    return null;
+  } catch (error) {
+    console.error('Supabaseクライアント作成エラー:', error);
+    return null;
+  }
+})();
 
 // 接続テスト用の関数
 export const testSupabaseConnection = async () => {
-  if (!supabase) return { success: false, error: 'Supabaseクライアントが初期化されていません' };
+  if (!supabase) {
+    return { 
+      success: false, 
+      error: 'Supabaseクライアントが初期化されていません',
+      details: {
+        urlValid: isValidUrl(supabaseUrl),
+        keyValid: isValidSupabaseKey(supabaseAnonKey),
+        url: supabaseUrl ? `${supabaseUrl.substring(0, 10)}...` : 'なし',
+        keyExists: !!supabaseAnonKey
+      }
+    };
+  }
   
   try {
-    const { data, error } = await supabase.from('users').select('count').limit(1);
+    // 単純なPingテスト
+    const { data, error } = await supabase.from('users').select('id').limit(1);
     if (error) {
       return { success: false, error: error.message, details: error };
     }
