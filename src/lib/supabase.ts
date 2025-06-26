@@ -3,8 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined');
-console.log('Supabase Key exists:', !!supabaseAnonKey, supabaseAnonKey ? `Length: ${supabaseAnonKey.length}, First 10 chars: ${supabaseAnonKey.substring(0, 10)}...` : '');
+// 環境変数のログ出力（デバッグ用）
+console.log('Supabase URL exists:', !!supabaseUrl);
+console.log('Supabase Key exists:', !!supabaseAnonKey);
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
@@ -30,12 +31,14 @@ const isValidSupabaseKey = (key: string): boolean => {
 // 本番環境での詳細な検証
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
+  console.log('URL:', supabaseUrl || 'undefined');
+  console.log('Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined');
 } else if (!isValidUrl(supabaseUrl) || !isValidSupabaseKey(supabaseAnonKey)) {
   console.warn('Supabase環境変数が無効です。設定を確認してください。');
   console.log('URL valid:', isValidUrl(supabaseUrl));
   console.log('Key valid:', isValidSupabaseKey(supabaseAnonKey));
-  console.log('URL length:', supabaseUrl?.length || 0);
-  console.log('Key length:', supabaseAnonKey?.length || 0);
+  console.log('URL:', supabaseUrl ? `${supabaseUrl.substring(0, 10)}...` : 'undefined');
+  console.log('Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined');
 }
 
 // Supabaseクライアントの作成
