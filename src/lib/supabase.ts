@@ -802,17 +802,26 @@ export const syncService = {
   async bulkMigrateLocalData(userId: string, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
     
+    console.log(`大量データ移行開始 - ユーザーID: ${userId}`);
     try {
       const localEntries = localStorage.getItem('journalEntries');
-      if (!localEntries) return true;
+      if (!localEntries) {
+        console.log('ローカルデータが見つかりません - 移行スキップ');
+        return true;
+      }
       
       const entries = JSON.parse(localEntries);
-      for (let i = 0; i < totalBatches; i++) {
-        const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
-        
-        const insertData = batch.map((entry: any) => ({
-          user_id: userId,
-          date: entry.date,
+      if (entries.length === 0) {
+        console.log('ローカルデータが空です - 移行スキップ');
+        return true;
+      }
+      
+      console.log(`移行するエントリー数: ${entries.length}`);
+      
+      // バッチ処理のサイズと総数を計算
+      const batchSize = 20;
+      const totalBatches = Math.ceil(entries.length / batchSize);
+      
       // 一括処理でデータを移行
       for (let i = 0; i < totalBatches; i++) {
         const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
@@ -827,6 +836,7 @@ export const syncService = {
           self_esteem_score: entry.selfEsteemScore || 50,
           worthlessness_score: entry.worthlessnessScore || 50
         }));
+        console.log(`バッチ ${i+1}/${totalBatches} 処理中 - ${batch.length}件`);
         
         try {
           const { error } = await supabase
@@ -838,6 +848,7 @@ export const syncService = {
           
           if (error) {
             console.warn(`バッチ ${i+1} 処理エラー:`, error);
+          }
         } catch (batchError) {
           console.error(`バッチ ${i+1} 処理例外:`, batchError);
         }
@@ -845,6 +856,12 @@ export const syncService = {
         // レート制限対策
         await new Promise(resolve => setTimeout(resolve, 100));
       }
+
+      // 進捗コールバックが提供されている場合は100%完了を通知
+      if (progressCallback) {
+        progressCallback(100);
+      }
+      
       
       console.log(`ローカルデータの移行が完了しました - ${entries.length}件 - ${new Date().toISOString()}`);
       return true;

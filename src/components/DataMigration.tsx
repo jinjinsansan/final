@@ -442,24 +442,28 @@ const DataMigration: React.FC = () => {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm font-jp-medium text-yellow-800">Supabaseに接続できません。ローカルモードで動作中です。</p>
-                      <p className="text-xs text-yellow-700 mt-1">
-                        ローカルモードではデータはブラウザ内に保存され、クラウドと同期されません。
-                      </p>
-                    <p className="text-sm text-blue-800 mb-3">
-                      Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
-                      ユーザー作成には数秒かかる場合があります。
-                    </p>
+                    <span className="text-sm font-jp-medium text-yellow-800">
+                      Supabaseに接続できません。ローカルモードで動作中です。
+                    </span>
                   </div>
+                  <p className="text-xs text-yellow-700 mt-1 ml-7">
+                    ローカルモードではデータはブラウザ内に保存され、クラウドと同期されません。
+                  </p>
+                  <p className="text-sm text-blue-800 mb-3 ml-7">
+                    Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
+                    ユーザー作成には数秒かかる場合があります。
+                  </p>
                   <div className="mt-2 text-center">
                     <button 
                       onClick={retryConnection}
                       className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors w-full"
                     >
-                      {/* 'ユーザーを作成してデータ同期を有効化' */}
                       接続を再試行
                     </button>
+                    <p className="text-sm text-blue-800 mb-3">
+                      Supabaseユーザーを作成すると、データをクラウドに同期できるようになります。
+                      ユーザー作成には数秒かかる場合があります。
+                    </p>
                   </div>
                 </div>
               )}
