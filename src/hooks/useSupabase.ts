@@ -10,23 +10,9 @@ export const useSupabase = () => {
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
   const [lastConnectionAttempt, setLastConnectionAttempt] = useState<number>(0);
   const [retryCount, setRetryCount] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null); 
-  const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
-  const [lastConnectionAttempt, setLastConnectionAttempt] = useState<number>(0);
-  const [retryCount, setRetryCount] = useState<number>(0);
 
   useEffect(() => {
     const now = Date.now();
-    // 最後の接続試行から3秒以上経過している場合のみ実行
-    if (now - lastConnectionAttempt > 3000) {
-      setLastConnectionAttempt(now);
-      checkConnection(false);
-    }
-  }, [connectionAttempts]);
-
-  // 初回ロード時に接続を確認
-  useEffect(() => {
-    checkConnection(true);
     // 最後の接続試行から3秒以上経過している場合のみ実行
     if (now - lastConnectionAttempt > 3000) {
       setLastConnectionAttempt(now);
@@ -44,14 +30,10 @@ export const useSupabase = () => {
     if (isInitialCheck) {
       setError(null);
     }
-    if (isInitialCheck) {
-      setError(null);
-    }
     
     if (!supabase) {
       console.log('Supabase未設定 - ローカルモードで動作');
       setIsConnected(false);
-      setError('Supabase接続エラー: 設定が見つかりません');
       setError('Supabase接続エラー: 設定が見つかりません');
       setLoading(false);
       return;
@@ -59,19 +41,12 @@ export const useSupabase = () => {
     
     try {
       // 新しい接続テスト関数を使用
-      // 新しい接続テスト関数を使用
       console.log('Checking Supabase connection...');
       const result = await testSupabaseConnection();
       
       if (!result.success) {
         console.error('Supabase接続エラー:', result.error, result.details);
         setIsConnected(false);
-
-        if (result.error === 'APIキーが無効です') {
-          setError('接続エラー: APIキーが無効です');
-        } else {
-          setError(`接続エラー: ${result.error}`);
-        }
 
         if (result.error === 'APIキーが無効です') {
           setError('接続エラー: APIキーが無効です');
@@ -91,22 +66,9 @@ export const useSupabase = () => {
     } catch (error) {
       console.error('接続チェックエラー:', error);
       setError(error instanceof Error ? error.message : '不明なエラー');
-      setError(error instanceof Error ? error.message : '不明なエラー');
       setIsConnected(false);
     } finally {
       setLoading(false);
-    }
-  };
-  
-  // 接続を再試行する関数
-  const retryConnection = () => {
-    if (retryCount < 5) { // 再試行回数を制限
-      console.log('接続を再試行します...', retryCount + 1);
-      setRetryCount(prev => prev + 1);
-      setConnectionAttempts(prev => prev + 1);
-      setError(null);
-    } else {
-      setError('接続の再試行回数が上限に達しました。しばらく時間をおいてから再度お試しください。');
     }
   };
   
@@ -254,8 +216,5 @@ export const useSupabase = () => {
     error,
     retryConnection,
     retryCount
-    error: error,
-    retryConnection: retryConnection,
-    retryCount: retryCount
   };
 };
