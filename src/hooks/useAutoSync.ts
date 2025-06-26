@@ -172,6 +172,8 @@ export const useAutoSync = () => {
 
     try {
       if (!isConnected || !currentUser) {
+      }
+    }
 
     // 即座に同期を実行（非同期で）
     if (enabled && isConnected && currentUser) {
