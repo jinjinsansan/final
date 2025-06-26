@@ -5,28 +5,34 @@ import { getAuthSession, logSecurityEvent } from '../lib/deviceAuth';
 export const useSupabase = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); 
+  const [error, setError] = useState<string | null>(null);
+  const [connectionAttempts, setConnectionAttempts] = useState(0);
 
   useEffect(() => {
     checkConnection();
-  }, []);
+  }, [connectionAttempts]);
 
   const checkConnection = async () => {
     setLoading(true);
+    setError(null);
     
     if (!supabase) {
       console.log('Supabase未設定 - ローカルモードで動作');
       setIsConnected(false);
+      setError('Supabaseクライアントが初期化されていません');
       setLoading(false);
       return;
     }
     
     try {
       // 新しい接続テスト関数を使用
+      console.log('Checking Supabase connection...');
       const result = await testSupabaseConnection();
       if (!result.success) {
         console.error('Supabase接続エラー:', result.error, result.details);
         setIsConnected(false);
+        setError(`接続エラー: ${result.error}`);
       } else {
         console.log('Supabase接続成功');
         setIsConnected(true);
@@ -39,10 +45,16 @@ export const useSupabase = () => {
       }
     } catch (error) {
       console.error('接続チェックエラー:', error);
+      setError(error instanceof Error ? error.message : '不明なエラー');
       setIsConnected(false);
     } finally {
       setLoading(false);
     }
+  };
+  
+  // 接続を再試行する関数
+  const retryConnection = () => {
+    setConnectionAttempts(prev => prev + 1);
   };
 
   const initializeUser = async (lineUsername: string) => {
@@ -174,5 +186,7 @@ export const useSupabase = () => {
     updateEntry,
     deleteEntry,
     checkConnection
+    error,
+    retryConnection,
   };
 };

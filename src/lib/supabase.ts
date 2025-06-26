@@ -4,6 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 10)}...` : 'undefined');
+console.log('Supabase Key exists:', !!supabaseAnonKey);
+
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
   try {
@@ -36,14 +39,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Supabaseクライアントの作成
 export const supabase = (() => {
   try {
+    console.log('Creating Supabase client with valid URL and key:', 
+      isValidUrl(supabaseUrl), isValidSupabaseKey(supabaseAnonKey));
+      
     if (isValidUrl(supabaseUrl) && isValidSupabaseKey(supabaseAnonKey)) {
-      return createClient(supabaseUrl, supabaseAnonKey, {
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
         }
       });
+      console.log('Supabase client created successfully');
+      return client;
     }
+    console.log('Failed to create Supabase client: invalid URL or key');
     return null;
   } catch (error) {
     console.error('Supabaseクライアント作成エラー:', error);
@@ -54,6 +63,7 @@ export const supabase = (() => {
 // 接続テスト用の関数
 export const testSupabaseConnection = async () => {
   if (!supabase) {
+    console.log('Connection test failed: Supabase client not initialized');
     return { 
       success: false, 
       error: 'Supabaseクライアントが初期化されていません',
@@ -68,12 +78,16 @@ export const testSupabaseConnection = async () => {
   
   try {
     // 単純なPingテスト
+    console.log('Testing Supabase connection...');
     const { data, error } = await supabase.from('users').select('id').limit(1);
     if (error) {
+      console.log('Connection test error:', error.message);
       return { success: false, error: error.message, details: error };
     }
+    console.log('Connection test successful');
     return { success: true, data };
   } catch (error) {
+    console.log('Connection test exception:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : '不明なエラー',

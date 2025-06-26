@@ -6,7 +6,7 @@ import AutoSyncSettings from './AutoSyncSettings';
 import DataBackupRecovery from './DataBackupRecovery';
 
 const DataMigration: React.FC = () => {
-  const { isConnected, currentUser, loading } = useSupabase();
+  const { isConnected, currentUser, loading, error, retryConnection } = useSupabase();
   const [migrating, setMigrating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [migrationStatus, setMigrationStatus] = useState<string>('');
@@ -377,7 +377,8 @@ const DataMigration: React.FC = () => {
               <div className="flex items-center space-x-3 mb-4">
                 <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                 <span className="font-jp-medium text-gray-900">
-                  Supabase接続状態: {isConnected ? '接続済み' : '未接続'}
+                  Supabase接続状態: {isConnected ? '接続済み' : '未接続'} 
+                  {error && <span className="text-red-600 ml-2 text-xs">({error})</span>}
                 </span>
               </div>
               
@@ -392,9 +393,15 @@ const DataMigration: React.FC = () => {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                    <span className="text-sm font-jp-medium text-yellow-800">
-                      Supabaseに接続できません。ローカルモードで動作中です。
-                    </span>
+                    <div className="text-sm font-jp-medium text-yellow-800">
+                      <p>Supabaseに接続できません。ローカルモードで動作中です。</p>
+                      <button 
+                        onClick={retryConnection}
+                        className="mt-2 px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs"
+                      >
+                        接続を再試行
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
