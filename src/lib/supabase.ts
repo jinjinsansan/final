@@ -807,13 +807,6 @@ export const syncService = {
       if (!localEntries) return true;
       
       const entries = JSON.parse(localEntries);
-      if (entries.length === 0) return true;
-      
-      // バッチ処理で効率的に保存（本番環境対応）
-      const batchSize = 20; // 一度に20件ずつ処理
-      const totalBatches = Math.ceil(entries.length / batchSize);
-      console.log(`バッチ処理を開始: ${totalBatches}バッチ`);
-      
       for (let i = 0; i < totalBatches; i++) {
         const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
         
@@ -845,10 +838,9 @@ export const syncService = {
           
           if (error) {
             console.warn(`バッチ ${i+1} 処理エラー:`, error);
-          progressCallback(progress);
         } catch (batchError) {
           console.error(`バッチ ${i+1} 処理例外:`, batchError);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        }
         
         // レート制限対策
         await new Promise(resolve => setTimeout(resolve, 100));
