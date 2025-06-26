@@ -1017,6 +1017,7 @@ const App: React.FC = () => {
                     <button
                       key={key}
                       onClick={() => {
+                        // 現在のページを更新してからメニューを閉じる
                         setCurrentPage(key);
                         setIsMobileMenuOpen(false);
                       }}
