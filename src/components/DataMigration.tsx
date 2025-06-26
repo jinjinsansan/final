@@ -6,7 +6,7 @@ import AutoSyncSettings from './AutoSyncSettings';
 import DataBackupRecovery from './DataBackupRecovery';
 
 const DataMigration: React.FC = () => {
-  const { isConnected, currentUser, loading, error, retryConnection } = useSupabase();
+  const { isConnected, currentUser, loading, error, retryConnection, initializeUser } = useSupabase();
   const [migrating, setMigrating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [migrationStatus, setMigrationStatus] = useState<string>('');
