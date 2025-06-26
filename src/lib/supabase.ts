@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // 環境変数から値を取得し、undefined や null の場合は空文字列にする
-const supabaseUrl = 'https://your-project-id.supabase.co';
-const supabaseAnonKey = 'your-anon-key';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // 環境変数のデバッグ情報（開発環境のみ）
 if (import.meta.env.DEV) {
@@ -82,9 +82,72 @@ export const supabase = (() => {
 
 // 接続テスト用の関数
 export const testSupabaseConnection = async () => {
-  // 開発環境ではモックデータを返す
-  console.log('開発環境用のモック接続テスト - 成功を返します');
-  return { success: true, data: [] };
+  if (!supabase) {
+    console.warn('接続テスト失敗: Supabaseクライアントが未初期化');
+    return { 
+      success: false,
+      error: 'Supabaseクライアントが初期化されていません',
+      details: {
+        urlValid: isValidUrl(supabaseUrl),
+        keyValid: isValidSupabaseKey(supabaseAnonKey),
+        url: supabaseUrl.substring(0, 10) + '...',
+        keyLength: supabaseAnonKey.length
+      }
+    };
+  }
+  
+  try {
+    // 単純なPingテスト（詳細ログは開発環境のみ）
+    if (import.meta.env.DEV) {
+      console.log('Supabase接続テスト中...', new Date().toISOString());
+    }
+
+    try {
+      const { data, error } = await supabase.from('users').select('id').limit(1);
+    
+      if (error) {      
+        console.error('接続テストエラー:', error.message, error);
+      
+        // APIキーエラーの特別処理
+        if (error.message.includes('JWT') || error.message.includes('Invalid API key') || error.message.includes('key') || error.message.includes('token')) {
+          console.error('APIキーエラーが検出されました:', error.message);
+        
+          // エラーメッセージの詳細をログ
+          if (error.details) console.error('エラー詳細:', error.details);
+          if (error.hint) console.error('エラーヒント:', error.hint);
+        
+          return { 
+            success: false,
+            error: 'APIキーが無効です',
+            details: error 
+          };
+        }
+      
+        return { 
+          success: false, 
+          error: error.message, 
+          details: error 
+        };
+      }
+      console.log('Supabase接続テスト成功');
+      return { success: true, data };
+    } catch (queryError) {
+      console.error('Supabase接続テスト中のクエリエラー:', queryError);
+      return { 
+        success: false, 
+        error: queryError instanceof Error ? queryError.message : '不明なクエリエラー',
+        details: queryError
+      };
+    }
+  } catch (error) {
+    console.error('接続テスト例外:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : '不明なエラー',
+      details: error,
+      isConnectionError: true
+    };
+  }
 };
 
 // データベース型定義
@@ -145,23 +208,112 @@ export interface ConsentHistory {
 // ユーザー管理関数
 export const userService = {
   async createUser(lineUsername: string | null): Promise<User | null> {
-    // 開発環境用のモックユーザー作成
-    console.log(`モックユーザー作成: "${lineUsername}"`);
-    
-    // モックユーザーを返す
-    return {
-      id: 'mock-user-id',
-      line_username: lineUsername || 'mock-user',
-      created_at: new Date().toISOString()
-    };
+    if (!supabase) return null;
+    if (!lineUsername) {
+      console.error('ユーザー名が指定されていません');
+      return null;
+    }
+
+    console.log(`ユーザー作成開始 (userService): "${lineUsername}" - ${new Date().toISOString()}`);
+    try {
+      // まず既存ユーザーをチェック
+      const existingUser = await this.getUserByUsername(lineUsername);
+      if (existingUser) {
+        console.log(`ユーザーは既に存在します: "${lineUsername}" - ID: ${existingUser.id}`);
+        return existingUser;
+      }
+      
+      // 新規ユーザー作成
+      console.log(`新規ユーザーを作成します - username: "${lineUsername}" - ${new Date().toISOString()}`);
+
+      // 重要: ここでupsertを使用して、重複エラーを回避
+      const { data, error } = await supabase
+        .from('users')
+        .upsert([{ 
+          line_username: lineUsername,
+          created_at: new Date().toISOString()
+        }], { onConflict: 'line_username', ignoreDuplicates: true })
+        .select()
+        .maybeSingle();
+      
+      if (error) {
+        console.error('ユーザー作成エラー (insert):', error);
+        
+        // エラーの詳細情報をログ
+        console.error('エラーコード:', error.code);
+        console.error('エラーメッセージ:', error.message);
+        if (error.details) console.error('エラー詳細:', JSON.stringify(error.details));
+        if (error.hint) console.error('エラーヒント:', JSON.stringify(error.hint));
+        
+        // 重複キーエラーの場合は既存ユーザーを返す
+        if (error.code === '23505' || error.message.includes('duplicate key') || error.message.includes('already exists')) {
+          console.log(`重複キーエラー - 既存ユーザーを取得します: "${lineUsername}"`);
+          return await this.getUserByUsername(lineUsername);
+        }
+        
+        throw error;
+      }
+      
+      if (!data) {
+        console.error(`ユーザー作成エラー: "${lineUsername}" - データが返されませんでした - ${new Date().toISOString()}`);
+        return null;
+      }
+      
+      console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${data.id} - ${new Date().toISOString()}`);
+      return data;
+    } catch (error) {
+      console.error(`ユーザー作成エラー: "${lineUsername}"`, error);
+      
+      // 重複エラーの場合は既存ユーザーを返す
+      if (error instanceof Error && error.message.includes('duplicate key')) {
+        console.log(`重複エラーのため既存ユーザーを取得します: "${lineUsername}"`);
+        try {
+          const existingUser = await this.getUserByUsername(lineUsername);
+          console.log(`既存ユーザーを取得しました: "${lineUsername}" - ID: ${existingUser?.id || 'null'}`);
+          return existingUser;
+        } catch (getUserError) {
+          console.error(`既存ユーザー取得エラー: "${lineUsername}"`, getUserError);
+          return null;
+        }
+      }
+      
+      return null;
+    }
   },
 
   async getUserByUsername(lineUsername: string | null): Promise<User | null> {
-    // 開発環境用のモックユーザー検索
-    console.log(`モックユーザー検索: "${lineUsername}"`);
-    
-    // 常にnullを返す（ユーザーが存在しないことを示す）
-    return null;
+    if (!supabase) return null;
+    if (!lineUsername) {
+      console.error('ユーザー名が指定されていません');
+      return null;
+    }
+
+    console.log(`ユーザー検索開始 (userService): "${lineUsername}" - ${new Date().toISOString()}`);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('line_username', lineUsername)
+        .maybeSingle();
+      
+      if (error) {
+        // ユーザーが見つからない場合は null を返す
+        if (error.code === 'PGRST116' || error.message.includes('No rows found')) {
+          console.log(`ユーザーが見つかりません: "${lineUsername}" - ${new Date().toISOString()}`);
+          return null;
+        }
+        console.error(`ユーザー検索エラー: "${lineUsername}" - ${new Date().toISOString()}`, error);
+        console.error('エラーコード:', error.code);
+        console.error('エラーメッセージ:', error.message);
+        throw error;
+      }
+      
+      console.log(`ユーザー検索結果: "${lineUsername}" - ${data ? `ID: ${data.id} - 見つかりました` : '見つかりません'} - ${new Date().toISOString()}`);
+      return data || null;
+    } catch (error) {
+      console.error(`ユーザー取得エラー: "${lineUsername}" - ${new Date().toISOString()}`, error);
+      return null;
+    }
   },
 
   // 本番環境用：ユーザー統計取得
@@ -500,51 +652,249 @@ export const consentService = {
 // データ同期ユーティリティ
 export const syncService = {
   async migrateLocalData(userId: string | null): Promise<boolean> {
-    // 開発環境用のモックデータ移行
-    console.log(`モックデータ移行: ユーザーID: ${userId}`);
-    
-    // 成功を返す
-    return true;
+    if (!supabase) return false;
+    if (!userId) {
+      console.error('ユーザーIDが指定されていません');
+      return false;
+    }
+
+    console.log(`データ移行開始 (syncService): ユーザーID: ${userId} - ${new Date().toISOString()}`);
+    try {
+      // ローカルストレージから日記データを取得
+      const localEntries = localStorage.getItem('journalEntries');
+      if (!localEntries) {
+        console.log('ローカルデータが見つかりません - 移行スキップ');
+        return true;
+      }
+      
+      const entries = JSON.parse(localEntries);
+      if (entries.length === 0) {
+        console.log('ローカルデータが空です - 移行スキップ');
+        return true;
+      }
+      
+      console.log(`移行するエントリー数: ${entries.length}`);
+      
+      // バッチ処理で効率的に保存（本番環境対応）
+      const batchSize = 50; // 一度に50件ずつ処理
+      
+      for (const entry of entries) {
+        try {
+          // 既存エントリーの重複チェック
+          const { data: existing } = await supabase
+            .from('diary_entries')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('date', entry.date)
+            .eq('emotion', entry.emotion)
+            .single();
+          
+          if (!existing) {
+            await diaryService.createEntry({
+              user_id: userId,
+              date: entry.date,
+              emotion: entry.emotion,
+              event: entry.event,
+              realization: entry.realization,
+              self_esteem_score: entry.selfEsteemScore || 50,
+              worthlessness_score: entry.worthlessnessScore || 50
+            });
+          }
+        } catch (entryError) {
+          console.warn('エントリー移行スキップ:', entry.id, entryError);
+          // 個別エラーは警告として処理し、全体の処理は継続
+        }
+      }
+      
+      console.log('ローカルデータの移行が完了しました');
+      return true;
+    } catch (error) {
+      console.error('データ移行エラー:', error);
+      return false;
+    }
   },
 
   async syncToLocal(userId: string | null): Promise<boolean> {
-    // 開発環境用のモック同期
-    console.log(`モック同期: ユーザーID: ${userId}`);
+    if (!supabase) return false;
+    if (!userId) {
+      console.error('ユーザーIDが指定されていません');
+      return false;
+    }
     
-    // 成功を返す
-    return true;
+    try {
+      const entries = await diaryService.getUserEntries(userId);
+      
+      // ローカルストレージ形式に変換
+      const localFormat = entries.map(entry => ({
+        id: entry.id,
+        date: entry.date,
+        emotion: entry.emotion,
+        event: entry.event,
+        realization: entry.realization,
+        selfEsteemScore: entry.self_esteem_score,
+        worthlessnessScore: entry.worthlessness_score
+      }));
+      
+      localStorage.setItem('journalEntries', JSON.stringify(localFormat));
+      console.log('Supabaseからローカルへの同期が完了しました');
+      return true;
+    } catch (error) {
+      console.error('同期エラー:', error);
+      return false;
+    }
   },
 
   async syncConsentHistories(): Promise<boolean> {
-    // 開発環境用のモック同意履歴同期
-    console.log('モック同意履歴同期');
-    
-    // 成功を返す
-    return true;
+    if (!supabase) return false;
+
+    console.log('同意履歴の同期を開始 - ' + new Date().toISOString());
+    try {
+      // ローカルストレージから同意履歴を取得
+      const localHistories = localStorage.getItem('consent_histories');
+      if (!localHistories) {
+        console.log('ローカル同意履歴が見つかりません - 同期スキップ');
+        return true;
+      }
+      
+      const histories = JSON.parse(localHistories);
+      console.log(`同期する同意履歴数: ${histories.length}`);
+      
+      // Supabaseに保存
+      for (const history of histories) {
+        console.log(`同意履歴を処理中: ${history.line_username} - ${history.consent_date}`);
+        
+        // 既存の記録をチェック
+        try {
+          const existing = await consentService.getConsentHistoryByUsername(history.line_username);
+          if (!existing) {
+            console.log(`新規同意履歴を作成: ${history.line_username}`);
+            await consentService.createConsentRecord({
+              line_username: history.line_username,
+              consent_given: history.consent_given,
+              consent_date: history.consent_date,
+              ip_address: history.ip_address,
+              user_agent: history.user_agent
+            });
+          } else {
+            console.log(`同意履歴は既に存在します: ${history.line_username}`);
+          }
+        } catch (historyError) {
+          console.error(`同意履歴処理エラー: ${history.line_username}`, historyError);
+          // エラーがあっても続行
+        }
+      }
+      
+      console.log(`同意履歴の同期が完了しました - ${histories.length}件 - ${new Date().toISOString()}`);
+      return true;
+    } catch (error) {
+      console.error('同意履歴同期エラー:', error);
+      return false;
+    }
   },
 
   async syncConsentHistoriesToLocal(): Promise<boolean> {
-    // 開発環境用のモック同意履歴ローカル同期
-    console.log('モック同意履歴ローカル同期');
+    if (!supabase) return false;
     
-    // 成功を返す
-    return true;
+    try {
+      const histories = await consentService.getAllConsentHistories();
+      
+      // ローカルストレージ形式に変換
+      const localFormat = histories.map(history => ({
+        id: history.id,
+        line_username: history.line_username,
+        consent_given: history.consent_given,
+        consent_date: history.consent_date,
+        ip_address: history.ip_address,
+        user_agent: history.user_agent
+      }));
+      
+      localStorage.setItem('consent_histories', JSON.stringify(localFormat));
+      console.log('同意履歴のローカル同期が完了しました');
+      return true;
+    } catch (error) {
+      console.error('同意履歴ローカル同期エラー:', error);
+      return false;
+    }
   },
 
   async bulkMigrateLocalData(userId: string | null, progressCallback?: (progress: number) => void): Promise<boolean> {
-    // 開発環境用のモック大量データ移行
-    console.log(`モック大量データ移行: ユーザーID: ${userId}`);
-    
-    // 進捗をシミュレート
-    if (progressCallback) {
-      for (let i = 0; i <= 100; i += 20) {
-        progressCallback(i);
-        // 実際の環境では遅延が必要
+    if (!supabase) return false;
+    if (!userId) {
+      console.error('ユーザーIDが指定されていません');
+      return false;
+    }
+
+    console.log(`大量データ移行開始 (bulkMigrateLocalData): ユーザーID: ${userId} - ${new Date().toISOString()}`);
+    try {
+      const localEntries = localStorage.getItem('journalEntries');
+      if (!localEntries) {
+        console.log('ローカルデータが見つかりません - 移行スキップ');
+        return true;
+      }
+      
+      const entries = JSON.parse(localEntries);
+      if (entries.length === 0) {
+        console.log('ローカルデータが空です - 移行スキップ');
+        return true;
+      }
+      
+      console.log(`移行するエントリー数: ${entries.length}`);
+      
+      // バッチ処理のサイズと総数を計算
+      const batchSize = 20;
+      const totalBatches = Math.ceil(entries.length / batchSize);
+      
+      // バッチ処理でデータを移行
+      for (let i = 0; i < totalBatches; i++) {
+        const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
+        console.log(`バッチ ${i+1}/${totalBatches} 処理中 - ${batch.length}件`);
+        
+        const insertData = batch.map((entry: any) => ({
+          user_id: userId,
+          date: entry.date,
+          emotion: entry.emotion,
+          event: entry.event,
+          realization: entry.realization,
+          self_esteem_score: entry.selfEsteemScore || 50,
+          worthlessness_score: entry.worthlessnessScore || 50
+        }));
+        
+        try {
+          const { error } = await supabase
+            .from('diary_entries')
+            .upsert(insertData, { 
+              onConflict: 'user_id,date,emotion',
+              ignoreDuplicates: true 
+            });
+          
+          if (error) {
+            console.warn(`バッチ ${i+1} 処理エラー:`, error);
+          }
+        } catch (batchError) {
+          console.error(`バッチ ${i+1} 処理例外:`, batchError);
+        }
+        
+        // 進捗報告
+        if (progressCallback) {
+          const progress = Math.round(((i + 1) / totalBatches) * 100);
+          progressCallback(progress);
+        }
+        
+        // レート制限対策
         await new Promise(resolve => setTimeout(resolve, 100));
       }
+
+      // 進捗コールバックが提供されている場合は100%完了を通知
+      if (progressCallback) {
+        progressCallback(100);
+      }
+      
+      // 完了メッセージ
+      console.log(`ローカルデータの移行が完了しました - ${entries.length}件 - ${new Date().toISOString()}`);
+      return true;
+    } catch (error) {
+      console.error(`データ移行エラー - ユーザーID: ${userId}`, error);
+      return false;
     }
-    
-    // 成功を返す
-    return true;
   }
 };

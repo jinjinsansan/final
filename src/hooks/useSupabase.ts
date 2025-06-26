@@ -101,24 +101,57 @@ export const useSupabase = () => {
     
     try {
       // 既存ユーザーを検索
-      // 開発環境用のモックユーザー
-      let user = {
-        id: 'mock-user-id',
-        line_username: lineUsername,
-        created_at: new Date().toISOString()
-      };
+      let user = await userService.getUserByUsername(lineUsername);
       
       // セキュリティイベントをログ
-      console.log(`Supabaseユーザーが見つかりました: "${lineUsername}" - ID: ${user.id}`);
-      try {
-        logSecurityEvent('supabase_user_found', lineUsername, 'Supabaseユーザーが見つかりました');
-      } catch (logError) {
-        console.error('セキュリティログ記録エラー:', logError);
+      if (user) {
+        console.log(`Supabaseユーザーが見つかりました: "${lineUsername}" - ID: ${user.id}`);
+        try {
+          logSecurityEvent('supabase_user_found', lineUsername, 'Supabaseユーザーが見つかりました');
+        } catch (logError) {
+          console.error('セキュリティログ記録エラー:', logError);
+        }
+      } else {
+        console.log(`Supabaseユーザーが見つかりません: "${lineUsername}" - 新規作成を試みます`);
+        try {
+          logSecurityEvent('supabase_user_not_found', lineUsername, 'Supabaseユーザーが見つかりません');
+        } catch (logError) {
+          console.error('セキュリティログ記録エラー:', logError);
+        }
       }
       
-      // 既存ユーザーの場合、Supabaseからローカルに同期
-      console.log(`Supabaseからローカルへの同期を開始: "${lineUsername}" - ID: ${user.id}`);
-      console.log(`Supabaseからローカルへの同期が完了しました: "${lineUsername}"`);
+      if (!user) {
+        // 新規ユーザー作成
+        console.log(`新規ユーザー作成を試みます: "${lineUsername}" - ${new Date().toISOString()}`);
+        user = await userService.createUser(lineUsername);
+        
+        if (user) {
+          console.log(`ユーザー作成成功: "${lineUsername}" - ID: ${user.id}`);
+          try {
+            logSecurityEvent('supabase_user_created', lineUsername, 'Supabaseユーザーを作成しました');
+          } catch (logError) {
+            console.error('セキュリティログ記録エラー:', logError);
+          }
+          
+          // ローカルデータを移行
+          try {
+            console.log(`ローカルデータの移行を開始: "${lineUsername}" - ID: ${user.id}`);
+            await syncService.migrateLocalData(user.id);
+            console.log(`ローカルデータの移行が完了しました: "${lineUsername}"`);
+          } catch (syncError) {
+            console.error('データ移行エラー:', syncError);
+          }
+        }
+      } else {
+        // 既存ユーザーの場合、Supabaseからローカルに同期
+        try {
+          console.log(`Supabaseからローカルへの同期を開始: "${lineUsername}" - ID: ${user.id}`);
+          await syncService.syncToLocal(user.id);
+          console.log(`Supabaseからローカルへの同期が完了しました: "${lineUsername}"`);
+        } catch (syncError) {
+          console.error('データ同期エラー:', syncError);
+        }
+      }
       
       setCurrentUser(user);
       return user;
@@ -134,23 +167,35 @@ export const useSupabase = () => {
 
   const saveEntry = async (entryData: any) => {
     // まずローカルストレージに保存（既存の動作を維持）
-    // 開発環境用のモック保存処理
-    console.log('モックエントリー保存');
-    
-    // ローカルストレージに保存
     const existingEntries = localStorage.getItem('journalEntries') || '[]';
     const entries = JSON.parse(existingEntries);
     const newEntry = { id: Date.now().toString(), ...entryData };
     entries.unshift(newEntry);
     localStorage.setItem('journalEntries', JSON.stringify(entries));
+
+    // Supabaseにも保存（バックグラウンドで）
+    if (isConnected && currentUser) {
+      try {
+        await diaryService.createEntry({
+          user_id: currentUser.id,
+          date: entryData.date,
+          emotion: entryData.emotion,
+          event: entryData.event,
+          realization: entryData.realization,
+          self_esteem_score: entryData.selfEsteemScore,
+          worthlessness_score: entryData.worthlessnessScore
+        });
+        console.log('Supabaseにも保存しました');
+      } catch (error) {
+        console.error('Supabase保存エラー:', error);
+        // エラーが発生してもローカル保存は成功しているので続行
+      }
+    }
     
     return newEntry;
   };
 
   const updateEntry = async (id: string, updates: any) => {
-    // 開発環境用のモック更新処理
-    console.log(`モックエントリー更新: ${id}`);
-    
     // ローカルストレージを更新
     const existingEntries = localStorage.getItem('journalEntries') || '[]';
     const entries = JSON.parse(existingEntries);
@@ -158,17 +203,41 @@ export const useSupabase = () => {
       entry.id === id ? { ...entry, ...updates } : entry
     );
     localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+
+    // Supabaseも更新
+    if (isConnected && currentUser) {
+      try {
+        await diaryService.updateEntry(id, {
+          date: updates.date,
+          emotion: updates.emotion,
+          event: updates.event,
+          realization: updates.realization,
+          self_esteem_score: updates.selfEsteemScore,
+          worthlessness_score: updates.worthlessnessScore
+        });
+        console.log('Supabaseも更新しました');
+      } catch (error) {
+        console.error('Supabase更新エラー:', error);
+      }
+    }
   };
 
   const deleteEntry = async (id: string) => {
-    // 開発環境用のモック削除処理
-    console.log(`モックエントリー削除: ${id}`);
-    
     // ローカルストレージから削除
     const existingEntries = localStorage.getItem('journalEntries') || '[]';
     const entries = JSON.parse(existingEntries);
     const filteredEntries = entries.filter((entry: any) => entry.id !== id);
     localStorage.setItem('journalEntries', JSON.stringify(filteredEntries));
+
+    // Supabaseからも削除
+    if (isConnected && currentUser) {
+      try {
+        await diaryService.deleteEntry(id);
+        console.log('Supabaseからも削除しました');
+      } catch (error) {
+        console.error('Supabase削除エラー:', error);
+      }
+    }
   };
 
   return {

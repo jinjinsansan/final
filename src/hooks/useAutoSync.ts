@@ -51,22 +51,35 @@ export const useAutoSync = () => {
   // 自動初期化処理
   const handleAutoInitialization = async (lineUsername: string) => {
     try {
-      // 開発環境用のモックユーザー
-      let user = {
-        id: 'mock-user-id',
-        line_username: lineUsername,
-        created_at: new Date().toISOString()
-      };
+      let user = await userService.getUserByUsername(lineUsername);
       
-      setStatus(prev => ({ ...prev, userCreated: true }));
-      console.log('モックユーザーを使用します:', user);
+      if (!user) {
+        if (import.meta.env.DEV) {
+          console.log('ユーザーが存在しないため、自動作成します');
+        }
+        
+        try {
+          logSecurityEvent('auto_sync_create_user', lineUsername, 'ユーザーが存在しないため、自動作成します');
+        } catch (logError) {
+          console.error('セキュリティログ記録エラー:', logError);
+        }
+        
+        user = await userService.createUser(lineUsername);
+        
+        if (user) {
+          setStatus(prev => ({ ...prev, userCreated: true }));
+          // ユーザー作成後、アプリの状態を更新
+          if (initializeUser) {
+            await initializeUser(lineUsername); 
+          }
+        }
+      } else {
+        setStatus(prev => ({ ...prev, userCreated: true }));
+      }
 
       // 2. 自動同期が有効な場合のみデータ同期
       if (status.isAutoSyncEnabled && user) {
-        console.log('自動同期をシミュレートします');
-        const now = new Date().toISOString();
-        localStorage.setItem('last_sync_time', now);
-        setStatus(prev => ({ ...prev, lastSyncTime: now }));
+        await performAutoSync(user.id);
       }
     } catch (error) {
       console.error('自動初期化エラー:', error);
@@ -81,20 +94,57 @@ export const useAutoSync = () => {
 
   // 自動同期実行
   const performAutoSync = async (userId: string) => {
-    // 開発環境用のモック同期
-    console.log('モック自動同期を実行:', userId);
-    
-    // 同期完了を記録
-    const now = new Date().toISOString();
-    localStorage.setItem('last_sync_time', now);
-    
     try {
-      logSecurityEvent('auto_sync_completed', userId, '自動同期が完了しました');
+      // ローカルデータの存在確認
+      const localEntries = localStorage.getItem('journalEntries');
+      const localConsents = localStorage.getItem('consent_histories');
+      
+      let syncPerformed = false;
+
+      // 日記データの同期
+      if (localEntries) {
+        const entries = JSON.parse(localEntries);
+        if (entries.length > 0) {
+          await syncService.migrateLocalData(userId);
+          syncPerformed = true;
+          if (import.meta.env.DEV) {
+            console.log('日記データを自動同期しました');
+          }
+        }
+      }
+
+      // 同意履歴の同期
+      if (localConsents) {
+        const consents = JSON.parse(localConsents);
+        if (consents.length > 0) {
+          await syncService.syncConsentHistories();
+          syncPerformed = true;
+          if (import.meta.env.DEV) {
+            console.log('同意履歴を自動同期しました');
+          }
+        }
+      }
+
+      if (syncPerformed) {
+        const now = new Date().toISOString();
+        localStorage.setItem('last_sync_time', now);
+        
+        try {
+          logSecurityEvent('auto_sync_completed', userId, '自動同期が完了しました');
+        } catch (error) {
+          console.error('セキュリティログ記録エラー:', error);
+        }
+        
+        setStatus(prev => ({ ...prev, lastSyncTime: now }));
+      }
+
     } catch (error) {
-      console.error('セキュリティログ記録エラー:', error);
+      console.error('自動同期エラー:', error);
+      setStatus(prev => ({ 
+        ...prev, 
+        syncError: error instanceof Error ? error.message : '同期に失敗しました'
+      }));
     }
-    
-    setStatus(prev => ({ ...prev, lastSyncTime: now }));
   };
 
   // 自動同期の有効/無効切り替え
@@ -119,18 +169,17 @@ export const useAutoSync = () => {
   // 手動同期実行
   const triggerManualSync = async () => {
     setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
-    
+
     try {
-      // 開発環境用のモック手動同期
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!isConnected || !currentUser) {
+        throw new Error('Supabaseに接続されていないか、ユーザーが設定されていません');
+      }
       
-      const now = new Date().toISOString();
-      localStorage.setItem('last_sync_time', now);
-      setStatus(prev => ({ ...prev, lastSyncTime: now }));
+      await performAutoSync(currentUser.id);
       
       try {
         const user = getCurrentUser();
-        logSecurityEvent('manual_sync_triggered', user?.lineUsername || 'unknown', '手動同期が実行されました');
+        logSecurityEvent('manual_sync_triggered', user?.lineUsername || currentUser.id, '手動同期が実行されました');
       } catch (error) {
         console.error('セキュリティログ記録エラー:', error);
       }
@@ -149,11 +198,9 @@ export const useAutoSync = () => {
       }
       
       syncTimeoutRef.current = setInterval(() => {
-        // 開発環境用のモック定期同期
-        const now = new Date().toISOString();
-        localStorage.setItem('last_sync_time', now);
-        setStatus(prev => ({ ...prev, lastSyncTime: now }));
-        console.log('定期自動同期をシミュレート:', now);
+        if (isConnected && currentUser) {
+          performAutoSync(currentUser.id);
+        }
       }, 5 * 60 * 1000); // 5分
 
       return () => {
