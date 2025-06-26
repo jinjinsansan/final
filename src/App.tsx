@@ -80,6 +80,8 @@ const App: React.FC = () => {
     const consentGiven = localStorage.getItem('privacyConsentGiven');
     const savedUsername = localStorage.getItem('line-username');
     
+    console.log('アプリ初期化 - 同意状態:', consentGiven, '保存ユーザー名:', savedUsername);
+    
     if (consentGiven === 'true') {
       setShowPrivacyConsent(false);
       
@@ -90,7 +92,7 @@ const App: React.FC = () => {
         if (user) {
           setLineUsername(user.lineUsername);
           // Supabaseユーザーを初期化
-          if (isConnected) {
+          if (isConnected && initializeUser) {
             initializeUser(user.lineUsername);
           }
           setCurrentPage('how-to');
@@ -98,14 +100,15 @@ const App: React.FC = () => {
       } else if (savedUsername) {
         // 未認証だがユーザー名がある場合はそのまま使用
         setLineUsername(savedUsername);
-        // Supabaseユーザーを初期化
-        if (isConnected) {
+        // Supabaseユーザーを初期化（遅延実行）
+        if (isConnected && initializeUser) {
+          console.log('保存されたユーザー名でSupabaseユーザーを初期化:', savedUsername);
           initializeUser(savedUsername);
         }
         setCurrentPage('how-to');
       }
     }
-  }, [isConnected]);
+  }, [isConnected, initializeUser]);
 
   // テストデータ生成関数
   const generateTestData = () => {

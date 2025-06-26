@@ -694,20 +694,22 @@ export const syncService = {
       // 各エントリーを処理
       let successCount = 0;
       let errorCount = 0;
+      let skippedCount = 0;
       
       for (const entry of entries) {
         try {
+          // エントリーデータの準備
           const entryData = {
             user_id: userId,
-            date: entry.date,
-            emotion: entry.emotion,
-            event: entry.event,
-            realization: entry.realization,
+            date: entry.date || new Date().toISOString().split('T')[0],
+            emotion: entry.emotion || '',
+            event: entry.event || '',
+            realization: entry.realization || '',
             self_esteem_score: entry.selfEsteemScore || 50,
             worthlessness_score: entry.worthlessnessScore || 50,
-            counselor_memo: entry.counselor_memo,
-            is_visible_to_user: entry.is_visible_to_user,
-            counselor_name: entry.counselor_name
+            counselor_memo: entry.counselor_memo || '',
+            is_visible_to_user: entry.is_visible_to_user || false,
+            counselor_name: entry.counselor_name || ''
           };
           
           // 既存エントリーの重複チェック
@@ -725,6 +727,7 @@ export const syncService = {
           }
           
           if (!existing || existing.length === 0) {
+            // 新規エントリーの挿入
             const { error: insertError } = await supabase
               .from('diary_entries')
               .insert(entryData);
@@ -737,7 +740,7 @@ export const syncService = {
             }
           } else {
             console.log(`エントリーは既に存在します: ${entry.date} - ${entry.emotion}`);
-            successCount++;
+            skippedCount++;
           }
         } catch (entryError) {
           console.warn('エントリー移行スキップ:', entry.id, entryError);
@@ -747,6 +750,11 @@ export const syncService = {
       }
       
       console.log(`ローカルデータの移行が完了しました - 成功=${successCount}, 失敗=${errorCount}, 合計=${entries.length}`);
+      
+      if (successCount === 0 && errorCount === 0 && skippedCount > 0) {
+        console.log(`すべてのエントリー(${skippedCount}件)は既に存在しています。新規移行は不要です。`);
+      }
+      
       return true;
     } catch (error) {
       console.error('データ移行エラー:', error);
