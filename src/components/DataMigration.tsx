@@ -109,7 +109,7 @@ const DataMigration: React.FC = () => {
   const handleCreateUser = async () => {
     const lineUsername = localStorage.getItem('line-username');
     if (!lineUsername) {
-      setMigrationStatus('エラー: ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してください。');
+      setMigrationStatus('エラー: ユーザー名が設定されていません。トップページに戻り、プライバシーポリシーに同意してユーザー名を設定してください。');
       return;
     }
 
@@ -130,11 +130,18 @@ const DataMigration: React.FC = () => {
         // 既存ユーザーの場合は、現在のユーザー状態を更新
         if (isConnected) {
           try {
-            await initializeUser(lineUsername);
-            setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
-            setTimeout(() => {
-              window.location.reload();
-            }, 2000);
+            if (initializeUser) {
+              await initializeUser(lineUsername);
+              setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
+              setTimeout(() => {
+                window.location.reload();
+              }, 2000);
+            } else {
+              setMigrationStatus('ユーザー初期化関数が利用できません。ページを再読み込みしてください。');
+              setTimeout(() => {
+                window.location.reload();
+              }, 2000);
+            }
           } catch (initError) {
             console.error('ユーザー初期化エラー:', initError);
             setMigrationStatus('ユーザー情報の更新に失敗しました。ページを再読み込みしてください。');
@@ -201,11 +208,15 @@ const DataMigration: React.FC = () => {
         // 自動的にユーザー情報を更新して再読み込み
         const lineUsername = localStorage.getItem('line-username');
         if (lineUsername && isConnected) {
-          try {
-            await initializeUser(lineUsername);
-            setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
-          } catch (error) {
-            console.error('ユーザー初期化エラー:', error);
+          if (initializeUser) {
+            try {
+              await initializeUser(lineUsername);
+              setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
+            } catch (error) {
+              console.error('ユーザー初期化エラー:', error);
+            }
+          } else {
+            setMigrationStatus('ユーザー初期化関数が利用できません。ページを再読み込みしてください。');
           }
           
           setTimeout(() => {
@@ -252,11 +263,15 @@ const DataMigration: React.FC = () => {
         // 自動的にユーザー情報を更新して再読み込み
         const lineUsername = localStorage.getItem('line-username');
         if (lineUsername && isConnected) {
-          try {
-            await initializeUser(lineUsername);
-            setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
-          } catch (error) {
-            console.error('ユーザー初期化エラー:', error);
+          if (initializeUser) {
+            try {
+              await initializeUser(lineUsername);
+              setMigrationStatus('ユーザー情報を更新しました。ページを再読み込みします...');
+            } catch (error) {
+              console.error('ユーザー初期化エラー:', error);
+            }
+          } else {
+            setMigrationStatus('ユーザー初期化関数が利用できません。ページを再読み込みしてください。');
           }
           
           setTimeout(() => {

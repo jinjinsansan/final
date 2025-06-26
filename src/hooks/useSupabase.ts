@@ -102,6 +102,7 @@ export const useSupabase = () => {
     try {
       // 既存ユーザーを検索
       let user = await userService.getUserByUsername(lineUsername);
+      console.log('ユーザー検索結果:', user ? 'ユーザーが見つかりました' : 'ユーザーが見つかりませんでした');
       
       // 明示的にローディング状態を設定
       setLoading(true);
@@ -129,11 +130,18 @@ export const useSupabase = () => {
         try {
           user = await userService.createUser(lineUsername);
         } catch (createError) {
-          console.error('ユーザー作成エラー:', createError);
+          console.error('ユーザー作成エラー (initializeUser):', createError);
           
           // 作成エラーの場合、もう一度ユーザー検索を試みる
           // (同時作成などで競合が発生した可能性がある)
-          user = await userService.getUserByUsername(lineUsername);
+          try {
+            console.log('ユーザー作成エラー後に再検索を試みます');
+            user = await userService.getUserByUsername(lineUsername);
+            console.log('再検索結果:', user ? 'ユーザーが見つかりました' : 'ユーザーが見つかりませんでした');
+          } catch (searchError) {
+            console.error('ユーザー再検索エラー:', searchError);
+            throw new Error('ユーザーの作成と検索に失敗しました');
+          }
         }
         
         if (user) {
@@ -172,6 +180,9 @@ export const useSupabase = () => {
       if (user) {
         setCurrentUser(user);
         setError(null);
+        console.log('currentUserを更新しました:', user);
+      } else {
+        console.error('ユーザー情報が取得できませんでした');
       }
       
       return user;
@@ -181,7 +192,10 @@ export const useSupabase = () => {
       return null;
     } finally {
       console.log(`ユーザー初期化完了: "${lineUsername}" - ${new Date().toISOString()}`);
-      setTimeout(() => setLoading(false), 500); // 少し遅延させてUI更新を確実にする
+      setTimeout(() => {
+        setLoading(false);
+        console.log('ローディング状態を解除しました');
+      }, 500); // 少し遅延させてUI更新を確実にする
     }
   };
 

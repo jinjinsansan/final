@@ -284,11 +284,12 @@ export const userService = {
   async getUserByUsername(lineUsername: string | null): Promise<User | null> {
     if (!supabase) return null;
     if (!lineUsername) {
-      console.error('ユーザー名が指定されていません');
+      console.error('getUserByUsername: ユーザー名が指定されていません');
       return null;
     }
 
-    console.log(`ユーザー検索開始 (userService): "${lineUsername}" - ${new Date().toISOString()}`);
+    const timestamp = new Date().toISOString();
+    console.log(`ユーザー検索開始 (userService): "${lineUsername}" - ${timestamp}`);
     try {
       const { data, error } = await supabase
         .from('users')
@@ -296,22 +297,24 @@ export const userService = {
         .eq('line_username', lineUsername)
         .maybeSingle();
       
+      console.log(`ユーザー検索クエリ実行完了: "${lineUsername}" - ${new Date().toISOString()}`);
+      
       if (error) {
         // ユーザーが見つからない場合は null を返す
         if (error.code === 'PGRST116' || error.message.includes('No rows found')) {
-          console.log(`ユーザーが見つかりません: "${lineUsername}" - ${new Date().toISOString()}`);
+          console.log(`ユーザーが見つかりません: "${lineUsername}" - ${timestamp}`);
           return null;
         }
-        console.error(`ユーザー検索エラー: "${lineUsername}" - ${new Date().toISOString()}`, error);
+        console.error(`ユーザー検索エラー: "${lineUsername}" - ${timestamp}`, error);
         console.error('エラーコード:', error.code);
         console.error('エラーメッセージ:', error.message);
         throw error;
       }
       
-      console.log(`ユーザー検索結果: "${lineUsername}" - ${data ? `ID: ${data.id} - 見つかりました` : '見つかりません'} - ${new Date().toISOString()}`);
+      console.log(`ユーザー検索結果: "${lineUsername}" - ${data ? `ID: ${data.id} - 見つかりました` : '見つかりませんでした'} - ${timestamp}`);
       return data || null;
     } catch (error) {
-      console.error(`ユーザー取得エラー: "${lineUsername}" - ${new Date().toISOString()}`, error);
+      console.error(`ユーザー取得エラー: "${lineUsername}" - ${timestamp}`, error);
       return null;
     }
   },

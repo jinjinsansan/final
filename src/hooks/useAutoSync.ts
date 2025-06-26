@@ -40,10 +40,14 @@ export const useAutoSync = () => {
   // 接続状態が変わった時の自動処理
   useEffect(() => {
     if (!hasInitializedRef.current && isConnected) {
+      console.log('自動同期: 接続状態が変わりました - 自動初期化を試みます');
       const lineUsername = localStorage.getItem('line-username');
       if (lineUsername) {
+        console.log('自動同期: ユーザー名が見つかりました:', lineUsername);
         handleAutoInitialization(lineUsername);
         hasInitializedRef.current = true;
+      } else {
+        console.log('自動同期: ユーザー名が見つかりません');
         hasInitializedRef.current = true;
       }
     }
@@ -52,9 +56,11 @@ export const useAutoSync = () => {
   // 自動初期化処理
   const handleAutoInitialization = async (lineUsername: string) => {
     try {
+      console.log('自動同期: 自動初期化を開始します:', lineUsername);
+      setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
+      
       let user = await userService.getUserByUsername(lineUsername);
-      setStatus(prev => ({ ...prev, syncInProgress: true }));
-      setStatus(prev => ({ ...prev, syncInProgress: true }));
+      console.log('自動同期: ユーザー検索結果:', user ? 'ユーザーが見つかりました' : 'ユーザーが見つかりませんでした');
       
       if (!user) {
         if (import.meta.env.DEV) {
@@ -70,33 +76,46 @@ export const useAutoSync = () => {
         user = await userService.createUser(lineUsername);
         
         if (user) {
-          setStatus(prev => ({ ...prev, userCreated: true, syncError: null }));
+          console.log('自動同期: ユーザーを作成しました:', user.id);
+          setStatus(prev => ({ 
+            ...prev, 
+            userCreated: true, 
+            syncError: null,
+            syncInProgress: false
+          }));
+          
           // ユーザー作成後、アプリの状態を更新
           if (initializeUser) {
             await initializeUser(lineUsername); 
           }
         }
       } else {
-        setStatus(prev => ({ ...prev, userCreated: true, syncError: null }));
+        console.log('自動同期: ユーザーは既に存在します:', user.id);
+        setStatus(prev => ({ 
+          ...prev, 
+          userCreated: true, 
+          syncError: null,
+          syncInProgress: false
+        }));
+        
         // 既存ユーザーの場合も、アプリの状態を更新
         if (initializeUser) {
-          await initializeUser(lineUsername);
-        }
-        // 既存ユーザーの場合も、アプリの状態を更新
-        if (initializeUser) {
+          console.log('自動同期: 既存ユーザーの状態を更新します');
           await initializeUser(lineUsername);
         }
       }
 
       // 2. 自動同期が有効な場合のみデータ同期
       if (status.isAutoSyncEnabled && user) {
+        console.log('自動同期: データ同期を開始します');
         await performAutoSync(user.id);
       }
     } catch (error) {
       console.error('自動初期化エラー:', error);
       setStatus(prev => ({ 
         ...prev, 
-        syncError: error instanceof Error ? error.message : '初期化に失敗しました'
+        syncError: error instanceof Error ? error.message : '初期化に失敗しました',
+        syncInProgress: false
       }));
     } finally {
       setStatus(prev => ({ ...prev, syncInProgress: false }));
