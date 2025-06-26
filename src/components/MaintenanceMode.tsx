@@ -22,13 +22,13 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('');
   const [adminLoginAttempts, setAdminLoginAttempts] = useState(0);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showBackupRestore, setShowBackupRestore] = useState(false);
   const [backupData, setBackupData] = useState<File | null>(null);
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
