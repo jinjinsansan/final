@@ -1016,11 +1016,7 @@ const App: React.FC = () => {
                   ].map(({ key, label, icon: Icon }) => (
                     <button
                       key={key}
-                      onClick={() => {
-                        // 現在のページを更新してからメニューを閉じる
-                        setCurrentPage(key);
-                        setIsMobileMenuOpen(false);
-                      }}
+                      onClick={() => setCurrentPage(key)}
                       className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md text-base font-jp-medium transition-colors ${
                         currentPage === key
                           ? 'text-blue-600 bg-blue-50'
@@ -1037,7 +1033,6 @@ const App: React.FC = () => {
                     href="https://lin.ee/OYN8msX"
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center space-x-3 w-full px-3 py-2 rounded-md text-base font-jp-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                   >
                     <MessageCircle className="w-5 h-5" />
@@ -1047,11 +1042,14 @@ const App: React.FC = () => {
                   {!isAdmin && (
                     <button
                       onClick={() => {
-                        handleShowCounselorLogin();
+                        setCurrentPage(key);
                         setIsMobileMenuOpen(false);
+                      }}
+                        handleShowCounselorLogin();
                       }}
                       className="flex items-center space-x-3 w-full px-3 py-2 rounded-md text-base font-jp-medium text-gray-600 hover:text-gray-900 transition-colors"
                     >
+                    onClick={() => setIsMobileMenuOpen(false)}
                       <Settings className="w-5 h-5" />
                       <span>カウンセラーログイン</span>
                     </button>
@@ -1060,6 +1058,7 @@ const App: React.FC = () => {
                   {/* ログアウトボタン */}
                   {lineUsername && (
                     <button
+                        setIsMobileMenuOpen(false);
                       onClick={handleLogout}
                       className="flex items-center space-x-3 w-full px-3 py-2 rounded-md text-base font-jp-medium text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
                     >
