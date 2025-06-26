@@ -172,16 +172,10 @@ export const useAutoSync = () => {
 
     try {
       if (!isConnected || !currentUser) {
+        throw new Error('Supabaseに接続されていないか、ユーザーが設定されていません');
       }
-    }
-
-    // 即座に同期を実行（非同期で）
-    if (enabled && isConnected && currentUser) {
-      setTimeout(() => {
-        performAutoSync(currentUser.id).catch(error => {
-          console.error('自動同期実行エラー:', error);
-        });
-      }, 0);
+      
+      await performAutoSync(currentUser.id);
       
       try {
         const user = getCurrentUser();
@@ -189,7 +183,6 @@ export const useAutoSync = () => {
       } catch (error) {
         console.error('セキュリティログ記録エラー:', error);
       }
-      
     } finally {
       setStatus(prev => ({ ...prev, syncInProgress: false }));
     }
@@ -197,13 +190,10 @@ export const useAutoSync = () => {
 
   // 定期同期の設定（5分間隔）
   useEffect(() => {    
-    if (!isConnected || !currentUser) {
-      throw new Error('Supabaseに接続されていないか、ユーザーが設定されていません');
-    }
-    
     if (status.isAutoSyncEnabled && isConnected && currentUser) {
-    
       if (syncTimeoutRef.current) {
+        clearInterval(syncTimeoutRef.current);
+      }
       
       syncTimeoutRef.current = setInterval(() => {
         performAutoSync(currentUser.id).catch(error => {
@@ -218,8 +208,12 @@ export const useAutoSync = () => {
       };
     } else if (syncTimeoutRef.current) {
       clearInterval(syncTimeoutRef.current);
-      await performAutoSync(currentUser.id);
+    }
   }, [status.isAutoSyncEnabled, isConnected, currentUser]);
-    currentUser
+
+  return {
+    status,
+    toggleAutoSync,
+    triggerManualSync
   };
 };
