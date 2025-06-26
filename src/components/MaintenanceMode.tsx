@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Clock, RefreshCw, Wrench, Heart, CheckCircle, Info } from 'lucide-react';
 import { getAuthSession } from '../lib/deviceAuth';
+import { getAuthSession } from '../lib/deviceAuth';
 
 interface MaintenanceConfig {
   isEnabled: boolean;
@@ -16,12 +17,20 @@ interface MaintenanceConfig {
 interface MaintenanceModeProps {
   config: MaintenanceConfig;
   onAdminLogin?: () => void;
+  onAdminLogin?: () => void;
   onRetry?: () => void;
 }
 
 const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin, onRetry }) => {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('');
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [showBackupRestore, setShowBackupRestore] = useState(false);
+  const [backupData, setBackupData] = useState<File | null>(null);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -61,6 +70,119 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, [config.endTime]);
+
+  // 管理者ログイン処理
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 管理者パスワードをチェック（実際の実装ではより安全な方法を使用）
+    if (adminPassword === 'counselor123') {
+      // 管理者としてログイン
+      localStorage.setItem('current_counselor', '管理者（緊急アクセス）');
+      
+      // 親コンポーネントに通知
+      if (onAdminLogin) {
+        onAdminLogin();
+      } else {
+        // 通知がない場合はページをリロード
+        window.location.reload();
+      }
+    } else {
+      setLoginError('パスワードが正しくありません');
+    }
+  };
+
+  // バックアップファイルの選択
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setBackupData(e.target.files[0]);
+      setRestoreStatus(null);
+    }
+  };
+
+  // バックアップからの復元
+  const handleRestoreBackup = async () => {
+    if (!backupData) {
+      setRestoreStatus('バックアップファイルを選択してください。');
+      return;
+    }
+    
+    if (!window.confirm('バックアップからデータを復元しますか？')) {
+      return;
+    }
+    
+    setRestoreLoading(true);
+    setRestoreStatus(null);
+    
+    try {
+      // ファイルを読み込み
+      const fileReader = new FileReader();
+      
+      fileReader.onload = (event) => {
+        try {
+          if (!event.target || typeof event.target.result !== 'string') {
+            throw new Error('ファイルの読み込みに失敗しました。');
+          }
+          
+          const backupObject = JSON.parse(event.target.result);
+          
+          // バージョンチェック
+          if (!backupObject.version) {
+            throw new Error('無効なバックアップファイルです。');
+          }
+          
+          // データの復元
+          if (backupObject.journalEntries) {
+            localStorage.setItem('journalEntries', JSON.stringify(backupObject.journalEntries));
+          }
+          
+          if (backupObject.initialScores) {
+            localStorage.setItem('initialScores', JSON.stringify(backupObject.initialScores));
+          }
+          
+          if (backupObject.consentHistories) {
+            localStorage.setItem('consent_histories', JSON.stringify(backupObject.consentHistories));
+          }
+          
+          if (backupObject.lineUsername) {
+            localStorage.setItem('line-username', backupObject.lineUsername);
+          }
+          
+          if (backupObject.privacyConsentGiven) {
+            localStorage.setItem('privacyConsentGiven', backupObject.privacyConsentGiven);
+          }
+          
+          if (backupObject.privacyConsentDate) {
+            localStorage.setItem('privacyConsentDate', backupObject.privacyConsentDate);
+          }
+          
+          setRestoreStatus('データが正常に復元されました！ページを再読み込みしてください。');
+          
+          // 5秒後に自動的にページを再読み込み
+          setTimeout(() => {
+            window.location.reload();
+          }, 5000);
+          
+        } catch (error) {
+          console.error('データ復元エラー:', error);
+          setRestoreStatus('データの復元に失敗しました。有効なバックアップファイルか確認してください。');
+          setRestoreLoading(false);
+        }
+      };
+      
+      fileReader.onerror = () => {
+        setRestoreStatus('ファイルの読み込みに失敗しました。');
+        setRestoreLoading(false);
+      };
+      
+      fileReader.readAsText(backupData);
+      
+    } catch (error) {
+      console.error('バックアップ復元エラー:', error);
+      setRestoreStatus('バックアップの復元に失敗しました。');
+      setRestoreLoading(false);
+    }
+  };
 
   // 管理者ログイン処理
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -279,13 +401,121 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ config, onAdminLogin,
             </div>
           )}
 
+          {/* バックアップ復元セクション */}
+          <div className="mt-6">
+            <button
+              onClick={() => setShowBackupRestore(!showBackupRestore)}
+              className="flex items-center space-x-2 bg-purple-100 hover:bg-purple-200 text-purple-800 px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors mx-auto"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>バックアップから復元</span>
+            </button>
+          </div>
+
+          {showBackupRestore && (
+            <div className="mt-4 bg-purple-50 rounded-lg p-4 border border-purple-200">
+              <h3 className="font-jp-bold text-gray-900 mb-3 text-sm">データ復元</h3>
+              <p className="text-sm text-gray-700 mb-3">
+                以前作成したバックアップファイルからデータを復元できます。
+              </p>
+              
+              <div className="space-y-3">
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileChange}
+                    className="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-lg file:border-0
+                      file:text-sm file:font-jp-medium
+                      file:bg-purple-100 file:text-purple-700
+                      hover:file:bg-purple-200
+                      cursor-pointer"
+                  />
+                </div>
+                
+                <button
+                  onClick={handleRestoreBackup}
+                  disabled={restoreLoading || !backupData}
+                  className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-jp-medium transition-colors w-full text-sm"
+                >
+                  {restoreLoading ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  <span>バックアップから復元</span>
+                </button>
+              </div>
+              
+              {/* 復元ステータス表示 */}
+              {restoreStatus && (
+                <div className={`mt-3 rounded-lg p-3 border ${
+                  restoreStatus.includes('失敗') 
+                    ? 'bg-red-50 border-red-200 text-red-800' 
+                    : 'bg-green-50 border-green-200 text-green-800'
+                }`}>
+                  <div className="flex items-center space-x-2">
+                    {restoreStatus.includes('失敗') ? (
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span className="text-sm font-jp-medium">{restoreStatus}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 管理者ログインボタン */}
+          <div className="mt-6">
+            <button
+              onClick={() => setShowAdminLogin(!showAdminLogin)}
+              className="text-xs text-gray-500 hover:text-gray-700 font-jp-normal underline"
+            >
+              カウンセラーログイン
+            </button>
+          </div>
+
+          {/* 管理者ログインフォーム */}
+          {showAdminLogin && (
+            <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <h3 className="font-jp-bold text-gray-900 mb-3 text-sm">カウンセラーログイン</h3>
+              
+              <form onSubmit={handleAdminLogin} className="space-y-3">
+                <div>
+                  <input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="カウンセラーパスワードを入力"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal text-sm"
+                  />
+                </div>
+                
+                {loginError && (
+                  <p className="text-xs text-red-600 font-jp-normal">{loginError}</p>
+                )}
+                
+                <button
+                  type="submit"
+                  className="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-jp-medium text-sm transition-colors"
+                >
+                  ログイン
+                </button>
+              </form>
+            </div>
+          )}
+
           {/* フッター */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500 font-jp-normal">
               一般社団法人NAMIDAサポート協会 | かんじょうにっき
             </p>
             <p className="text-xs text-gray-400 font-jp-normal mt-1 mb-4">
-            </p>
+              ご不便をおかけして申し訳ございません
           </div>
         </div>
       </div>
