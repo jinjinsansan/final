@@ -281,9 +281,6 @@ export const userService = {
       return null;
     }
   },
-      return null;
-    }
-  },
 
   // 本番環境用：ユーザー統計取得
   async getUserStats(): Promise<{ total: number; today: number; thisWeek: number } | null> {
@@ -776,8 +773,8 @@ export const syncService = {
       const entries = JSON.parse(localEntries);
       if (entries.length === 0) return true;
       
-      const batchSize = 20;
-      const totalBatches = Math.ceil(entries.length / batchSize);
+      // バッチ処理で効率的に保存（本番環境対応）
+      const batchSize = 20; // 一度に50件ずつ処理
       
       for (let i = 0; i < totalBatches; i++) {
         const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
