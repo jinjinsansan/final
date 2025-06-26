@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, userService, diaryService, syncService } from '../lib/supabase';
+import { supabase, userService, diaryService, syncService, testSupabaseConnection } from '../lib/supabase';
 import { getAuthSession, logSecurityEvent } from '../lib/deviceAuth';
 
 export const useSupabase = () => {
@@ -14,19 +14,11 @@ export const useSupabase = () => {
   const checkConnection = async () => {
     setLoading(true);
     
-    if (!supabase) {
-      console.log('Supabase未設定 - ローカルモードで動作');
-      setIsConnected(false);
-      setLoading(false);
-      return;
-    }
-
     try {
-      // 接続テスト
-      const { data, error } = await supabase.from('users').select('count').limit(1);
-      
-      if (error) {
-        console.error('Supabase接続エラー:', error);
+      // 新しい接続テスト関数を使用
+      const result = await testSupabaseConnection();
+      if (!result.success) {
+        console.error('Supabase接続エラー:', result.error);
         setIsConnected(false);
       } else {
         console.log('Supabase接続成功');

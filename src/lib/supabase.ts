@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// 環境変数から値を取得
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
@@ -17,8 +18,7 @@ const isValidUrl = (url: string): boolean => {
 };
 
 const isValidSupabaseKey = (key: string): boolean => {
-  return !!(key && 
-    key.trim() !== '');
+  return !!(key && key.trim() !== '');
 };
 
 // 本番環境での詳細な検証
@@ -30,9 +30,34 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.log('Key:', supabaseAnonKey ? 'あり' : 'なし');
 }
 
-export const supabase = supabaseUrl && supabaseAnonKey && isValidUrl(supabaseUrl) && isValidSupabaseKey(supabaseAnonKey)
-  ? createClient(supabaseUrl, supabaseAnonKey)
+// Supabaseクライアントの作成
+export const supabase = (isValidUrl(supabaseUrl) && isValidSupabaseKey(supabaseAnonKey))
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      }
+    })
   : null;
+
+// 接続テスト用の関数
+export const testSupabaseConnection = async () => {
+  if (!supabase) return { success: false, error: 'Supabaseクライアントが初期化されていません' };
+  
+  try {
+    const { data, error } = await supabase.from('users').select('count').limit(1);
+    if (error) {
+      return { success: false, error: error.message, details: error };
+    }
+    return { success: true, data };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : '不明なエラー',
+      details: error 
+    };
+  }
+};
 
 // データベース型定義
 export interface User {
