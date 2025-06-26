@@ -4,8 +4,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // 環境変数のデバッグ情報（詳細）
-console.log('Supabase URL:', !!supabaseUrl, supabaseUrl ? `(${supabaseUrl.substring(0, 15)}...)` : '');
-console.log('Supabase Key:', !!supabaseAnonKey, supabaseAnonKey ? `(${supabaseAnonKey.substring(0, 15)}...)` : '');
+console.log('Supabase URL:', !!supabaseUrl, supabaseUrl ? `(${supabaseUrl.substring(0, 15)}...)` : 'なし');
+console.log('Supabase Key:', !!supabaseAnonKey, supabaseAnonKey ? `(長さ: ${supabaseAnonKey.length})` : 'なし');
 
 // 環境変数の検証（本番環境対応）
 const isValidUrl = (url: string): boolean => {
@@ -44,7 +44,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Supabaseクライアントの作成
 export const supabase = (() => {
   try {
-    console.log('Supabase client initialization starting...', new Date().toISOString());
+    console.log('Supabaseクライアント初期化開始...', new Date().toISOString());
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Supabase URL または API キーが設定されていません');
       return null;
@@ -53,10 +53,10 @@ export const supabase = (() => {
     const urlValid = isValidUrl(supabaseUrl);
     const keyValid = isValidSupabaseKey(supabaseAnonKey);
     
-    console.log('Creating Supabase client - URL valid:', urlValid, 'Key valid:', keyValid);
+    console.log('Supabaseクライアント作成 - URL有効:', urlValid, 'キー有効:', keyValid);
       
     if (urlValid && keyValid && supabaseUrl && supabaseAnonKey) {
-      console.log('Creating Supabase client with URL:', supabaseUrl, 'Key length:', supabaseAnonKey.length);
+      console.log('Supabaseクライアント作成中 - URL:', supabaseUrl.substring(0, 20) + '...', 'キー長:', supabaseAnonKey.length);
       try {
         const client = createClient(supabaseUrl, supabaseAnonKey, {
           auth: {
@@ -64,14 +64,14 @@ export const supabase = (() => {
             autoRefreshToken: true,
           }
         });
-        console.log('Supabase client created successfully');
+        console.log('Supabaseクライアント作成成功');
         return client;
       } catch (createError) {
         console.error('Supabaseクライアント作成中のエラー:', createError);
         return null;
       }
     }
-    console.log('Failed to create Supabase client: invalid URL or key');
+    console.log('Supabaseクライアント作成失敗: URLまたはキーが無効です');
     return null;
   } catch (error) {
     console.error('Supabaseクライアント作成エラー:', error instanceof Error ? error.message : error);
@@ -82,7 +82,7 @@ export const supabase = (() => {
 // 接続テスト用の関数
 export const testSupabaseConnection = async () => {
   if (!supabase) {
-    console.error('接続テスト失敗: Supabaseクライアントが初期化されていません');
+    console.error('接続テスト失敗: Supabaseクライアントが未初期化');
     return { 
       success: false,
       error: 'Supabaseクライアントが初期化されていません',
@@ -97,7 +97,7 @@ export const testSupabaseConnection = async () => {
   
   try {
     // 単純なPingテスト
-    console.log('Supabase接続をテスト中...', new Date().toISOString());
+    console.log('Supabase接続テスト中...', new Date().toISOString());
     const { data, error } = await supabase.from('users').select('id').limit(1);
     
     if (error) {      
@@ -106,6 +106,11 @@ export const testSupabaseConnection = async () => {
       // APIキーエラーの特別処理
       if (error.message.includes('JWT') || error.message.includes('Invalid API key') || error.message.includes('key') || error.message.includes('token')) {
         console.error('APIキーエラーが検出されました:', error.message);
+        
+        // エラーメッセージの詳細をログ
+        if (error.details) console.error('エラー詳細:', error.details);
+        if (error.hint) console.error('エラーヒント:', error.hint);
+        
         return { 
           success: false,
           error: 'APIキーが無効です',
@@ -119,7 +124,7 @@ export const testSupabaseConnection = async () => {
         details: error 
       };
     }
-    console.log('接続テスト成功');
+    console.log('Supabase接続テスト成功');
     return { success: true, data };
   } catch (error) {
     console.error('接続テスト例外:', error);
@@ -192,7 +197,7 @@ export const userService = {
   async createUser(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
 
-    console.log('ユーザー作成開始:', lineUsername);
+    console.log(`ユーザー作成開始: "${lineUsername}"`);
     try {
       // まず既存ユーザーをチェック
       const existingUser = await this.getUserByUsername(lineUsername);
@@ -202,7 +207,7 @@ export const userService = {
       }
       
       // 新規ユーザー作成
-      console.log('新規ユーザーを作成します - username:', lineUsername);
+      console.log(`新規ユーザーを作成します - username: "${lineUsername}"`);
       
       const { data, error } = await supabase
         .from('users')
@@ -222,11 +227,11 @@ export const userService = {
       }
       
       if (!data) {
-        console.error('ユーザー作成エラー: データが返されませんでした');
+        console.error(`ユーザー作成エラー: "${lineUsername}" - データが返されませんでした`);
         return null;
       }
       
-      console.log('ユーザー作成成功:', data);
+      console.log(`ユーザー作成成功: "${lineUsername}"`, data);
       return data;
     } catch (error) {
       console.error('ユーザー作成エラー:', error);
@@ -251,7 +256,7 @@ export const userService = {
   async getUserByUsername(lineUsername: string): Promise<User | null> {
     if (!supabase) return null;
 
-    console.log('ユーザー検索開始:', lineUsername);
+    console.log(`ユーザー検索開始: "${lineUsername}"`);
     try {
       const { data, error } = await supabase
         .from('users')
@@ -262,17 +267,20 @@ export const userService = {
       if (error) {
         // ユーザーが見つからない場合は null を返す
         if (error.code === 'PGRST116' || error.message.includes('No rows found')) {
-          console.log('ユーザーが見つかりません:', lineUsername);
+          console.log(`ユーザーが見つかりません: "${lineUsername}"`);
           return null;
         }
-        console.error('ユーザー検索エラー:', error);
+        console.error(`ユーザー検索エラー: "${lineUsername}"`, error);
         throw error;
       }
       
-      console.log('ユーザー検索結果:', data);
+      console.log(`ユーザー検索結果: "${lineUsername}"`, data ? '見つかりました' : '見つかりません');
       return data || null;
     } catch (error) {
-      console.error('ユーザー取得エラー:', error);
+      console.error(`ユーザー取得エラー: "${lineUsername}"`, error);
+      return null;
+    }
+  },
       return null;
     }
   },
