@@ -598,14 +598,6 @@ const AdminPanel: React.FC = () => {
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => handleDeleteEntry(entry.id)}
-                                disabled={deleting}
-                                className="text-red-600 hover:text-red-700 p-1"
-                                title="削除"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
                             </div>
                           </div>
 
