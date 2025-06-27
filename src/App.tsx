@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Menu, X, Home, Search, BookOpen, HelpCircle, Settings, User, Shield, LogIn } from 'lucide-react';
+import { Heart, Menu, X, Home, Search, BookOpen, HelpCircle, Settings, User, Shield, LogIn, MessageCircle, AlertTriangle } from 'lucide-react';
 import DiaryPage from './pages/DiaryPage';
 import DiarySearchPage from './pages/DiarySearchPage';
 import HowTo from './pages/HowTo';
