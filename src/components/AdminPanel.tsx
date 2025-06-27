@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Calendar, Search, Settings, Users, AlertTriangle, Edit3, Trash2, Save, X, CheckCircle, Eye, EyeOff, User, Clock, Filter, Shield, Database, RefreshCw, Download } from 'lucide-react';
+import { Calendar, Search, MessageCircle, Settings, Users, AlertTriangle, Edit3, Trash2, Save, X, CheckCircle, Eye, EyeOff, User, Clock, Filter, Shield, Database, RefreshCw, Download } from 'lucide-react';
 import AdvancedSearchFilter from './AdvancedSearchFilter';
 import CounselorManagement from './CounselorManagement';
+import CounselorChat from './CounselorChat';
 import MaintenanceController from './MaintenanceController';
 import ConsentHistoryManagement from './ConsentHistoryManagement';
 import DeviceAuthManagement from './DeviceAuthManagement';
@@ -491,7 +492,7 @@ const AdminPanel: React.FC = () => {
         </div>
 
         <Tabs defaultValue="search" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-6 gap-1 mb-6 overflow-x-auto">
+          <TabsList className="grid grid-cols-7 gap-1 mb-6 overflow-x-auto">
             <TabsTrigger value="search" className="flex items-center justify-center px-2 py-1.5">
               <Search className="w-4 h-4" />
               <span className="hidden md:inline">日記</span>
@@ -499,6 +500,10 @@ const AdminPanel: React.FC = () => {
             <TabsTrigger value="advanced-search" className="flex items-center justify-center px-2 py-1.5">
               <Filter className="w-4 h-4" />
               <span className="hidden md:inline">検索</span>
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center justify-center px-2 py-1.5">
+              <MessageCircle className="w-4 h-4" />
+              <span className="hidden md:inline">チャット</span>
             </TabsTrigger>
             <TabsTrigger value="counselors" className="flex items-center justify-center px-2 py-1.5">
               <Users className="w-4 h-4" />
@@ -665,6 +670,10 @@ const AdminPanel: React.FC = () => {
               onViewEntry={handleViewEntry} 
               onDeleteEntry={handleDeleteEntry}
             />
+          </TabsContent>
+
+          <TabsContent value="chat">
+            <CounselorChat />
           </TabsContent>
 
           <TabsContent value="counselors">
