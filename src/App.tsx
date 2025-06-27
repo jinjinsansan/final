@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Menu, X, Home, Search, BookOpen, HelpCircle, Settings, User, Shield, LogIn, AlertTriangle } from 'lucide-react';
+import { Heart, Menu, X, Home, Search, BookOpen, HelpCircle, Settings, User, Shield, LogIn } from 'lucide-react';
 import DiaryPage from './pages/DiaryPage';
 import DiarySearchPage from './pages/DiarySearchPage';
 import HowTo from './pages/HowTo';
@@ -653,14 +653,6 @@ const App: React.FC = () => {
       </main>
 
       {/* メンテナンスモード表示 */}
-      {isMaintenanceMode && isAdminBypass && (
-        <div className="fixed bottom-0 left-0 right-0 bg-red-100 border-t border-red-200 p-2 text-center">
-          <div className="flex items-center justify-center space-x-2 text-red-800 text-sm">
-            <AlertTriangle className="w-4 h-4" />
-            <span className="font-jp-medium">メンテナンスモード中（管理者アクセス）</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
