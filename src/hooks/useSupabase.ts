@@ -96,7 +96,8 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     // 管理者モードの場合は初期化をスキップ
     if (isAdminMode) {
-      console.log('管理者モードのため、ユーザー初期化をスキップします', new Date().toISOString());
+      console.log('管理者モードのため、ユーザー初期化をスキップします - 管理者IDを返します', new Date().toISOString());
+      setCurrentUser({ id: 'admin', line_username: lineUsername.trim() });
       return { id: 'admin', line_username: lineUsername.trim() };
     }
     
@@ -107,7 +108,13 @@ export const useSupabase = () => {
 
     const startTime = new Date().toISOString();
     console.log(`ユーザー初期化開始: "${lineUsername.trim()}" - ${startTime}`);
-    
+
+    // 既に初期化中の場合は処理をスキップ
+    if (loading) {
+      console.log(`別の初期化処理が進行中のため、現在のユーザーを返します: ${lineUsername.trim()}`, new Date().toISOString());
+      return currentUser || { id: null, line_username: lineUsername.trim() };
+    }
+
     setLoading(true);
     setError(null);
     

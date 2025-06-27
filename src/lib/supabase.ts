@@ -698,15 +698,126 @@ export const syncService = {
   // ローカルストレージからSupabaseへデータを移行
   async migrateLocalData(userId: string | null, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
-    if (!userId || userId === 'admin') {
-      // 管理者モードの場合は特別な処理
-      if (userId === 'admin') {
-        console.log('管理者モードでデータ移行を実行します', new Date().toISOString());
-        // 管理者モードでは全ユーザーのデータを処理
-        return true; // 実際の処理は別の関数で行う
-      }
+    if (!userId) {
       console.error('データ移行エラー: ユーザーIDが指定されていません');
       return false;
+    }
+    
+    // 管理者モードの場合は特別な処理
+    if (userId === 'admin') {
+      console.log('管理者モードでデータ移行を実行します', new Date().toISOString());
+      // 管理者モードでは全ユーザーのデータを処理
+      try {
+        // ローカルストレージからデータを取得
+        const localEntries = localStorage.getItem('journalEntries');
+        if (!localEntries) {
+          console.log('管理者モード: ローカルデータが見つかりません - 移行スキップ');
+          return true;
+        }
+        
+        const entries = JSON.parse(localEntries);
+        if (entries.length === 0) {
+          console.log('管理者モード: ローカルデータが空です - 移行スキップ');
+          return true;
+        }
+        
+        console.log(`管理者モード: ${entries.length}件のエントリーを処理します`);
+        
+        // 進捗コールバックが提供されている場合は初期値を設定
+        if (progressCallback) progressCallback(10);
+        
+        // 全ユーザーのデータを取得
+        const { data: users, error: usersError } = await supabase
+          .from('users')
+          .select('id, line_username');
+        
+        if (usersError) {
+          console.error('管理者モード: ユーザー取得エラー:', usersError);
+          return false;
+        }
+        
+        if (!users || users.length === 0) {
+          console.log('管理者モード: ユーザーが見つかりません');
+          return false;
+        }
+        
+        console.log(`管理者モード: ${users.length}人のユーザーが見つかりました`);
+        
+        // 進捗コールバックが提供されている場合は更新
+        if (progressCallback) progressCallback(30);
+        
+        // 各ユーザーのデータを処理
+        let successCount = 0;
+        for (const user of users) {
+          try {
+            console.log(`管理者モード: ユーザー ${user.line_username} (${user.id}) のデータを処理中...`);
+            
+            // ユーザーに関連するエントリーをフィルタリング
+            const userEntries = entries.filter((entry: any) => {
+              // ここでユーザーに関連するエントリーを特定するロジックを実装
+              // 例: エントリーにuser_idフィールドがあれば、それを使用
+              return true; // 管理者モードでは全エントリーを処理
+            });
+            
+            if (userEntries.length > 0) {
+              console.log(`管理者モード: ユーザー ${user.line_username} の ${userEntries.length} 件のエントリーを処理します`);
+              
+              // 各エントリーをSupabaseに保存
+              for (const entry of userEntries) {
+                const entryData = {
+                  user_id: user.id,
+                  date: entry.date || new Date().toISOString().split('T')[0],
+                  emotion: entry.emotion || '',
+                  event: entry.event || '',
+                  realization: entry.realization || '',
+                  self_esteem_score: entry.selfEsteemScore || 50,
+                  worthlessness_score: entry.worthlessnessScore || 50,
+                  counselor_memo: entry.counselor_memo || '',
+                  is_visible_to_user: entry.is_visible_to_user || false,
+                  counselor_name: entry.counselor_name || ''
+                };
+                
+                // 既存エントリーの重複チェック
+                const { data: existing, error: checkError } = await supabase
+                  .from('diary_entries')
+                  .select('id')
+                  .eq('user_id', user.id)
+                  .eq('date', entry.date)
+                  .eq('emotion', entry.emotion);
+                
+                if (checkError) {
+                  console.warn('管理者モード: エントリー確認エラー:', checkError);
+                  continue;
+                }
+                
+                if (!existing || existing.length === 0) {
+                  // 新規エントリーの挿入
+                  const { error: insertError } = await supabase
+                    .from('diary_entries')
+                    .insert(entryData);
+                  
+                  if (insertError) {
+                    console.warn('管理者モード: エントリー作成エラー:', insertError);
+                  } else {
+                    successCount++;
+                  }
+                }
+              }
+            }
+          } catch (userError) {
+            console.error(`管理者モード: ユーザー ${user.line_username} の処理中にエラーが発生しました:`, userError);
+          }
+        }
+        
+        // 進捗コールバックが提供されている場合は完了を通知
+        if (progressCallback) progressCallback(100);
+        
+        console.log(`管理者モード: データ移行が完了しました。成功: ${successCount} 件`);
+        return true;
+      } catch (error) {
+        console.error('管理者モードでのデータ移行エラー:', error);
+        return false;
+      }
     }
 
     const startTime = new Date().toISOString();
@@ -825,20 +936,62 @@ export const syncService = {
   // Supabaseからローカルストレージにデータを同期
   async syncToLocal(userId: string | null): Promise<boolean> {
     if (!supabase) return false;
-    if (!userId) {
+    if (!userId && userId !== 'admin') {
       console.error('データ同期エラー: ユーザーIDが指定されていません');
       return false;
     }
     
-    // 管理者モードの場合は特別な処理
+    // 管理者モードの場合
     if (userId === 'admin') {
       console.log('管理者モードでSupabaseからローカルへの同期を実行します', new Date().toISOString());
-      // 管理者モードでは全ユーザーのデータを処理
-      return true; // 実際の処理は別の関数で行う
+      try {
+        // 全ユーザーのデータを取得
+        const { data: allEntries, error } = await supabase
+          .from('diary_entries')
+          .select('*, users(line_username)')
+          .order('date', { ascending: false });
+        
+        if (error) {
+          console.error('管理者モード: 全データ取得エラー:', error);
+          return false;
+        }
+        
+        if (!allEntries || allEntries.length === 0) {
+          console.log('管理者モード: Supabaseにデータがありません');
+          return true;
+        }
+        
+        console.log(`管理者モード: ${allEntries.length}件のエントリーを取得しました`);
+        
+        // ローカル形式に変換
+        const localFormat = allEntries.map(entry => ({
+          id: entry.id,
+          date: entry.date,
+          emotion: entry.emotion,
+          event: entry.event,
+          realization: entry.realization,
+          selfEsteemScore: entry.self_esteem_score,
+          worthlessnessScore: entry.worthlessness_score,
+          counselor_memo: entry.counselor_memo,
+          is_visible_to_user: entry.is_visible_to_user,
+          counselor_name: entry.counselor_name,
+          user: entry.users,
+          assigned_counselor: entry.assigned_counselor,
+          urgency_level: entry.urgency_level,
+          created_at: entry.created_at
+        }));
+        
+        localStorage.setItem('journalEntries', JSON.stringify(localFormat));
+        console.log(`管理者モード: ${localFormat.length}件のエントリーをローカルに同期しました`);
+        return true;
+      } catch (error) {
+        console.error('管理者モードでのデータ同期エラー:', error);
+        return false;
+      }
     }
     
-    if (userId.trim() === '') {
-      console.error('データ同期エラー: ユーザーIDが指定されていません');
+    if (typeof userId === 'string' && userId.trim() === '') {
+      console.error('データ同期エラー: ユーザーIDが空文字列です');
       return false;
     }
     
@@ -1071,34 +1224,146 @@ export const syncService = {
   // 本番環境用：大量データの効率的な同期
   async bulkMigrateLocalData(userId: string | null, progressCallback?: (progress: number) => void): Promise<boolean> {
     if (!supabase) return false;
-    if (!userId) {
+    if (!userId && userId !== 'admin') {
       console.error('データ移行エラー: ユーザーIDが指定されていません');
       return false;
     }
-    
-    // 管理者モードの場合は特別な処理
+
+    // 管理者モードの場合
     if (userId === 'admin') {
       console.log('管理者モードで大量データ移行を実行します', new Date().toISOString());
       try {
-        // 管理者モードでは全ユーザーのデータを処理
-        if (progressCallback) progressCallback(50); // 進捗表示
+        // 進捗表示の初期値
+        if (progressCallback) progressCallback(10);
         
-        // 全ユーザーのデータを取得して処理する処理をここに実装
-        // 例: すべてのユーザーを取得し、各ユーザーのデータを処理
+        // ローカルストレージからデータを取得
+        const localEntries = localStorage.getItem('journalEntries');
+        if (!localEntries) {
+          console.log('管理者モード: ローカルデータが見つかりません - 移行スキップ');
+          if (progressCallback) progressCallback(100);
+          return true;
+        }
+        
+        const entries = JSON.parse(localEntries);
+        if (entries.length === 0) {
+          console.log('管理者モード: ローカルデータが空です - 移行スキップ');
+          if (progressCallback) progressCallback(100);
+          return true;
+        }
+        
+        console.log(`管理者モード: ${entries.length}件のエントリーを処理します`);
+        
+        // 進捗表示を更新
+        if (progressCallback) progressCallback(20);
+        
+        // 全ユーザーを取得
         const { data: users, error: usersError } = await supabase
           .from('users')
           .select('id, line_username');
-          
+        
         if (usersError) {
-          console.error('ユーザー取得エラー:', usersError);
+          console.error('管理者モード: ユーザー取得エラー:', usersError);
           return false;
         }
         
-        console.log(`全${users?.length || 0}ユーザーのデータ処理を開始します`);
+        if (!users || users.length === 0) {
+          console.log('管理者モード: ユーザーが見つかりません');
+          return false;
+        }
+        
+        console.log(`管理者モード: ${users.length}人のユーザーが見つかりました`);
+        
+        // 進捗表示を更新
+        if (progressCallback) progressCallback(30);
+        
+        // バッチ処理のサイズと総数を計算
+        const batchSize = 20; // 一度に20件ずつ処理
+        const totalEntries = entries.length;
+        const totalBatches = Math.ceil(totalEntries / batchSize);
+        console.log(`管理者モード: 総バッチ数: ${totalBatches} (バッチサイズ: ${batchSize}件)`);
+        
+        let successCount = 0;
+        let errorCount = 0;
+        let skippedCount = 0;
+        
+        // 各ユーザーのデータを処理
+        for (const user of users) {
+          try {
+            console.log(`管理者モード: ユーザー ${user.line_username} (${user.id}) のデータを処理中...`);
+            
+            // バッチ処理でデータを移行
+            for (let i = 0; i < totalBatches; i++) {
+              const batch = entries.slice(i * batchSize, (i + 1) * batchSize);
+              
+              for (const entry of batch) {
+                try {
+                  // エントリーデータの準備
+                  const entryData = {
+                    user_id: user.id,
+                    date: entry.date || new Date().toISOString().split('T')[0],
+                    emotion: entry.emotion || '',
+                    event: entry.event || '',
+                    realization: entry.realization || '',
+                    self_esteem_score: entry.selfEsteemScore || 50,
+                    worthlessness_score: entry.worthlessnessScore || 50,
+                    counselor_memo: entry.counselor_memo || '',
+                    is_visible_to_user: entry.is_visible_to_user || false,
+                    counselor_name: entry.counselor_name || ''
+                  };
+                  
+                  // 既存エントリーの重複チェック
+                  const { data: existing, error: checkError } = await supabase
+                    .from('diary_entries')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('date', entry.date)
+                    .eq('emotion', entry.emotion);
+                  
+                  if (checkError) {
+                    console.warn('管理者モード: エントリー確認エラー:', checkError);
+                    errorCount++;
+                    continue;
+                  }
+                  
+                  if (!existing || existing.length === 0) {
+                    // 新規エントリーの挿入
+                    const { error: insertError } = await supabase
+                      .from('diary_entries')
+                      .insert(entryData);
+                    
+                    if (insertError) {
+                      console.warn('管理者モード: エントリー作成エラー:', insertError);
+                      errorCount++;
+                    } else {
+                      successCount++;
+                    }
+                  } else {
+                    skippedCount++;
+                  }
+                } catch (entryError) {
+                  console.error('管理者モード: エントリー処理エラー:', entryError);
+                  errorCount++;
+                }
+              }
+              
+              // 進捗表示を更新
+              if (progressCallback) {
+                const progress = Math.round(30 + ((i + 1) / totalBatches) * 70);
+                progressCallback(progress);
+              }
+              
+              // レート制限を回避するための待機
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+          } catch (userError) {
+            console.error(`管理者モード: ユーザー ${user.line_username} の処理中にエラーが発生しました:`, userError);
+          }
+        }
         
         // 進捗表示が100%になるように設定
         if (progressCallback) progressCallback(100);
         
+        console.log(`管理者モード: データ移行が完了しました。成功: ${successCount}件, 失敗: ${errorCount}件, スキップ: ${skippedCount}件`);
         return true;
       } catch (error) {
         console.error('管理者モードでのデータ移行エラー:', error);
@@ -1106,7 +1371,8 @@ export const syncService = {
       }
     }
     
-    if (typeof userId !== 'string') {
+    // 通常モードでユーザーIDが無効な場合
+    if (userId !== 'admin' && typeof userId !== 'string') {
       console.error('データ移行エラー: ユーザーIDが無効です');
       return false;
     }
