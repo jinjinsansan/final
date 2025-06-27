@@ -41,13 +41,15 @@ interface JournalEntry {
 interface AdvancedSearchFilterProps {
   entries: JournalEntry[];
   onFilteredResults: (filtered: JournalEntry[]) => void;
-  onViewEntry: (entry: JournalEntry) => void;
+  onViewEntry: (entry: JournalEntry) => void; 
+  onDeleteEntry?: (entryId: string) => void;
 }
 
 const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   entries,
   onFilteredResults,
-  onViewEntry
+  onViewEntry,
+  onDeleteEntry
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
@@ -737,6 +739,15 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
                     >
                       <Eye className="w-4 h-4" />
                     </button>
+                    {onDeleteEntry && (
+                      <button
+                        onClick={() => onDeleteEntry(entry.id)}
+                        className="text-red-600 hover:text-red-700 p-1"
+                        title="削除"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

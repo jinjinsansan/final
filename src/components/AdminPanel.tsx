@@ -43,6 +43,7 @@ const AdminPanel: React.FC = () => {
   const [assignedCounselor, setAssignedCounselor] = useState('');
   const [savingMemo, setSavingMemo] = useState(false);
   const [activeTab, setActiveTab] = useState('search');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     // カウンセラー名を取得
@@ -236,6 +237,53 @@ const AdminPanel: React.FC = () => {
       alert('メモの保存に失敗しました。もう一度お試しください。');
     } finally {
       setSavingMemo(false);
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: string) => {
+    if (!window.confirm('この日記を削除してもよろしいですか？この操作は元に戻せません。')) {
+      return;
+    }
+    
+    setDeleting(true);
+    
+    try {
+      // ローカルストレージの更新
+      const savedEntries = localStorage.getItem('journalEntries');
+      if (savedEntries) {
+        const entries = JSON.parse(savedEntries);
+        const updatedEntries = entries.filter((entry: any) => entry.id !== entryId);
+        localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+      }
+      
+      // Supabaseの更新（接続されている場合）
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from('diary_entries')
+            .delete()
+            .eq('id', entryId);
+          
+          if (error) {
+            console.error('Supabase削除エラー:', error);
+            throw new Error('Supabaseからの削除に失敗しました');
+          }
+        } catch (supabaseError) {
+          console.error('Supabase接続エラー:', supabaseError);
+          throw new Error('Supabaseとの接続に失敗しました');
+        }
+      }
+      
+      // エントリーリストの更新
+      setEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
+      setFilteredEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
+      
+      alert('日記を削除しました！');
+    } catch (error) {
+      console.error('削除エラー:', error);
+      alert('削除に失敗しました。もう一度お試しください。');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -538,9 +586,25 @@ const AdminPanel: React.FC = () => {
                               <button
                                 onClick={() => handleViewEntry(entry)}
                                 className="text-blue-600 hover:text-blue-700 p-1"
-                                title="詳細を見る"
+                                title="詳細"
                               >
                                 <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteEntry(entry.id)}
+                                disabled={deleting}
+                                className="text-red-600 hover:text-red-700 p-1"
+                                title="削除"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteEntry(entry.id)}
+                                disabled={deleting}
+                                className="text-red-600 hover:text-red-700 p-1"
+                                title="削除"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </div>
@@ -610,8 +674,9 @@ const AdminPanel: React.FC = () => {
           <TabsContent value="advanced-search">
             <AdvancedSearchFilter 
               entries={entries} 
-              onFilteredResults={setFilteredEntries}
-              onViewEntry={handleViewEntry}
+              onFilteredResults={setFilteredEntries} 
+              onViewEntry={handleViewEntry} 
+              onDeleteEntry={handleDeleteEntry}
             />
           </TabsContent>
 
