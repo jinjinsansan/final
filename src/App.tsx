@@ -232,6 +232,7 @@ const App: React.FC = () => {
   // カウンセラーログイン処理
   const handleCounselorLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('カウンセラーログイン試行:', counselorCredentials);
     
     const { email, password } = counselorCredentials;
     
@@ -255,6 +256,7 @@ const App: React.FC = () => {
     setIsAdminMode(true);
     setCurrentPage('admin');
     setCounselorCredentials({ email: '', password: '' });
+    setShowCounselorLogin(false);
   };
 
   // ログアウト処理
@@ -553,6 +555,8 @@ const App: React.FC = () => {
   // カウンセラーログインモーダル
   const renderCounselorLoginModal = () => {
     if (!showCounselorLogin) return null;
+    
+    console.log('カウンセラーログインモーダルを表示:', counselorCredentials);
 
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -578,6 +582,7 @@ const App: React.FC = () => {
                 type="email"
                 value={counselorCredentials.email}
                 onChange={(e) => setCounselorCredentials({...counselorCredentials, email: e.target.value})}
+                onKeyDown={(e) => e.key === 'Enter' && document.getElementById('counselor-password')?.focus()}
                 placeholder="カウンセラー用メールアドレスを入力"
                 className="w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-jp-normal text-gray-800 placeholder-gray-400 transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
                 required
@@ -590,6 +595,7 @@ const App: React.FC = () => {
               </label>
               <input
                 type="password"
+                id="counselor-password"
                 value={counselorCredentials.password}
                 onChange={(e) => setCounselorCredentials({...counselorCredentials, password: e.target.value})}
                 placeholder="パスワードを入力"
@@ -616,6 +622,7 @@ const App: React.FC = () => {
             <div className="flex space-x-3 pt-2">
               <button
                 type="submit"
+                id="counselor-login-button"
                 className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 px-4 rounded-lg font-jp-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 text-sm"
               >
                 ログイン
