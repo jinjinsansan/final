@@ -15,12 +15,12 @@ const DataMigration: React.FC = () => {
   const [syncDirection, setSyncDirection] = useState<'local-to-supabase' | 'supabase-to-local'>('local-to-supabase');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
-  
+
   const { isConnected, currentUser, initializeUser } = useSupabase();
 
   useEffect(() => {
     loadData();
-    
+
     // カウンセラーとしてログインしているかチェック
     const counselorName = localStorage.getItem('current_counselor');
     if (counselorName) {
@@ -41,7 +41,7 @@ const DataMigration: React.FC = () => {
       // Supabaseデータ数を取得（接続されている場合のみ）
       if (isConnected && currentUser) {
         supabase.from('diary_entries')
-          .select('id', { count: 'exact' }) 
+          .select('id', { count: 'exact' })
           .eq('user_id', currentUser.id)
           .then(({ count, error }) => {
             console.log('Supabase日記データ数:', count || 0);
@@ -69,72 +69,93 @@ const DataMigration: React.FC = () => {
       setMigrationStatus(`ユーザー作成中... (${lineUsername})`);
       setUserCreationError(null);
       setMigrating(true);
-      console.log(`ユーザー作成開始: ${lineUsername}`);
+      console.log(`ユーザー作成開始: ${lineUsername}`, new Date().toISOString());
 
       // まず既存ユーザーをチェック
       const existingUser = await userService.getUserByUsername(lineUsername);
       if (existingUser) {
-        console.log('既存ユーザーが見つかりました:', existingUser);
+        console.log('既存ユーザーが見つかりました:', existingUser, new Date().toISOString());
         setMigrationStatus('ユーザーは既に存在します！ページを再読み込みします...');
         localStorage.setItem('supabase_user_id', existingUser.id);
         setUserExists(true);
-        
+
         // 現在のユーザーを設定
         if (isConnected) {
-          await initializeUser(lineUsername);
+          try {
+            console.log('既存ユーザーの初期化を開始します', new Date().toISOString());
+            const result = await initializeUser(lineUsername);
+            console.log('ユーザー初期化結果:', result, new Date().toISOString());
+            setMigrationStatus('ユーザー初期化が完了しました。ページを再読み込みします...');
+          } catch (initError) {
+            console.error('ユーザー初期化エラー:', initError);
+            setMigrationStatus('ユーザー初期化中にエラーが発生しました。ページを再読み込みしてください。');
+          }
         }
-        
-        setMigrationStatus('ユーザー初期化関数が利用できません。ページを再読み込みしてください。');
+
         setTimeout(() => {
           window.location.reload();
         }, 2000);
         return;
       }
-      
+
       // 新規ユーザー作成
-      console.log('新規ユーザーを作成します:', lineUsername);
+      console.log('新規ユーザーを作成します:', lineUsername, new Date().toISOString());
       const user = await userService.createUser(lineUsername);
-      
+
       if (!user || !user.id) {
-        console.error('ユーザー作成に失敗しました - nullが返されました');
+        console.error('ユーザー作成に失敗しました - nullが返されました', new Date().toISOString());
         throw new Error('ユーザー作成に失敗しました。');
       }
-      
-      console.log('ユーザー作成成功:', user);
+
+      console.log('ユーザー作成成功:', user, new Date().toISOString());
       localStorage.setItem('supabase_user_id', user.id);
       // 成功メッセージを表示
-      await initializeUser(lineUsername);
-      
+      try {
+        console.log('新規ユーザーの初期化を開始します', new Date().toISOString());
+        const result = await initializeUser(lineUsername);
+        console.log('新規ユーザー初期化結果:', result, new Date().toISOString());
+        setMigrationStatus('ユーザー作成と初期化が完了しました。ページを再読み込みします...');
+      } catch (initError) {
+        console.error('新規ユーザー初期化エラー:', initError);
+        setMigrationStatus('ユーザー初期化中にエラーが発生しました。ページを再読み込みしてください。');
+      }
+
       // 少し待ってからリロード
       setTimeout(() => {
         window.location.reload(); // ページをリロードして状態を更新
       }, 2000);
     } catch (error) {
-      console.error('ユーザー作成エラー:', error);
+      console.error('ユーザー作成エラー:', error, new Date().toISOString());
       let errorMessage = 'ユーザー作成中にエラーが発生しました。';
-      
+
       // エラーメッセージを詳細に表示
       if (error instanceof Error) {
         setUserCreationError(error.message);
         errorMessage += ` ${error.message}`;
-        
+
         // 重複キーエラーの場合
         if (error.message.includes('duplicate key') || error.message.includes('already exists')) {
-          console.log('重複エラーを検出しました - 既存ユーザーを使用します');
+          console.log('重複エラーを検出しました - 既存ユーザーを使用します', new Date().toISOString());
           setMigrationStatus('このユーザー名は既に登録されています。ページを再読み込みします...');
           setUserExists(true);
-          
+
           if (isConnected) {
-            await initializeUser(lineUsername);
+            try {
+              console.log('重複エラー後のユーザー初期化を開始します', new Date().toISOString());
+              const result = await initializeUser(lineUsername);
+              console.log('重複エラー後のユーザー初期化結果:', result, new Date().toISOString());
+            } catch (initError) {
+              console.error('重複エラー後のユーザー初期化エラー:', initError);
+            }
           }
-          
+
           setTimeout(() => {
             window.location.reload();
           }, 2000);
           return;
         }
       }
-      
+
       // エラーメッセージを表示
       setMigrationStatus(`エラー: ${errorMessage}`);
       setUserCreationError(errorMessage);
@@ -274,9 +295,18 @@ const DataMigration: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center space-x-3 mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
           <Database className="w-8 h-8 text-blue-600" />
           <h2 className="text-2xl font-jp-bold text-gray-900">データ管理</h2>
+          </div>
+          <button
+            onClick={loadData}
+            className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-jp-medium transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>更新</span>
+          </button>
         </div>
 
         {/* 接続状態表示 */}
@@ -322,7 +352,7 @@ const DataMigration: React.FC = () => {
         </div>
 
         {/* ユーザー作成セクション */}
-        {!currentUser && isConnected && !userExists && (
+        {(!currentUser || !currentUser.id) && isConnected && !userExists && !isAdminMode && (
           <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200 mb-6">
             <div className="flex items-start space-x-3 mb-4">
               <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1 flex-shrink-0" />
@@ -357,7 +387,7 @@ const DataMigration: React.FC = () => {
         )}
 
         {/* データ移行セクション */}
-        {isConnected && currentUser && (
+        {isConnected && (currentUser || isAdminMode) && (
           <div className="bg-indigo-50 rounded-lg p-6 border border-indigo-200 mb-6">
             <div className="flex items-start space-x-3 mb-4">
               <Database className="w-6 h-6 text-indigo-600 mt-1 flex-shrink-0" />
@@ -394,6 +424,18 @@ const DataMigration: React.FC = () => {
             </div>
 
             {/* 移行ボタン */}
+            {isAdminMode && (
+              <div className="bg-green-50 rounded-lg p-4 border border-green-200 mb-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Shield className="w-5 h-5 text-green-600" />
+                  <span className="font-jp-medium text-green-800">管理者モード</span>
+                </div>
+                <p className="text-sm text-green-700">
+                  管理者モードでは、すべてのユーザーのデータを管理できます。
+                </p>
+              </div>
+            )}
+
             <button
               onClick={handleMigrateData}
               disabled={migrating}
@@ -414,6 +456,7 @@ const DataMigration: React.FC = () => {
             </button>
 
             {/* 同意履歴同期ボタン */}
+            {!isAdminMode && (
             <button
               onClick={handleSyncConsentHistories}
               disabled={migrating}
@@ -426,6 +469,7 @@ const DataMigration: React.FC = () => {
               )}
               <span>同意履歴をSupabaseに同期</span>
             </button>
+            )}
 
             {/* 詳細設定 */}
             <div className="mt-4">
@@ -438,7 +482,8 @@ const DataMigration: React.FC = () => {
             </div>
 
             {showAdvanced && (
-              <div className="mt-4 bg-white rounded-lg p-4 border border-indigo-200">
+              <div className="mt-4 space-y-4">
+                <div className="bg-white rounded-lg p-4 border border-indigo-200">
                 <h4 className="font-jp-bold text-gray-900 mb-3">詳細設定</h4>
                 <button
                   onClick={handleBulkMigration}
@@ -455,6 +500,28 @@ const DataMigration: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-2">
                   大量のデータを効率的に処理します。通常の移行で問題がある場合のみ使用してください。
                 </p>
+                </div>
+                
+                {isAdminMode && (
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <h4 className="font-jp-bold text-gray-900 mb-3">管理者機能</h4>
+                  <button
+                    onClick={handleSyncConsentHistories}
+                    disabled={migrating}
+                    className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full mb-3"
+                  >
+                    {migrating ? (
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Upload className="w-5 h-5" />
+                    )}
+                    <span>すべての同意履歴を同期</span>
+                  </button>
+                  <p className="text-xs text-purple-700">
+                    管理者のみ: すべてのユーザーの同意履歴をSupabaseに同期します
+                  </p>
+                </div>
+                )}
               </div>
             )}
           </div>
@@ -491,10 +558,10 @@ const DataMigration: React.FC = () => {
         )}
 
         {/* 説明セクション */}
-        <div className="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
+        <div className={`mt-6 ${isAdminMode ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} rounded-lg p-4 border`}>
           <div className="flex items-start space-x-3">
-            <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-blue-800 font-jp-normal">
+            <Info className={`w-5 h-5 ${isAdminMode ? 'text-green-600' : 'text-blue-600'} mt-0.5 flex-shrink-0`} />
+            <div className={`text-sm ${isAdminMode ? 'text-green-800' : 'text-blue-800'} font-jp-normal`}>
               <p className="font-jp-medium mb-2">データ管理について</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>ローカルデータはブラウザに保存されています</li>
@@ -502,6 +569,7 @@ const DataMigration: React.FC = () => {
                 <li>データの同期は手動で行う必要があります</li>
                 <li>ブラウザのキャッシュをクリアするとローカルデータは失われます</li>
                 <li>端末を変更する場合は、先にデータをSupabaseに移行してください</li>
+                {isAdminMode && <li className="font-jp-bold">管理者モードでは、すべてのユーザーのデータを管理できます</li>}
               </ul>
             </div>
           </div>

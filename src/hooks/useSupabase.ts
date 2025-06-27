@@ -96,8 +96,8 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     // 管理者モードの場合は初期化をスキップ
     if (isAdminMode) {
-      console.log('管理者モードのため、ユーザー初期化をスキップします');
-      return { id: null, line_username: lineUsername.trim() };
+      console.log('管理者モードのため、ユーザー初期化をスキップします', new Date().toISOString());
+      return { id: 'admin', line_username: lineUsername.trim() };
     }
     
     if (!isConnected) {
@@ -107,12 +107,6 @@ export const useSupabase = () => {
 
     const startTime = new Date().toISOString();
     console.log(`ユーザー初期化開始: "${lineUsername.trim()}" - ${startTime}`);
-    
-    // 既に初期化中の場合は処理をスキップ
-    if (loading) {
-      console.log(`別の初期化処理が進行中のため、現在のユーザーを返します: ${lineUsername.trim()}`, new Date().toISOString());
-      return currentUser || { id: null, line_username: lineUsername.trim() };
-    }
     
     setLoading(true);
     setError(null);
@@ -203,7 +197,7 @@ export const useSupabase = () => {
       // 明示的にユーザー情報を更新
       if (user) {
         setCurrentUser(user);
-        console.log('currentUserを更新しました:', user.id || 'ID不明', '- ユーザー名:', user.line_username, new Date().toISOString());
+        console.log('currentUserを更新しました:', user.id || 'ID不明', '- ユーザー名:', user.line_username || lineUsername.trim(), new Date().toISOString());
         setError(null);
         
         // ローカルストレージにユーザーIDを保存
@@ -211,11 +205,12 @@ export const useSupabase = () => {
           localStorage.setItem('supabase_user_id', user.id);
           console.log('ユーザーIDをローカルストレージに保存しました:', user.id);
         }
+        return user;
       } else {
         console.error('ユーザー情報が取得できませんでした');
         setError('ユーザー情報の取得に失敗しました');
+        return { id: null, line_username: lineUsername.trim() };
       }
-      return user;
     } catch (error) {
       console.error(`ユーザー初期化エラー: ${trimmedUsername}`, error);
       const errorMessage = error instanceof Error ? error.message : '不明なエラー';
@@ -225,7 +220,9 @@ export const useSupabase = () => {
     } finally {
       const endTime = new Date().toISOString();
       console.log(`ユーザー初期化完了: "${trimmedUsername.trim()}" - ${endTime}`);
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 100);
       console.log('ローディング状態を解除しました', new Date().toISOString());
     }
   };
