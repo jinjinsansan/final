@@ -42,6 +42,12 @@ const CounselorManagement: React.FC = () => {
     totalAssignedCases: 0,
     averageAssignedCases: 0
   });
+  const [stats, setStats] = useState({
+    totalCounselors: 0,
+    activeCounselors: 0,
+    totalAssignedCases: 0,
+    averageAssignedCases: 0
+  });
   
   const [formData, setFormData] = useState({
     name: '',
@@ -53,6 +59,7 @@ const CounselorManagement: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    calculateStats();
     calculateStats();
   }, []);
 
@@ -68,8 +75,8 @@ const CounselorManagement: React.FC = () => {
           phone: '090-1234-5678',
           specialization: '無価値感・自己肯定感',
           is_active: true,
-          assigned_cases: 3,
-          total_cases: 8,
+          assigned_cases: 0,
+          total_cases: 0,
           created_at: '2024-01-15T09:00:00Z',
           last_active: '2024-01-10T14:30:00Z'
         },
@@ -80,8 +87,8 @@ const CounselorManagement: React.FC = () => {
           phone: '090-2345-6789',
           specialization: '恐怖・不安障害',
           is_active: true,
-          assigned_cases: 2,
-          total_cases: 5,
+          assigned_cases: 0,
+          total_cases: 0,
           created_at: '2024-02-01T09:00:00Z',
           last_active: '2024-01-12T16:15:00Z'
         },
@@ -92,8 +99,8 @@ const CounselorManagement: React.FC = () => {
           phone: '090-3456-7890',
           specialization: '悲しみ・喪失感',
           is_active: true,
-          assigned_cases: 1,
-          total_cases: 4,
+          assigned_cases: 0,
+          total_cases: 0,
           created_at: '2024-03-10T09:00:00Z',
           last_active: '2024-01-08T11:45:00Z'
         },
@@ -105,7 +112,7 @@ const CounselorManagement: React.FC = () => {
           specialization: '怒り・感情制御',
           is_active: false,
           assigned_cases: 0,
-          total_cases: 3,
+          total_cases: 0,
           created_at: '2024-04-20T09:00:00Z',
           last_active: '2024-01-05T10:20:00Z'
         },
@@ -116,8 +123,8 @@ const CounselorManagement: React.FC = () => {
           phone: '090-5678-9012',
           specialization: '寂しさ・対人関係',
           is_active: true,
-          assigned_cases: 2,
-          total_cases: 6,
+          assigned_cases: 0,
+          total_cases: 0,
           created_at: '2024-05-05T09:00:00Z',
           last_active: '2024-01-11T13:20:00Z'
         },
@@ -128,8 +135,8 @@ const CounselorManagement: React.FC = () => {
           phone: '090-6789-0123',
           specialization: '罪悪感・恥',
           is_active: true,
-          assigned_cases: 1,
-          total_cases: 4,
+          assigned_cases: 0,
+          total_cases: 0,
           created_at: '2024-06-12T09:00:00Z',
           last_active: '2024-01-09T15:50:00Z'
         }
@@ -147,12 +154,48 @@ const CounselorManagement: React.FC = () => {
           console.error('日記データの解析エラー:', error);
           setEntries([]);
         }
+          setEntries(parsedEntries);
+        } catch (error) {
+          console.error('日記データの解析エラー:', error);
+          setEntries([]);
+        }
       }
 
     } catch (error) {
       console.error('データ読み込みエラー:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 実際のデータに基づいて統計情報を計算
+  const calculateStats = () => {
+    try {
+      // 実際のカウンセラー数
+      const totalCounselors = counselors.length;
+      
+      // アクティブなカウンセラー数
+      const activeCounselors = counselors.filter(c => c.is_active).length;
+      
+      // 実際の担当案件数を計算
+      let totalAssignedCases = 0;
+      counselors.forEach(counselor => {
+        totalAssignedCases += counselor.assigned_cases;
+      });
+      
+      // 平均担当数（アクティブなカウンセラーあたり）
+      const averageAssignedCases = activeCounselors > 0 
+        ? Math.round(totalAssignedCases / activeCounselors) 
+        : 0;
+      
+      setStats({
+        totalCounselors,
+        activeCounselors,
+        totalAssignedCases,
+        averageAssignedCases
+      });
+    } catch (error) {
+      console.error('統計情報計算エラー:', error);
     }
   };
 
@@ -241,6 +284,9 @@ const CounselorManagement: React.FC = () => {
     
     // 統計情報を更新
     setTimeout(() => calculateStats(), 100);
+    
+    // 統計情報を更新
+    setTimeout(() => calculateStats(), 100);
 
     setFormData({
       name: '',
@@ -263,6 +309,9 @@ const CounselorManagement: React.FC = () => {
     
     // 統計情報を更新
     setTimeout(() => calculateStats(), 100);
+    
+    // 統計情報を更新
+    setTimeout(() => calculateStats(), 100);
   };
 
   const handleToggleActive = (counselor: Counselor) => {
@@ -276,6 +325,9 @@ const CounselorManagement: React.FC = () => {
         ? { ...c, is_active: !c.is_active }
         : c
     ));
+    
+    // 統計情報を更新
+    setTimeout(() => calculateStats(), 100);
     
     // 統計情報を更新
     setTimeout(() => calculateStats(), 100);
@@ -571,12 +623,8 @@ const CounselorManagement: React.FC = () => {
             <span className="text-sm font-jp-medium text-gray-700">アクティブ</span>
           </div>
           <p className="text-2xl font-jp-bold text-green-600 mt-1">{stats.activeCounselors}</p>
-        </div>
-        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-            <span className="text-sm font-jp-medium text-gray-700">総担当案件</span>
-          </div>
           <p className="text-2xl font-jp-bold text-yellow-600 mt-1">{stats.totalAssignedCases}</p>
         </div>
         <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
@@ -585,8 +633,6 @@ const CounselorManagement: React.FC = () => {
             <span className="text-sm font-jp-medium text-gray-700">平均担当数</span>
           </div>
           <p className="text-2xl font-jp-bold text-purple-600 mt-1">{stats.averageAssignedCases}</p>
-        </div>
-      </div>
 
       {/* カウンセラー一覧 */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
