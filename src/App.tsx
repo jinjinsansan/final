@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Menu, X, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Heart, Menu, X, Home, Search, BookOpen, HelpCircle, Settings, User, Shield, LogIn, AlertTriangle } from 'lucide-react';
 import DiaryPage from './pages/DiaryPage';
 import DiarySearchPage from './pages/DiarySearchPage';
 import HowTo from './pages/HowTo';
@@ -34,20 +34,26 @@ const App: React.FC = () => {
   const [deviceAuthMode, setDeviceAuthMode] = useState<'login' | 'register'>('login');
   const [lineUsername, setLineUsername] = useState<string | null>(null);
   
+  // メンテナンスモードの状態を取得
   const { isMaintenanceMode, config, isAdminBypass, refreshStatus } = useMaintenanceStatus();
   
+  // Supabase接続状態を取得
   const { isConnected, currentUser, retryConnection, error } = useSupabase();
   
+  // 自動同期フックを使用
   const autoSync = useAutoSync();
 
+  // 初期化時にプライバシー同意状態を確認
   useEffect(() => {
     const consentGiven = localStorage.getItem('privacyConsentGiven');
     if (consentGiven === 'true') {
       setPrivacyConsentGiven(true);
       
+      // ユーザー名を取得
       const username = localStorage.getItem('line-username');
       setLineUsername(username);
       
+      // デバイス認証状態を確認
       checkDeviceAuthStatus();
     } else if (consentGiven === 'false') {
       setPrivacyConsentGiven(false);
@@ -55,26 +61,34 @@ const App: React.FC = () => {
       setPrivacyConsentGiven(null);
     }
     
+    // カウンセラーログイン状態を確認
     const counselor = localStorage.getItem('current_counselor');
     if (counselor) {
       setCurrentCounselor(counselor);
     }
   }, []);
 
+  // デバイス認証状態を確認
   const checkDeviceAuthStatus = () => {
     const isDeviceAuthed = isAuthenticated();
     if (!isDeviceAuthed) {
+      // 認証が必要な場合は、認証モードを設定
       const session = getAuthSession();
       if (session) {
+        // セッションはあるが認証が切れている場合はログイン
         setDeviceAuthMode('login');
       } else {
+        // セッションがない場合は新規登録
         setDeviceAuthMode('register');
       }
       
+      // デバイス認証を表示するかどうかを決定
+      // 現在は無効化しているので、常にfalse
       setShowDeviceAuth(false);
     }
   };
 
+  // プライバシーポリシー同意処理
   const handleConsentResponse = (accepted: boolean) => {
     if (accepted) {
       const username = prompt('LINEのユーザー名を入力してください');
@@ -85,20 +99,23 @@ const App: React.FC = () => {
         setPrivacyConsentGiven(true);
         setLineUsername(username);
         
+        // 同意履歴を記録
         const consentRecord = {
           id: Date.now().toString(),
           line_username: username,
           consent_given: true,
           consent_date: new Date().toISOString(),
-          ip_address: 'unknown',
+          ip_address: 'unknown', // 実際の実装では取得可能
           user_agent: navigator.userAgent
         };
         
+        // ローカルストレージに保存
         const existingHistories = localStorage.getItem('consent_histories');
         const histories = existingHistories ? JSON.parse(existingHistories) : [];
         histories.push(consentRecord);
         localStorage.setItem('consent_histories', JSON.stringify(histories));
         
+        // デバイス認証状態を確認
         checkDeviceAuthStatus();
       }
     } else {
@@ -107,9 +124,11 @@ const App: React.FC = () => {
     }
   };
 
+  // カウンセラーログイン処理
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // カウンセラーパスワードをチェック
     if (adminPassword === 'counselor123') {
       const counselorName = prompt('カウンセラー名を入力してください');
       if (counselorName) {
@@ -118,8 +137,10 @@ const App: React.FC = () => {
         setShowAdminLogin(false);
         setAdminPassword('');
         
+        // メンテナンスモードの状態を更新
         refreshStatus();
         
+        // ホーム画面に戻る
         setActiveTab('admin');
       }
     } else {
@@ -127,22 +148,27 @@ const App: React.FC = () => {
     }
   };
 
+  // カウンセラーログアウト処理
   const handleAdminLogout = () => {
     if (window.confirm('カウンセラーアカウントからログアウトしますか？')) {
       localStorage.removeItem('current_counselor');
       setCurrentCounselor(null);
       
+      // メンテナンスモードの状態を更新
       refreshStatus();
       
+      // ホーム画面に戻る
       setActiveTab('home');
     }
   };
 
+  // デバイス認証完了処理
   const handleDeviceAuthComplete = (username: string) => {
     setShowDeviceAuth(false);
     setLineUsername(username);
   };
 
+  // ユーザーログアウト処理
   const handleUserLogout = () => {
     if (window.confirm('ログアウトしますか？')) {
       logoutUser();
@@ -152,10 +178,12 @@ const App: React.FC = () => {
       setPrivacyConsentGiven(null);
       setLineUsername(null);
       
+      // ホーム画面に戻る
       setActiveTab('home');
     }
   };
 
+  // メンテナンスモード中の場合
   if (isMaintenanceMode && !isAdminBypass) {
     return (
       <MaintenanceMode 
@@ -166,13 +194,15 @@ const App: React.FC = () => {
     );
   }
 
+  // プライバシーポリシー同意前の場合
   if (privacyConsentGiven === null) {
     return <PrivacyConsent onConsent={handleConsentResponse} />;
   }
 
+  // プライバシーポリシー拒否の場合
   if (privacyConsentGiven === false) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FFF8E8] flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -187,7 +217,7 @@ const App: React.FC = () => {
           </div>
           <button
             onClick={() => setPrivacyConsentGiven(null)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-jp-medium transition-colors"
+            className="w-full bg-[#F4933F] hover:bg-[#E87F2F] text-white px-4 py-3 rounded-lg font-jp-medium transition-colors"
           >
             プライバシーポリシーを再確認する
           </button>
@@ -196,6 +226,7 @@ const App: React.FC = () => {
     );
   }
 
+  // デバイス認証が必要な場合
   if (showDeviceAuth) {
     if (deviceAuthMode === 'login') {
       return (
@@ -215,6 +246,7 @@ const App: React.FC = () => {
     }
   }
 
+  // メインアプリケーション
   return (
     <div className="min-h-screen bg-[#FFF8E8] relative">
       {/* 背景の水玉模様 */}
