@@ -522,19 +522,19 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* ホーム画面 */}
         {activeTab === 'home' && (
-          <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-md mb-8">
-              <Heart className="w-12 h-12 text-orange-400" />
+          <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center bg-gradient-to-b from-orange-50 to-yellow-100 rounded-3xl">
+            <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-md mb-8">
+              <Heart className="w-16 h-16 text-orange-400" />
             </div>
-            <h1 className="text-4xl font-jp-bold text-gray-900 mb-4">かんじょうにっき</h1>
-            <p className="text-xl font-jp-medium text-gray-700 mb-12">自己肯定感を育てる感情日記アプリ</p>
+            <h1 className="text-5xl font-jp-bold text-gray-900 mb-4">かんじょうにっき</h1>
+            <p className="text-2xl font-jp-medium text-gray-700 mb-12">自己肯定感を育てる感情日記アプリ</p>
             <button
               onClick={() => setActiveTab('diary')}
-              className="bg-orange-400 hover:bg-orange-500 text-white px-8 py-4 rounded-full font-jp-bold text-lg shadow-lg transition-colors"
+              className="bg-orange-400 hover:bg-orange-500 text-white px-10 py-5 rounded-full font-jp-bold text-xl shadow-lg transition-colors"
             >
               はじめる
             </button>
-            <p className="mt-12 text-gray-500 font-jp-normal">一般社団法人NAMIDAサポート協会</p>
+            <p className="mt-16 text-gray-500 font-jp-normal">一般社団法人NAMIDAサポート協会</p>
           </div>
         )}
         
@@ -653,65 +653,10 @@ const App: React.FC = () => {
       </main>
 
       {/* フッターナビゲーション */}
-      <footer className="bg-white shadow-lg fixed bottom-0 w-full">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-around items-center h-16">
-            <button
-              onClick={() => setActiveTab('home')}
-              className={`flex flex-col items-center justify-center w-full h-full ${
-                activeTab === 'home' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Home className="w-5 h-5" />
-              <span className="text-xs mt-1">TOP</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('diary')}
-              className={`flex flex-col items-center justify-center w-full h-full ${
-                activeTab === 'diary' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Heart className="w-5 h-5" />
-              <span className="text-xs mt-1">日記</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('search')}
-              className={`flex flex-col items-center justify-center w-full h-full ${
-                activeTab === 'search' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Search className="w-5 h-5" />
-              <span className="text-xs mt-1">検索</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('chat')}
-              className={`flex flex-col items-center justify-center w-full h-full ${
-                activeTab === 'chat' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <MessageCircle className="w-5 h-5" />
-              <span className="text-xs mt-1">チャット</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('data')}
-              className={`flex flex-col items-center justify-center w-full h-full ${
-                activeTab === 'data' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Settings className="w-5 h-5" />
-              <span className="text-xs mt-1">設定</span>
-            </button>
-          </div>
-        </div>
-      </footer>
       
       {/* メンテナンスモード表示 */}
       {isMaintenanceMode && isAdminBypass && (
-        <div className="fixed bottom-20 left-0 right-0 bg-red-100 border-t border-red-200 p-2 text-center">
+        <div className="fixed bottom-0 left-0 right-0 bg-red-100 border-t border-red-200 p-2 text-center">
           <div className="flex items-center justify-center space-x-2 text-red-800 text-sm">
             <AlertTriangle className="w-4 h-4" />
             <span className="font-jp-medium">メンテナンスモード中（管理者アクセス）</span>
