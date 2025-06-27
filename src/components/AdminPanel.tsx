@@ -30,7 +30,6 @@ interface JournalEntry {
 const AdminPanel: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [allUserEntries, setAllUserEntries] = useState<JournalEntry[]>([]);
   const [selectedEmotion, setSelectedEmotion] = useState('');
   const [selectedUrgency, setSelectedUrgency] = useState('');
@@ -47,6 +46,7 @@ const AdminPanel: React.FC = () => {
   const [memoVisibleToUser, setMemoVisibleToUser] = useState(false);
   const [activeTab, setActiveTab] = useState<'diary' | 'search' | 'counselor' | 'maintenance' | 'device-auth' | 'security'>('diary');
   const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // 管理者モードフラグ - カウンセラーとしてログインしている場合はtrue
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
@@ -268,42 +268,6 @@ const AdminPanel: React.FC = () => {
       loadLocalEntries();
     } finally {
       setLoading(false);
-    }
-  };
-
-  // ローカルストレージからデータを読み込む（フォールバック）
-  const loadLocalEntries = () => {
-    try {
-      console.log('ローカルストレージから日記データを読み込み中...');
-      const localEntries = localStorage.getItem('journalEntries');
-      if (localEntries) {
-        const parsedEntries = JSON.parse(localEntries);
-        
-        // 管理画面用にデータを拡張
-        const enhancedEntries = parsedEntries.map((entry: any) => ({
-          ...entry,
-          self_esteem_score: entry.selfEsteemScore || 50,
-          worthlessness_score: entry.worthlessnessScore || 50,
-          created_at: entry.date,
-          user: {
-            line_username: localStorage.getItem('line-username') || 'テストユーザー'
-          },
-          assigned_counselor: entry.assigned_counselor || '未割り当て',
-          urgency_level: entry.urgency_level || 'medium',
-          counselor_memo: entry.counselor_memo || '',
-          is_visible_to_user: entry.is_visible_to_user || false,
-          counselor_name: entry.counselor_name || ''
-        }));
-        
-        setEntries(enhancedEntries);
-        console.log(`ローカルストレージから${enhancedEntries.length}件の日記を読み込みました`);
-      } else {
-        console.log('ローカルストレージに日記データが見つかりませんでした');
-        setEntries([]);
-      }
-    } catch (error) {
-      console.error('ローカルデータ読み込みエラー:', error);
-      setEntries([]);
     }
   };
 
