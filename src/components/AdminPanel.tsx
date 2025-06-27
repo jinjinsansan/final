@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Calendar, Search, MessageCircle, Settings, Users, AlertTriangle, Edit3, Trash2, Save, X, CheckCircle, Eye, EyeOff, User, Clock, Filter, Shield, Database, RefreshCw, Download } from 'lucide-react';
 import AdvancedSearchFilter from './AdvancedSearchFilter';
 import CounselorManagement from './CounselorManagement';
@@ -492,32 +492,32 @@ const AdminPanel: React.FC = () => {
         </div>
 
         <Tabs defaultValue="search" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 md:grid-cols-7 gap-2 mb-6">
-            <TabsTrigger value="search" className="flex items-center justify-center space-x-1">
+          <TabsList className="grid grid-cols-7 gap-1 mb-6 overflow-x-auto">
+            <TabsTrigger value="search" className="flex items-center justify-center space-x-1 px-2 py-1.5">
               <Search className="w-4 h-4" />
               <span className="hidden md:inline">日記</span>
             </TabsTrigger>
-            <TabsTrigger value="advanced-search" className="flex items-center justify-center space-x-1">
+            <TabsTrigger value="advanced-search" className="flex items-center justify-center space-x-1 px-2 py-1.5">
               <Filter className="w-4 h-4" />
               <span className="hidden md:inline">検索</span>
             </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center justify-center space-x-1">
+            <TabsTrigger value="chat" className="flex items-center justify-center space-x-1 px-2 py-1.5">
               <MessageCircle className="w-4 h-4" />
               <span className="hidden md:inline">チャット</span>
             </TabsTrigger>
-            <TabsTrigger value="counselors" className="flex items-center justify-center space-x-1">
+            <TabsTrigger value="counselors" className="flex items-center justify-center space-x-1 px-2 py-1.5">
               <Users className="w-4 h-4" />
               <span className="hidden md:inline">カウンセラー</span>
             </TabsTrigger>
-            <TabsTrigger value="maintenance" className="flex items-center justify-center space-x-1">
+            <TabsTrigger value="maintenance" className="flex items-center justify-center space-x-1 px-2 py-1.5">
               <Settings className="w-4 h-4" />
               <span className="hidden md:inline">設定</span>
             </TabsTrigger>
-            <TabsTrigger value="device-auth" className="flex items-center justify-center space-x-1">
+            <TabsTrigger value="device-auth" className="flex items-center justify-center space-x-1 px-2 py-1.5">
               <Shield className="w-4 h-4" />
               <span className="hidden md:inline">認証</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center justify-center space-x-1">
+            <TabsTrigger value="security" className="flex items-center justify-center space-x-1 px-2 py-1.5">
               <AlertTriangle className="w-4 h-4" />
               <span className="hidden md:inline">安全</span>
             </TabsTrigger>
