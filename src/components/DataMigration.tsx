@@ -217,7 +217,7 @@ const DataMigration: React.FC = () => {
   };
 
   const handleMigrateData = async () => {
-    if (!isConnected || !currentUser) {
+    if (!isConnected || (!currentUser && !isAdminMode)) {
       setMigrationStatus('エラー: Supabaseに接続されていないか、ユーザーが設定されていません。');
       return;
     }
@@ -229,12 +229,22 @@ const DataMigration: React.FC = () => {
     try {
       if (syncDirection === 'local-to-supabase') {
         // ローカルからSupabaseへ
-        setMigrationStatus('ローカルデータをSupabaseに移行中...');
+        setMigrationStatus(isAdminMode ? '全ユーザーのローカルデータをSupabaseに移行中...' : 'ローカルデータをSupabaseに移行中...');
         
-        const success = await syncService.migrateLocalData(
-          currentUser.id,
-          (progress) => setMigrationProgress(progress)
-        );
+        let success;
+        if (isAdminMode) {
+          // 管理者モードでは、ユーザーIDを指定せずに全体のデータを移行
+          success = await syncService.bulkMigrateLocalData(
+            'admin', // 管理者用の特別なID
+            (progress) => setMigrationProgress(progress)
+          );
+        } else {
+          // 通常モードでは、現在のユーザーのデータのみを移行
+          success = await syncService.migrateLocalData(
+            currentUser.id,
+            (progress) => setMigrationProgress(progress)
+          );
+        }
         
         if (success) {
           setMigrationStatus('データ移行が完了しました！');
@@ -245,9 +255,16 @@ const DataMigration: React.FC = () => {
         }
       } else {
         // Supabaseからローカルへ
-        setMigrationStatus('Supabaseデータをローカルに移行中...');
+        setMigrationStatus(isAdminMode ? '全ユーザーのSupabaseデータをローカルに移行中...' : 'Supabaseデータをローカルに移行中...');
         
-        const success = await syncService.syncToLocal(currentUser.id);
+        let success;
+        if (isAdminMode) {
+          // 管理者モードでは、全ユーザーのデータを同期
+          success = await syncService.syncToLocal('admin');
+        } else {
+          // 通常モードでは、現在のユーザーのデータのみを同期
+          success = await syncService.syncToLocal(currentUser.id);
+        }
         
         if (success) {
           setMigrationStatus('データ移行が完了しました！');
@@ -266,7 +283,7 @@ const DataMigration: React.FC = () => {
   };
 
   const handleBulkMigration = async () => {
-    if (!isConnected || !currentUser) {
+    if (!isConnected || (!currentUser && !isAdminMode)) {
       setMigrationStatus('エラー: Supabaseに接続されていないか、ユーザーが設定されていません。');
       return;
     }
@@ -282,12 +299,22 @@ const DataMigration: React.FC = () => {
     try {
       if (syncDirection === 'local-to-supabase') {
         // ローカルからSupabaseへ
-        setMigrationStatus('ローカルデータをSupabaseに移行中（バルク処理）...');
+        setMigrationStatus(isAdminMode ? '全ユーザーのローカルデータをSupabaseに移行中（バルク処理）...' : 'ローカルデータをSupabaseに移行中（バルク処理）...');
         
-        const success = await syncService.bulkMigrateLocalData(
-          currentUser.id,
-          (progress) => setMigrationProgress(progress)
-        );
+        let success;
+        if (isAdminMode) {
+          // 管理者モードでは、ユーザーIDを指定せずに全体のデータを移行
+          success = await syncService.bulkMigrateLocalData(
+            'admin', // 管理者用の特別なID
+            (progress) => setMigrationProgress(progress)
+          );
+        } else {
+          // 通常モードでは、現在のユーザーのデータのみを移行
+          success = await syncService.bulkMigrateLocalData(
+            currentUser.id,
+            (progress) => setMigrationProgress(progress)
+          );
+        }
         
         if (success) {
           setMigrationStatus('大量データの移行が完了しました！');
@@ -298,9 +325,16 @@ const DataMigration: React.FC = () => {
         }
       } else {
         // Supabaseからローカルへ
-        setMigrationStatus('Supabaseデータをローカルに移行中...');
+        setMigrationStatus(isAdminMode ? '全ユーザーのSupabaseデータをローカルに移行中...' : 'Supabaseデータをローカルに移行中...');
         
-        const success = await syncService.syncToLocal(currentUser.id);
+        let success;
+        if (isAdminMode) {
+          // 管理者モードでは、全ユーザーのデータを同期
+          success = await syncService.syncToLocal('admin');
+        } else {
+          // 通常モードでは、現在のユーザーのデータのみを同期
+          success = await syncService.syncToLocal(currentUser.id);
+        }
         
         if (success) {
           setMigrationStatus('データ移行が完了しました！');
