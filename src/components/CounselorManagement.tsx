@@ -36,6 +36,12 @@ const CounselorManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [stats, setStats] = useState({
+    totalCounselors: 0,
+    activeCounselors: 0,
+    totalAssignedCases: 0,
+    averageAssignedCases: 0
+  });
   
   const [formData, setFormData] = useState({
     name: '',
@@ -47,6 +53,7 @@ const CounselorManagement: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    calculateStats();
   }, []);
 
   const loadData = async () => {
@@ -133,14 +140,50 @@ const CounselorManagement: React.FC = () => {
       // 日記データを読み込み
       const savedEntries = localStorage.getItem('journalEntries');
       if (savedEntries) {
-        const parsedEntries = JSON.parse(savedEntries);
-        setEntries(parsedEntries);
+        try {
+          const parsedEntries = JSON.parse(savedEntries);
+          setEntries(parsedEntries);
+        } catch (error) {
+          console.error('日記データの解析エラー:', error);
+          setEntries([]);
+        }
       }
 
     } catch (error) {
       console.error('データ読み込みエラー:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 実際のデータに基づいて統計情報を計算
+  const calculateStats = () => {
+    try {
+      // 実際のカウンセラー数
+      const totalCounselors = counselors.length;
+      
+      // アクティブなカウンセラー数
+      const activeCounselors = counselors.filter(c => c.is_active).length;
+      
+      // 実際の担当案件数を計算
+      let totalAssignedCases = 0;
+      counselors.forEach(counselor => {
+        totalAssignedCases += counselor.assigned_cases;
+      });
+      
+      // 平均担当数（アクティブなカウンセラーあたり）
+      const averageAssignedCases = activeCounselors > 0 
+        ? Math.round(totalAssignedCases / activeCounselors) 
+        : 0;
+      
+      setStats({
+        totalCounselors,
+        activeCounselors,
+        totalAssignedCases,
+        averageAssignedCases
+      });
+    } catch (error) {
+      console.error('統計情報計算エラー:', error);
     }
   };
 
@@ -195,6 +238,9 @@ const CounselorManagement: React.FC = () => {
       setCounselors(prev => [...prev, newCounselor]);
       setShowAddForm(false);
     }
+    
+    // 統計情報を更新
+    setTimeout(() => calculateStats(), 100);
 
     setFormData({
       name: '',
@@ -214,6 +260,9 @@ const CounselorManagement: React.FC = () => {
     if (window.confirm(`${counselor.name}を削除しますか？この操作は取り消せません。`)) {
       setCounselors(prev => prev.filter(c => c.id !== counselor.id));
     }
+    
+    // 統計情報を更新
+    setTimeout(() => calculateStats(), 100);
   };
 
   const handleToggleActive = (counselor: Counselor) => {
@@ -227,6 +276,9 @@ const CounselorManagement: React.FC = () => {
         ? { ...c, is_active: !c.is_active }
         : c
     ));
+    
+    // 統計情報を更新
+    setTimeout(() => calculateStats(), 100);
   };
 
   const handleViewCases = (counselor: Counselor) => {
@@ -508,37 +560,31 @@ const CounselorManagement: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
           <div className="flex items-center space-x-2">
-            <Users className="w-5 h-5 text-blue-600" />
+            <Users className="w-5 h-5 text-blue-600 flex-shrink-0" />
             <span className="text-sm font-jp-medium text-gray-700">総カウンセラー数</span>
           </div>
-          <p className="text-2xl font-jp-bold text-blue-600 mt-1">{counselors.length}</p>
+          <p className="text-2xl font-jp-bold text-blue-600 mt-1">{stats.totalCounselors}</p>
         </div>
         <div className="bg-green-50 rounded-lg p-4 border border-green-200">
           <div className="flex items-center space-x-2">
-            <UserCheck className="w-5 h-5 text-green-600" />
+            <UserCheck className="w-5 h-5 text-green-600 flex-shrink-0" />
             <span className="text-sm font-jp-medium text-gray-700">アクティブ</span>
           </div>
-          <p className="text-2xl font-jp-bold text-green-600 mt-1">
-            {counselors.filter(c => c.is_active).length}
-          </p>
+          <p className="text-2xl font-jp-bold text-green-600 mt-1">{stats.activeCounselors}</p>
         </div>
         <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
           <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+            <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
             <span className="text-sm font-jp-medium text-gray-700">総担当案件</span>
           </div>
-          <p className="text-2xl font-jp-bold text-yellow-600 mt-1">
-            {counselors.reduce((sum, c) => sum + c.assigned_cases, 0)}
-          </p>
+          <p className="text-2xl font-jp-bold text-yellow-600 mt-1">{stats.totalAssignedCases}</p>
         </div>
         <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
           <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-purple-600" />
+            <Calendar className="w-5 h-5 text-purple-600 flex-shrink-0" />
             <span className="text-sm font-jp-medium text-gray-700">平均担当数</span>
           </div>
-          <p className="text-2xl font-jp-bold text-purple-600 mt-1">
-            {counselors.length > 0 ? Math.round(counselors.reduce((sum, c) => sum + c.assigned_cases, 0) / counselors.filter(c => c.is_active).length) || 0 : 0}
-          </p>
+          <p className="text-2xl font-jp-bold text-purple-600 mt-1">{stats.averageAssignedCases}</p>
         </div>
       </div>
 
