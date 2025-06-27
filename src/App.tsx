@@ -287,177 +287,180 @@ const App: React.FC = () => {
       {/* サイドメニュー */}
       {menuOpen && (
         <div className="fixed inset-0 z-20 overflow-hidden" onClick={() => setMenuOpen(false)}>
-          <div className="absolute inset-0 bg-black bg-opacity-30" onClick={() => setMenuOpen(false)}></div>
-          <div className="absolute top-0 right-0 w-64 h-full bg-white shadow-xl transform transition-transform" style={{ backgroundColor: '#FAFAFA' }} onClick={(e) => e.stopPropagation()}>
-            <div className="p-4">
-              <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <div className="flex items-center">
-                  <Heart className="w-5 h-5 text-pink-500 mr-2" />
-                  <h2 className="text-base font-jp-bold text-gray-900">かんじょうにっき</h2>
+          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setMenuOpen(false)}></div>
+          <div className="absolute top-0 right-0 w-64 h-full bg-white shadow-xl transform transition-transform" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-4 border-b border-gray-100">
+              <div className="flex items-center space-x-2">
+                <Heart className="w-5 h-5 text-pink-500" />
+                <h2 className="text-base font-jp-bold text-gray-900">かんじょうにっき</h2>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full">
+                  {lineUsername ? `${lineUsername}さん` : 'ゲスト'}
                 </div>
                 <button
                   onClick={() => setMenuOpen(false)}
-                  className="p-1 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 focus:outline-none"
+                  className="text-gray-400"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              
-              <div className="space-y-0.5">
+            </div>
+            
+            <div className="overflow-y-auto h-[calc(100%-60px)]">
+              <div className="py-1">
                 <button
                   onClick={() => { setActiveTab('home'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                    activeTab === 'home' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'home' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                   }`}
                 >
-                  <Home className="w-4 h-4" />
-                  <span className="font-jp-medium text-sm">TOP</span>
-                </button>
-                
-                <button
-                  onClick={() => { setActiveTab('diary'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md ${
-                    activeTab === 'diary' ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Heart className="w-5 h-5" />
-                  <span className="font-jp-medium">日記を書く</span>
-                </button>
-                
-                <button
-                  onClick={() => { setActiveTab('search'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md ${
-                    activeTab === 'search' ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Search className="w-5 h-5" />
-                  <span className="font-jp-medium">日記を検索</span>
+                  <div className="w-6 text-center">🏠</div>
+                  <span className="ml-3 font-jp-medium text-sm">TOP</span>
                 </button>
                 
                 <button
                   onClick={() => { setActiveTab('howto'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                    activeTab === 'howto' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'howto' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                   }`}
                 >
-                  <BookOpen className="w-4 h-4" />
-                  <span className="font-jp-medium text-sm">使い方</span>
+                  <div className="w-6 text-center">📘</div>
+                  <span className="ml-3 font-jp-medium text-sm">使い方</span>
                 </button>
                 
                 <button
                   onClick={() => { setActiveTab('firststeps'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                    activeTab === 'firststeps' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'firststeps' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                   }`}
                 >
-                  <div className="w-4 h-4 flex items-center justify-center">▶</div>
-                  <span className="font-jp-medium text-sm">最初にやること</span>
+                  <div className="w-6 text-center">▶</div>
+                  <span className="ml-3 font-jp-medium text-sm">最初にやること</span>
                 </button>
                 
                 <button
                   onClick={() => { setActiveTab('nextsteps'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                    activeTab === 'nextsteps' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'nextsteps' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                   }`}
                 >
-                  <div className="w-4 h-4 flex items-center justify-center">➡</div>
-                  <span className="font-jp-medium text-sm">次にやること</span>
+                  <div className="w-6 text-center">➡</div>
+                  <span className="ml-3 font-jp-medium text-sm">次にやること</span>
                 </button>
                 
                 <button
                   onClick={() => { setActiveTab('emotiontypes'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                    activeTab === 'emotiontypes' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'emotiontypes' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                   }`}
                 >
-                  <Heart className="w-4 h-4" />
-                  <span className="font-jp-medium text-sm">感情の種類</span>
+                  <div className="w-6 text-center">❤️</div>
+                  <span className="ml-3 font-jp-medium text-sm">感情の種類</span>
                 </button>
                 
                 <button
                   onClick={() => { setActiveTab('support'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                    activeTab === 'diary' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'support' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                   }`}
                 >
-                  <div className="w-4 h-4 flex items-center justify-center">➕</div>
-                  <span className="font-jp-medium text-sm">日記</span>
+                  <div className="w-6 text-center">🛡️</div>
+                  <span className="ml-3 font-jp-medium text-sm">サポートについて</span>
                 </button>
                 
                 <button
                   onClick={() => { setActiveTab('privacy'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                    activeTab === 'search' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'privacy' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                   }`}
                 >
-                  <Search className="w-4 h-4" />
-                  <span className="font-jp-medium text-sm">日記検索</span>
+                  <div className="w-6 text-center">🔒</div>
+                  <span className="ml-3 font-jp-medium text-sm">同意文</span>
+                </button>
+                
+                <button
+                  onClick={() => { setActiveTab('diary'); setMenuOpen(false); }}
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'diary' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                  }`}
+                >
+                  <div className="w-6 text-center">✏️</div>
+                  <span className="ml-3 font-jp-medium text-sm">日記</span>
+                </button>
+                
+                <button
+                  onClick={() => { setActiveTab('search'); setMenuOpen(false); }}
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'search' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                  }`}
+                >
+                  <div className="w-6 text-center">🔍</div>
+                  <span className="ml-3 font-jp-medium text-sm">日記検索</span>
                 </button>
                 
                 <button
                   onClick={() => { setActiveTab('worthlessness'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                    activeTab === 'worthlessness' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'worthlessness' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                   }`}
                 >
-                  <div className="w-4 h-4 flex items-center justify-center">📈</div>
-                  <span className="font-jp-medium text-sm">無価値感推移</span>
+                  <div className="w-6 text-center">📈</div>
+                  <span className="ml-3 font-jp-medium text-sm">無価値感推移</span>
                 </button>
                 
                 <button
                   onClick={() => { setActiveTab('data'); setMenuOpen(false); }}
-                  className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                    activeTab === 'data' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  className={`flex items-center w-full px-4 py-3 ${
+                    activeTab === 'data' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                   }`}
                 >
-                  <div className="w-4 h-4 flex items-center justify-center">⚙️</div>
-                  <span className="font-jp-medium text-sm">データ管理</span>
+                  <div className="w-6 text-center">⚙️</div>
+                  <span className="ml-3 font-jp-medium text-sm">データ管理</span>
                 </button>
                 
                 {currentCounselor && (
                   <button
                     onClick={() => { setActiveTab('admin'); setMenuOpen(false); }}
-                    className={`flex items-center space-x-3 w-full px-3 py-2.5 rounded-md ${
-                      activeTab === 'admin' ? 'bg-green-50 text-green-700' : 'text-gray-700 hover:bg-gray-50'
+                    className={`flex items-center w-full px-4 py-3 ${
+                      activeTab === 'admin' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                     }`}
                   >
-                    <div className="w-4 h-4 flex items-center justify-center">⚙️</div>
-                    <span className="font-jp-medium text-sm">管理画面</span>
+                    <div className="w-6 text-center">⚙️</div>
+                    <span className="ml-3 font-jp-medium text-sm">管理画面</span>
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className="absolute bottom-0 left-0 right-0 border-t border-gray-100 p-3 flex justify-between items-center bg-white">
+              <div className="text-xs text-gray-500">
+                {currentCounselor ? (
+                  <span>心理カウンセラーに</span>
+                ) : (
+                  <button
+                    onClick={() => setShowAdminLogin(true)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    心理カウンセラーに
                   </button>
                 )}
               </div>
               
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                {lineUsername && (
-                  <div className="mb-3">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="text-xs text-gray-700 font-jp-medium">{lineUsername}さん</span>
-                    </div>
-                    <button
-                      onClick={handleUserLogout}
-                      className="text-xs text-red-500 hover:text-red-700 font-jp-normal ml-4"
-                    >
-                      ログアウト
-                    </button>
-                  </div>
-                )}
-                
+              <div>
                 {currentCounselor ? (
                   <button
                     onClick={handleAdminLogout}
-                    className="flex items-center space-x-2 text-xs text-red-500 hover:text-red-700 font-jp-normal"
+                    className="text-xs text-gray-500 hover:text-gray-700"
                   >
-                    <LogIn className="w-3 h-3" />
-                    <span>カウンセラーログアウト</span>
+                    ログアウト
                   </button>
                 ) : (
                   <button
-                    onClick={() => setShowAdminLogin(true)}
-                    className="flex items-center space-x-2 text-xs text-gray-600 hover:text-gray-800 font-jp-normal"
+                    onClick={handleUserLogout}
+                    className="text-xs text-gray-500 hover:text-gray-700"
                   >
-                    <LogIn className="w-3 h-3" />
-                    <span>カウンセラーログイン</span>
+                    ログアウト
                   </button>
                 )}
               </div>
@@ -526,26 +529,27 @@ const App: React.FC = () => {
         {/* ホーム画面 */}
         {activeTab === 'home' && (
           <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center relative" style={{ backgroundColor: '#FFF8E8' }}>
-            {/* 水玉模様の背景要素 */}
-            <div className="absolute top-20 left-20 w-36 h-36 rounded-full bg-white opacity-20"></div>
-            <div className="absolute top-40 right-20 w-24 h-24 rounded-full bg-white opacity-20"></div>
-            <div className="absolute bottom-40 left-20 w-32 h-32 rounded-full bg-white opacity-20"></div>
-            <div className="absolute bottom-20 right-20 w-28 h-28 rounded-full bg-white opacity-20"></div>
-            <div className="absolute bottom-60 right-60 w-16 h-16 rounded-full bg-white opacity-10"></div>
+            {/* 水玉模様の背景要素（より正確に配置） */}
+            <div className="absolute top-[10%] left-[10%] w-36 h-36 rounded-full bg-white opacity-30"></div>
+            <div className="absolute top-[15%] right-[15%] w-28 h-28 rounded-full bg-white opacity-30"></div>
+            <div className="absolute bottom-[30%] left-[15%] w-32 h-32 rounded-full bg-white opacity-30"></div>
+            <div className="absolute bottom-[10%] right-[10%] w-28 h-28 rounded-full bg-white opacity-30"></div>
+            <div className="absolute bottom-[40%] right-[40%] w-16 h-16 rounded-full bg-white opacity-20"></div>
+            <div className="absolute top-[40%] left-[40%] w-20 h-20 rounded-full bg-white opacity-20"></div>
             
             <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center shadow-md mb-10 z-10">
               <Heart className="w-14 h-14" style={{ color: '#F4933F' }} />
             </div>
-            <h1 className="text-[42px] font-jp-bold text-[#1A202C] mb-6 z-10">かんじょうにっき</h1>
-            <p className="text-lg font-jp-medium text-[#4A5568] mb-16 z-10">自己肯定感を育てる感情日記アプリ</p>
+            <h1 className="text-[46px] font-jp-bold text-[#1A202C] mb-4 z-10">かんじょうにっき</h1>
+            <p className="text-xl font-jp-medium text-[#4A5568] mb-16 z-10">自己肯定感を育てる感情日記アプリ</p>
             <button
               onClick={() => setActiveTab('diary')}
-              className="z-10 text-white px-10 py-3.5 rounded-full font-jp-bold text-xl shadow-md transition-colors"
-              style={{ backgroundColor: '#F4933F', boxShadow: '0 4px 6px rgba(244, 147, 63, 0.2)' }}
+              className="z-10 text-white px-12 py-4 rounded-full font-jp-bold text-xl shadow-md transition-colors"
+              style={{ backgroundColor: '#F4933F', boxShadow: '0 4px 8px rgba(244, 147, 63, 0.25)' }}
             >
               はじめる
             </button>
-            <p className="mt-28 text-xs text-[#718096] font-jp-normal z-10">一般社団法人NAMIDAサポート協会</p>
+            <p className="mt-24 text-xs text-[#718096] font-jp-normal z-10">一般社団法人NAMIDAサポート協会</p>
           </div>
         )}
         
