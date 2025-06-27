@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Menu, X, Home, Search, BookOpen, HelpCircle, Settings, User, Shield, LogIn, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Heart, Menu, X, Home, Search, BookOpen, HelpCircle, Settings, User, Shield, LogIn, AlertTriangle } from 'lucide-react';
 import DiaryPage from './pages/DiaryPage';
 import DiarySearchPage from './pages/DiarySearchPage';
 import HowTo from './pages/HowTo';
@@ -397,7 +397,7 @@ const App: React.FC = () => {
                     activeTab === 'chat' ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <MessageCircle className="w-5 h-5" />
+                  <Home className="w-5 h-5" />
                   <span className="font-jp-medium">チャット</span>
                 </button>
                 
@@ -522,19 +522,19 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* ホーム画面 */}
         {activeTab === 'home' && (
-          <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center bg-gradient-to-b from-orange-50 to-yellow-100 rounded-3xl">
-            <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-md mb-8">
-              <Heart className="w-16 h-16 text-orange-400" />
+          <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-gradient-to-b from-orange-50 to-yellow-100">
+            <div className="w-36 h-36 bg-white rounded-full flex items-center justify-center shadow-md mb-10">
+              <Heart className="w-20 h-20 text-orange-400" />
             </div>
-            <h1 className="text-5xl font-jp-bold text-gray-900 mb-4">かんじょうにっき</h1>
-            <p className="text-2xl font-jp-medium text-gray-700 mb-12">自己肯定感を育てる感情日記アプリ</p>
+            <h1 className="text-6xl font-jp-bold text-gray-900 mb-6">かんじょうにっき</h1>
+            <p className="text-2xl font-jp-medium text-gray-700 mb-16">自己肯定感を育てる感情日記アプリ</p>
             <button
               onClick={() => setActiveTab('diary')}
-              className="bg-orange-400 hover:bg-orange-500 text-white px-10 py-5 rounded-full font-jp-bold text-xl shadow-lg transition-colors"
+              className="bg-orange-400 hover:bg-orange-500 text-white px-12 py-6 rounded-full font-jp-bold text-2xl shadow-lg transition-colors"
             >
               はじめる
             </button>
-            <p className="mt-16 text-gray-500 font-jp-normal">一般社団法人NAMIDAサポート協会</p>
+            <p className="mt-24 text-gray-500 font-jp-normal">一般社団法人NAMIDAサポート協会</p>
           </div>
         )}
         
@@ -652,8 +652,6 @@ const App: React.FC = () => {
         {activeTab === 'admin' && currentCounselor && <AdminPanel />}
       </main>
 
-      {/* フッターナビゲーション */}
-      
       {/* メンテナンスモード表示 */}
       {isMaintenanceMode && isAdminBypass && (
         <div className="fixed bottom-0 left-0 right-0 bg-red-100 border-t border-red-200 p-2 text-center">
