@@ -218,7 +218,11 @@ const DataMigration: React.FC = () => {
 
   const handleMigrateData = async () => {
     if (!isConnected || (!currentUser && !isAdminMode)) {
-      setMigrationStatus('エラー: Supabaseに接続されていないか、ユーザーが設定されていません。');
+      if (!isConnected) {
+        setMigrationStatus('エラー: Supabaseに接続されていません。');
+      } else {
+        setMigrationStatus('エラー: ユーザーが設定されていません。');
+      }
       return;
     }
 
@@ -233,7 +237,7 @@ const DataMigration: React.FC = () => {
         
         let success;
         if (isAdminMode) {
-          // 管理者モードでは、ユーザーIDを指定せずに全体のデータを移行
+          // 管理者モードでは、特別なIDを使用して全体のデータを移行
           success = await syncService.bulkMigrateLocalData(
             'admin', // 管理者用の特別なID
             (progress) => setMigrationProgress(progress)
@@ -259,7 +263,7 @@ const DataMigration: React.FC = () => {
         
         let success;
         if (isAdminMode) {
-          // 管理者モードでは、全ユーザーのデータを同期
+          // 管理者モードでは、特別なIDを使用して全ユーザーのデータを同期
           success = await syncService.syncToLocal('admin');
         } else {
           // 通常モードでは、現在のユーザーのデータのみを同期
@@ -284,7 +288,11 @@ const DataMigration: React.FC = () => {
 
   const handleBulkMigration = async () => {
     if (!isConnected || (!currentUser && !isAdminMode)) {
-      setMigrationStatus('エラー: Supabaseに接続されていないか、ユーザーが設定されていません。');
+      if (!isConnected) {
+        setMigrationStatus('エラー: Supabaseに接続されていません。');
+      } else {
+        setMigrationStatus('エラー: ユーザーが設定されていません。');
+      }
       return;
     }
 
@@ -329,7 +337,7 @@ const DataMigration: React.FC = () => {
         
         let success;
         if (isAdminMode) {
-          // 管理者モードでは、全ユーザーのデータを同期
+          // 管理者モードでは、特別なIDを使用して全ユーザーのデータを同期
           success = await syncService.syncToLocal('admin');
         } else {
           // 通常モードでは、現在のユーザーのデータのみを同期
