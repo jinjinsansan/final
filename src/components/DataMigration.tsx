@@ -16,6 +16,10 @@ const DataMigration: React.FC = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
 
+  // 全体のデータ数を保持する状態
+  const [totalLocalDataCount, setTotalLocalDataCount] = useState(0);
+  const [totalSupabaseDataCount, setTotalSupabaseDataCount] = useState(0);
+
   const { isConnected, currentUser, initializeUser } = useSupabase();
 
   useEffect(() => {
@@ -31,29 +35,76 @@ const DataMigration: React.FC = () => {
 
   const loadData = async () => {
     try {
-      // ローカルデータ数を取得
+      if (isAdminMode) {
+        // 管理者モードの場合は全体のデータ数を取得
+        await loadTotalData();
+      } else {
+        // 通常モードの場合は現在のユーザーのデータ数を取得
+        // ローカルデータ数を取得
+        const localEntries = localStorage.getItem('journalEntries');
+        if (localEntries) {
+          const entries = JSON.parse(localEntries);
+          setLocalDataCount(entries.length);
+        }
+
+        // Supabaseデータ数を取得（接続されている場合のみ）
+        if (isConnected && currentUser) {
+          supabase.from('diary_entries')
+            .select('id', { count: 'exact' })
+            .eq('user_id', currentUser.id)
+            .then(({ count, error }) => {
+              console.log('Supabase日記データ数:', count || 0);
+              setSupabaseDataCount(count || 0);
+            })
+            .catch((error) => {
+              console.error('Supabase日記データ数取得エラー:', error);
+              setSupabaseDataCount(0);
+            });
+        }
+      }
+    } catch (error) {
+      console.error('データ読み込みエラー:', error);
+    }
+  };
+
+  // 全体のデータ数を取得する関数
+  const loadTotalData = async () => {
+    try {
+      // ローカルストレージから全ユーザーの日記データを取得
       const localEntries = localStorage.getItem('journalEntries');
       if (localEntries) {
         const entries = JSON.parse(localEntries);
         setLocalDataCount(entries.length);
+        setTotalLocalDataCount(entries.length);
       }
 
-      // Supabaseデータ数を取得（接続されている場合のみ）
-      if (isConnected && currentUser) {
-        supabase.from('diary_entries')
-          .select('id', { count: 'exact' })
-          .eq('user_id', currentUser.id)
-          .then(({ count, error }) => {
-            console.log('Supabase日記データ数:', count || 0);
-            setSupabaseDataCount(count || 0);
-          })
-          .catch((error) => {
-            console.error('Supabase日記データ数取得エラー:', error);
-            setSupabaseDataCount(0);
-          });
+      // Supabaseから全体の日記データ数を取得
+      if (isConnected) {
+        const { count, error } = await supabase
+          .from('diary_entries')
+          .select('id', { count: 'exact' });
+
+        if (error) {
+          console.error('全体のSupabaseデータ数取得エラー:', error);
+        } else {
+          console.log('全体のSupabaseデータ数:', count || 0);
+          setSupabaseDataCount(count || 0);
+          setTotalSupabaseDataCount(count || 0);
+        }
+
+        // ユーザー数も取得
+        const { count: userCount, error: userError } = await supabase
+          .from('users')
+          .select('id', { count: 'exact' });
+
+        if (userError) {
+          console.error('ユーザー数取得エラー:', userError);
+        } else {
+          console.log('総ユーザー数:', userCount || 0);
+        }
       }
     } catch (error) {
-      console.error('データ読み込みエラー:', error);
+      console.error('全体データ読み込みエラー:', error);
     }
   };
 
@@ -336,16 +387,24 @@ const DataMigration: React.FC = () => {
         {/* データ数表示 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <h3 className="font-jp-bold text-gray-900 mb-2">ローカルデータ</h3>
+            <h3 className="font-jp-bold text-gray-900 mb-2">
+              {isAdminMode ? '全体のローカルデータ' : 'ローカルデータ'}
+            </h3>
             <div className="flex justify-between items-center">
-              <span className="text-gray-700 font-jp-normal">日記数:</span>
+              <span className="text-gray-700 font-jp-normal">
+                {isAdminMode ? '総日記数:' : '日記数:'}
+              </span>
               <span className="text-2xl font-jp-bold text-blue-600">{localDataCount}</span>
             </div>
           </div>
           <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-            <h3 className="font-jp-bold text-gray-900 mb-2">Supabaseデータ</h3>
+            <h3 className="font-jp-bold text-gray-900 mb-2">
+              {isAdminMode ? '全体のSupabaseデータ' : 'Supabaseデータ'}
+            </h3>
             <div className="flex justify-between items-center">
-              <span className="text-gray-700 font-jp-normal">日記数:</span>
+              <span className="text-gray-700 font-jp-normal">
+                {isAdminMode ? '総日記数:' : '日記数:'}
+              </span>
               <span className="text-2xl font-jp-bold text-green-600">{supabaseDataCount}</span>
             </div>
           </div>
@@ -506,6 +565,18 @@ const DataMigration: React.FC = () => {
                 <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
                   <h4 className="font-jp-bold text-gray-900 mb-3">管理者機能</h4>
                   <button
+                    onClick={loadTotalData}
+                    disabled={migrating}
+                    className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full mb-3"
+                  >
+                    {migrating ? (
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-5 h-5" />
+                    )}
+                    <span>全体のデータ数を更新</span>
+                  </button>
+                  <button
                     onClick={handleSyncConsentHistories}
                     disabled={migrating}
                     className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full mb-3"
@@ -517,9 +588,6 @@ const DataMigration: React.FC = () => {
                     )}
                     <span>すべての同意履歴を同期</span>
                   </button>
-                  <p className="text-xs text-purple-700">
-                    管理者のみ: すべてのユーザーの同意履歴をSupabaseに同期します
-                  </p>
                 </div>
                 )}
               </div>
@@ -566,10 +634,10 @@ const DataMigration: React.FC = () => {
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>ローカルデータはブラウザに保存されています</li>
                 <li>Supabaseデータはクラウドに保存されます</li>
-                <li>データの同期は手動で行う必要があります</li>
+                <li>{isAdminMode ? '管理者モードでは全体のデータ数が表示されます' : 'データの同期は手動で行う必要があります'}</li>
                 <li>ブラウザのキャッシュをクリアするとローカルデータは失われます</li>
                 <li>端末を変更する場合は、先にデータをSupabaseに移行してください</li>
-                {isAdminMode && <li className="font-jp-bold">管理者モードでは、すべてのユーザーのデータを管理できます</li>}
+                {isAdminMode && <li className="font-jp-bold text-green-700">管理者モードでは、すべてのユーザーのデータを管理できます</li>}
               </ul>
             </div>
           </div>
