@@ -711,7 +711,7 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
               <div key={entry.id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center space-x-3 flex-wrap">
-                    <span className={`px-3 py-1 rounded-full text-sm font-jp-medium border ${getEmotionColor(entry.emotion)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-jp-medium border ${getEmotionColor(entry.emotion)}`}>
                       {entry.emotion}
                     </span>
                     <span className="text-gray-900 font-jp-medium">
@@ -743,14 +743,14 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                   <div>
                     <h4 className="font-jp-semibold text-gray-700 mb-1 text-sm">出来事</h4>
-                    <p className="text-gray-600 text-sm font-jp-normal leading-relaxed line-clamp-2 break-words">
-                      {entry.event.length > 100 ? `${entry.event.substring(0, 100)}...` : entry.event}
+                    <p className="text-gray-600 text-sm font-jp-normal leading-relaxed break-words">
+                      {entry.event}
                     </p>
                   </div>
                   <div>
                     <h4 className="font-jp-semibold text-gray-700 mb-1 text-sm">気づき</h4>
-                    <p className="text-gray-600 text-sm font-jp-normal leading-relaxed line-clamp-2 break-words">
-                      {entry.realization.length > 100 ? `${entry.realization.substring(0, 100)}...` : entry.realization}
+                    <p className="text-gray-600 text-sm font-jp-normal leading-relaxed break-words">
+                      {entry.realization}
                     </p>
                   </div>
                 </div>
@@ -758,8 +758,8 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
                 {entry.counselor_memo && (
                   <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 mb-3">
                     <h4 className="font-jp-semibold text-blue-900 mb-1 text-sm">カウンセラーメモ</h4>
-                    <p className="text-blue-800 text-sm font-jp-normal leading-relaxed">
-                      {entry.counselor_memo.length > 150 ? `${entry.counselor_memo.substring(0, 150)}...` : entry.counselor_memo}
+                    <p className="text-blue-800 text-sm font-jp-normal leading-relaxed break-words">
+                      {entry.counselor_memo}
                     </p>
                   </div>
                 )}
