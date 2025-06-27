@@ -48,7 +48,8 @@ const App: React.FC = () => {
   const [showCounselorLogin, setShowCounselorLogin] = useState(false);
   const [counselorCredentials, setCounselorCredentials] = useState({
     email: '',
-    password: ''
+    password: '',
+    rememberMe: false
   });
   const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
@@ -81,7 +82,10 @@ const App: React.FC = () => {
     // カウンセラーとしてログインしているかチェック
     const counselorName = localStorage.getItem('current_counselor');
     if (counselorName) {
+      // 管理者モードを有効化
       setIsAdminMode(true);
+      setIsAdmin(true);
+      setCurrentCounselor(counselorName);
       console.log('管理者モードで動作中:', counselorName);
     }
   }, []);
@@ -233,8 +237,7 @@ const App: React.FC = () => {
   const handleCounselorLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
-    
-    const { email, password } = counselorCredentials;
+    const { email, password, rememberMe } = counselorCredentials;
 
     // パスワードチェック
     if (password !== 'counselor123') {
@@ -255,6 +258,12 @@ const App: React.FC = () => {
     console.log('カウンセラーログイン成功:', counselor.name);
     setCurrentCounselor(counselor.name);
     localStorage.setItem('current_counselor', counselor.name);
+    
+    // ログイン情報を記憶する場合
+    if (rememberMe) {
+      localStorage.setItem('counselor_email', email);
+    }
+    
     setIsAdmin(true);
     setIsAdminMode(true);
     setCurrentPage('admin');
@@ -607,6 +616,17 @@ const App: React.FC = () => {
                 className="w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-jp-normal text-gray-800 placeholder-gray-400 transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
                 required
               />
+            </div>
+            
+            <div className="flex items-center space-x-2 mt-2">
+              <input
+                type="checkbox"
+                id="remember-me"
+                checked={counselorCredentials.rememberMe}
+                onChange={(e) => setCounselorCredentials({...counselorCredentials, rememberMe: e.target.checked})}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="remember-me" className="text-sm text-gray-600 font-jp-normal">ログイン情報を記憶する</label>
             </div>
 
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100 shadow-sm">
