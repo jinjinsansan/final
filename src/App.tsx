@@ -232,12 +232,13 @@ const App: React.FC = () => {
   // カウンセラーログイン処理
   const handleCounselorLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('カウンセラーログイン試行:', counselorCredentials);
+    console.log('カウンセラーログイン試行:', counselorCredentials.email);
     
     const { email, password } = counselorCredentials;
     
     // パスワードチェック
     if (password !== 'counselor123') {
+      console.error('パスワードが正しくありません');
       alert('パスワードが正しくありません。');
       return;
     }
@@ -245,18 +246,20 @@ const App: React.FC = () => {
     // メールアドレスチェック
     const counselor = counselorAccounts.find(c => c.email === email);
     if (!counselor) {
+      console.error('登録されていないメールアドレスです');
       alert('登録されていないメールアドレスです。');
       return;
     }
     
     // ログイン成功
+    console.log('カウンセラーログイン成功:', counselor.name);
     setCurrentCounselor(counselor.name);
     localStorage.setItem('current_counselor', counselor.name);
     setIsAdmin(true);
     setIsAdminMode(true);
     setCurrentPage('admin');
-    setCounselorCredentials({ email: '', password: '' });
     setShowCounselorLogin(false);
+    setCounselorCredentials({ email: '', password: '' });
   };
 
   // ログアウト処理
@@ -579,6 +582,7 @@ const App: React.FC = () => {
                 メールアドレス
               </label>
               <input
+                id="counselor-email"
                 type="email"
                 value={counselorCredentials.email}
                 onChange={(e) => setCounselorCredentials({...counselorCredentials, email: e.target.value})}
@@ -594,8 +598,8 @@ const App: React.FC = () => {
                 パスワード
               </label>
               <input
-                type="password"
                 id="counselor-password"
+                type="password"
                 value={counselorCredentials.password}
                 onChange={(e) => setCounselorCredentials({...counselorCredentials, password: e.target.value})}
                 placeholder="パスワードを入力"
@@ -621,8 +625,8 @@ const App: React.FC = () => {
 
             <div className="flex space-x-3 pt-2">
               <button
-                type="submit"
                 id="counselor-login-button"
+                type="submit"
                 className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 px-4 rounded-lg font-jp-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 text-sm"
               >
                 ログイン
