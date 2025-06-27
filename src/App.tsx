@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Book, Play, ArrowRight, Heart, Search, TrendingUp, Database, Settings, Menu, X } from 'lucide-react';
+import { Home, Book, Play, ArrowRight, Heart, Search, TrendingUp, Database, Settings, Menu, X, AlertTriangle, Plus } from 'lucide-react';
 import HowTo from './pages/HowTo';
 import FirstSteps from './pages/FirstSteps';
 import NextSteps from './pages/NextSteps';
@@ -20,6 +20,7 @@ import MaintenanceMode from './components/MaintenanceMode';
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
 import AdminPanel from './components/AdminPanel';
 import { useAutoSync } from './hooks/useAutoSync';
+import { getCurrentUser } from './lib/deviceAuth';
 
 // メインアプリコンポーネント
 const App: React.FC = () => {
@@ -215,6 +216,9 @@ const AppContent: React.FC<{
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // 現在のユーザー情報を取得
+  const currentUser = getCurrentUser();
 
   // メニューを閉じる
   const closeMenu = () => {
@@ -444,8 +448,16 @@ const AppContent: React.FC<{
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/diary" element={<DiaryPage />} />
           <Route path="/diary-search" element={<DiarySearchPage />} />
-          <Route path="/worthlessness-chart" element={<Chat />} />
-          <Route path="/data-management" element={<UserDataManagement />} />
+          <Route path="/worthlessness-chart" element={
+            <div className="p-4">
+              <Chat />
+            </div>
+          } />
+          <Route path="/data-management" element={
+            <div className="p-4">
+              {currentUser ? <DataBackupRecovery /> : <UserDataManagement />}
+            </div>
+          } />
           <Route path="/admin" element={isAdminMode ? <AdminPanel /> : <div>アクセス権限がありません</div>} />
         </Routes>
       </main>
