@@ -413,7 +413,7 @@ const DiaryPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-6 px-2 relative z-10">
+    <div className="w-full max-w-2xl mx-auto space-y-6 px-2">
       {/* 今日の出来事セクション */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
@@ -475,7 +475,7 @@ const DiaryPage: React.FC = () => {
                         className={`
                           w-8 h-8 text-xs font-jp-normal rounded transition-colors
                           ${isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}
-                          ${isSelected ? 'bg-[#F4933F] text-white' : 'hover:bg-gray-100'}
+                          ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}
                           ${isToday && !isSelected ? 'bg-blue-100 text-blue-600' : ''}
                           ${isFuture ? 'opacity-30 cursor-not-allowed' : ''}
                         `}
@@ -591,7 +591,7 @@ const DiaryPage: React.FC = () => {
                   value={emotion.name}
                   checked={formData.emotion === emotion.name}
                   onChange={(e) => setFormData({...formData, emotion: e.target.value})}
-                  className="w-4 h-4 text-[#F4933F] focus:ring-2 focus:ring-[#F4933F]"
+                  className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                 />
                 <div className={`w-3 h-3 rounded-full ${
                   formData.emotion === emotion.name 
@@ -633,7 +633,7 @@ const DiaryPage: React.FC = () => {
                       max="100"
                       value={worthlessnessScores.yesterdaySelfEsteem}
                       onChange={(e) => handleSelfEsteemChange('yesterdaySelfEsteem', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#F4933F] focus:border-transparent font-jp-normal"
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
                       placeholder="50"
                     />
                   </div>
@@ -647,7 +647,7 @@ const DiaryPage: React.FC = () => {
                       max="100"
                       value={worthlessnessScores.yesterdayWorthlessness}
                       onChange={(e) => handleWorthlessnessChange('yesterdayWorthlessness', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#F4933F] focus:border-transparent font-jp-normal"
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
                       placeholder="50"
                     />
                   </div>
@@ -671,7 +671,7 @@ const DiaryPage: React.FC = () => {
                       max="100"
                       value={worthlessnessScores.todaySelfEsteem}
                       onChange={(e) => handleSelfEsteemChange('todaySelfEsteem', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#F4933F] focus:border-transparent font-jp-normal"
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
                       placeholder="50"
                     />
                   </div>
@@ -685,7 +685,7 @@ const DiaryPage: React.FC = () => {
                       max="100"
                       value={worthlessnessScores.todayWorthlessness}
                       onChange={(e) => handleWorthlessnessChange('todayWorthlessness', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#F4933F] focus:border-transparent font-jp-normal"
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
                       placeholder="50"
                     />
                   </div>
@@ -710,7 +710,7 @@ const DiaryPage: React.FC = () => {
           <textarea
             value={formData.realization}
             onChange={(e) => setFormData({...formData, realization: e.target.value})}
-           className="relative w-full h-32 p-4 pl-8 bg-white border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-[#F4933F] focus:border-transparent font-jp-normal text-gray-800 leading-8 overflow-hidden"
+           className="relative w-full h-32 p-4 pl-8 bg-white border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal text-gray-800 leading-8 overflow-hidden"
             placeholder=""
            style={{
              backgroundImage: `
@@ -762,7 +762,7 @@ const DiaryPage: React.FC = () => {
         <button
           onClick={handleSubmit}
           disabled={saving}
-          className="w-full sm:w-auto bg-[#F4933F] hover:bg-[#E87F2F] text-white px-6 sm:px-8 py-3 rounded-lg font-jp-medium transition-colors shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-3 rounded-lg font-jp-medium transition-colors shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
         >
           {saving ? (
             <>
@@ -780,7 +780,7 @@ const DiaryPage: React.FC = () => {
         <button
           onClick={formData.event.trim() ? handleShare : () => alert('日記を入力してから共有してください')}
           disabled={saving}
-          className={`w-full sm:w-auto ${formData.event.trim() ? 'bg-[#4CAF50] hover:bg-[#388E3C]' : 'bg-gray-400 cursor-not-allowed'} text-white px-6 sm:px-8 py-3 rounded-lg font-jp-medium transition-colors shadow-md hover:shadow-lg flex items-center justify-center space-x-2`}
+          className={`w-full sm:w-auto ${formData.event.trim() ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'} text-white px-6 sm:px-8 py-3 rounded-lg font-jp-medium transition-colors shadow-md hover:shadow-lg flex items-center justify-center space-x-2`}
         >
           <Share2 className="w-5 h-5" />
           <span>SNSでシェア</span>
