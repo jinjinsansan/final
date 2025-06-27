@@ -249,13 +249,13 @@ const App: React.FC = () => {
   // メインアプリケーション
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* ヘッダー */}
+      {/* ヘッダー - 新しいデザイン */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Heart className="w-8 h-8 text-pink-500" />
-              <h1 className="ml-2 text-xl font-jp-bold text-gray-900">かんじょうにっき</h1>
+              <Heart className="w-6 h-6 text-pink-500" />
+              <h1 className="ml-2 text-lg font-jp-bold text-gray-900">かんじょうにっき</h1>
             </div>
             <div className="flex items-center space-x-4">
               {currentCounselor && (
@@ -286,6 +286,12 @@ const App: React.FC = () => {
 
       {/* サイドメニュー */}
       {menuOpen && (
+        <div className="fixed inset-0 z-20 overflow-hidden" onClick={() => setMenuOpen(false)}>
+          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setMenuOpen(false)}></div>
+          <div className="absolute top-0 right-0 w-64 h-full bg-white shadow-xl transform transition-transform" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-4 border-b border-gray-100">
+              <div className="flex items-center space-x-2">
+                <Heart className="w-5 h-5 text-pink-500" />
         <div className="fixed inset-0 z-20 overflow-hidden" onClick={() => setMenuOpen(false)}>
           <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setMenuOpen(false)}></div>
           <div className="absolute top-0 right-0 w-64 h-full bg-white shadow-xl transform transition-transform" onClick={(e) => e.stopPropagation()}>
@@ -542,6 +548,15 @@ const App: React.FC = () => {
             </div>
             <h1 className="text-[46px] font-jp-bold text-[#1A202C] mb-4 z-10">かんじょうにっき</h1>
             <p className="text-xl font-jp-medium text-[#4A5568] mb-16 z-10">自己肯定感を育てる感情日記アプリ</p>
+            <button
+              onClick={() => setActiveTab('diary')}
+              className="z-10 text-white px-12 py-4 rounded-full font-jp-bold text-xl shadow-md transition-colors"
+              style={{ backgroundColor: '#F4933F', boxShadow: '0 4px 8px rgba(244, 147, 63, 0.25)' }}
+            >
+              はじめる
+            </button>
+            <p className="mt-24 text-xs text-[#718096] font-jp-normal z-10">一般社団法人NAMIDAサポート協会</p>
+          </div>
             <button
               onClick={() => setActiveTab('diary')}
               className="z-10 text-white px-12 py-4 rounded-full font-jp-bold text-xl shadow-md transition-colors"
