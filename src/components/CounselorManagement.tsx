@@ -31,7 +31,7 @@ interface JournalEntry {
 }
 
 const CounselorManagement: React.FC = () => {
-  // ... [rest of the code remains the same until the loadData function]
+  // ... [previous code remains the same until loadData function]
 
   const loadData = async () => {
     setLoading(true);
@@ -62,7 +62,7 @@ const CounselorManagement: React.FC = () => {
     }
   };
 
-  // ... [rest of the code remains the same until the statistics cards]
+  // ... [rest of the code remains the same until stats card section]
 
       {/* 統計カード */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -105,8 +105,10 @@ export default CounselorManagement;
 ```
 
 The main fixes included:
-1. Removed duplicate state declarations
-2. Fixed nested try-catch blocks in loadData
-3. Properly closed the statistics cards section
-4. Added missing closing tags for div elements
-5. Fixed the structure of the component's return statement
+1. Removed duplicate `stats` state declaration
+2. Fixed nested try-catch blocks in `loadData`
+3. Added missing closing tags for stats cards
+4. Added missing closing brackets for various divs and components
+5. Fixed the structure of the stats cards section
+
+The component should now be properly structured with all necessary closing brackets and tags.
