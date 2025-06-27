@@ -8,6 +8,7 @@ import MaintenanceController from './MaintenanceController';
 import ConsentHistoryManagement from './ConsentHistoryManagement';
 import DeviceAuthManagement from './DeviceAuthManagement';
 import SecurityDashboard from './SecurityDashboard';
+import DataCleanup from './DataCleanup';
 import { supabase } from '../lib/supabase';
 
 interface JournalEntry {
@@ -446,11 +447,11 @@ const AdminPanel: React.FC = () => {
           <TabsList className="grid grid-cols-2 md:grid-cols-7 gap-2 mb-6">
             <TabsTrigger value="search" className="flex items-center space-x-2">
               <Search className="w-4 h-4" />
-              <span className="hidden md:inline">日記管理</span>
+              <span className="hidden md:inline">日記</span>
             </TabsTrigger>
             <TabsTrigger value="advanced-search" className="flex items-center space-x-2">
               <Filter className="w-4 h-4" />
-              <span className="hidden md:inline">高度な検索</span>
+              <span className="hidden md:inline">検索</span>
             </TabsTrigger>
             <TabsTrigger value="chat" className="flex items-center space-x-2">
               <MessageCircle className="w-4 h-4" />
@@ -462,15 +463,15 @@ const AdminPanel: React.FC = () => {
             </TabsTrigger>
             <TabsTrigger value="maintenance" className="flex items-center space-x-2">
               <Settings className="w-4 h-4" />
-              <span className="hidden md:inline">メンテナンス</span>
+              <span className="hidden md:inline">設定</span>
             </TabsTrigger>
             <TabsTrigger value="device-auth" className="flex items-center space-x-2">
               <Shield className="w-4 h-4" />
-              <span className="hidden md:inline">デバイス認証</span>
+              <span className="hidden md:inline">認証</span>
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center space-x-2">
               <AlertTriangle className="w-4 h-4" />
-              <span className="hidden md:inline">セキュリティ</span>
+              <span className="hidden md:inline">安全</span>
             </TabsTrigger>
           </TabsList>
 
@@ -626,7 +627,10 @@ const AdminPanel: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="maintenance">
-            <MaintenanceController />
+            <div className="grid grid-cols-1 gap-6">
+              <MaintenanceController />
+              <DataCleanup />
+            </div>
           </TabsContent>
 
           <TabsContent value="device-auth">
