@@ -523,18 +523,18 @@ const App: React.FC = () => {
         {/* ホーム画面 */}
         {activeTab === 'home' && (
           <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-gradient-to-b from-orange-50 to-yellow-50">
-            <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-md mb-12">
-              <Heart className="w-16 h-16 text-orange-400" />
+            <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center shadow-md mb-16">
+              <Heart className="w-14 h-14 text-orange-400" />
             </div>
-            <h1 className="text-5xl font-jp-bold text-gray-900 mb-6">かんじょうにっき</h1>
-            <p className="text-xl font-jp-medium text-gray-700 mb-12">自己肯定感を育てる感情日記アプリ</p>
+            <h1 className="text-[42px] font-jp-bold text-gray-900 mb-4">かんじょうにっき</h1>
+            <p className="text-lg font-jp-medium text-gray-700 mb-14">自己肯定感を育てる感情日記アプリ</p>
             <button
               onClick={() => setActiveTab('diary')}
-              className="bg-orange-400 hover:bg-orange-500 text-white px-10 py-4 rounded-full font-jp-bold text-xl shadow-lg transition-colors"
+              className="bg-orange-400 hover:bg-orange-500 text-white px-10 py-3.5 rounded-full font-jp-bold text-xl shadow-md transition-colors"
             >
               はじめる
             </button>
-            <p className="mt-20 text-gray-500 font-jp-normal text-sm">一般社団法人NAMIDAサポート協会</p>
+            <p className="mt-28 text-gray-500 font-jp-normal text-xs">一般社団法人NAMIDAサポート協会</p>
           </div>
         )}
         
@@ -654,8 +654,3 @@ const App: React.FC = () => {
 
       {/* メンテナンスモード表示 */}
       {/* メンテナンスモード表示は削除済み */}
-    </div>
-  );
-};
-
-export default App;
