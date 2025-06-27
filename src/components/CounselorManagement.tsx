@@ -76,7 +76,7 @@ const CounselorManagement: React.FC = () => {
           is_active: true,
           assigned_cases: 0,
           total_cases: 0,
-          created_at: '2025-06-25T09:00:00Z',
+          created_at: '2024-01-15T09:00:00Z',
           last_active: '2024-01-21T14:30:00Z'
         },
         {
@@ -88,7 +88,7 @@ const CounselorManagement: React.FC = () => {
           is_active: true,
           assigned_cases: 0,
           total_cases: 0,
-          created_at: '2025-06-25T09:00:00Z',
+          created_at: '2024-02-01T09:00:00Z',
           last_active: '2024-01-22T16:15:00Z'
         },
         {
@@ -100,7 +100,7 @@ const CounselorManagement: React.FC = () => {
           is_active: true,
           assigned_cases: 0,
           total_cases: 0,
-          created_at: '2025-06-25T09:00:00Z',
+          created_at: '2024-03-10T09:00:00Z',
           last_active: '2024-01-21T11:45:00Z'
         },
         {
@@ -112,7 +112,7 @@ const CounselorManagement: React.FC = () => {
           is_active: false,
           assigned_cases: 0,
           total_cases: 0,
-          created_at: '2025-06-25T09:00:00Z',
+          created_at: '2024-04-20T09:00:00Z',
           last_active: '2024-01-15T10:20:00Z'
         },
         {
@@ -124,7 +124,7 @@ const CounselorManagement: React.FC = () => {
           is_active: true,
           assigned_cases: 0,
           total_cases: 0,
-          created_at: '2025-06-25T09:00:00Z',
+          created_at: '2024-05-05T09:00:00Z',
           last_active: '2024-01-21T13:20:00Z'
         },
         {
@@ -136,7 +136,7 @@ const CounselorManagement: React.FC = () => {
           is_active: true,
           assigned_cases: 0,
           total_cases: 0,
-          created_at: '2025-06-25T09:00:00Z',
+          created_at: '2024-06-12T09:00:00Z',
           last_active: '2024-01-22T15:50:00Z'
         }
       ];
