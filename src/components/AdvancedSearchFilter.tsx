@@ -372,7 +372,7 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
     <div className="space-y-6">
       {/* 管理者モード表示 */}
       {isAdminMode && (
-        <div className="bg-green-50 rounded-lg p-3 border border-green-200 mb-4">
+        <div className="bg-green-50 rounded-lg p-2 sm:p-3 border border-green-200 mb-4">
           <div className="flex items-center space-x-2 text-green-800">
             <User className="w-4 h-4" />
             <span className="text-sm font-jp-medium">管理者モード: 全ユーザーの日記を検索できます</span>
@@ -380,10 +380,10 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
         </div>
       )}
       {/* 検索ヘッダー */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0 mb-6">
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-2 lg:space-y-0 mb-4 sm:mb-6">
           <div>
-            <h2 className="text-2xl font-jp-bold text-gray-900 mb-2">高度な検索・フィルター</h2>
+            <h2 className="text-xl sm:text-2xl font-jp-bold text-gray-900 mb-1 sm:mb-2">高度な検索・フィルター</h2>
             <p className="text-gray-600 font-jp-normal text-sm">
               詳細な条件で日記を検索・分析できます
             </p>

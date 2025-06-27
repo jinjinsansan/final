@@ -493,31 +493,31 @@ const AdminPanel: React.FC = () => {
 
         <Tabs defaultValue="search" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-7 gap-1 mb-6 overflow-x-auto">
-            <TabsTrigger value="search" className="flex items-center justify-center space-x-1 px-2 py-1.5">
+            <TabsTrigger value="search" className="flex items-center justify-center px-2 py-1.5">
               <Search className="w-4 h-4" />
               <span className="hidden md:inline">日記</span>
             </TabsTrigger>
-            <TabsTrigger value="advanced-search" className="flex items-center justify-center space-x-1 px-2 py-1.5">
+            <TabsTrigger value="advanced-search" className="flex items-center justify-center px-2 py-1.5">
               <Filter className="w-4 h-4" />
               <span className="hidden md:inline">検索</span>
             </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center justify-center space-x-1 px-2 py-1.5">
+            <TabsTrigger value="chat" className="flex items-center justify-center px-2 py-1.5">
               <MessageCircle className="w-4 h-4" />
               <span className="hidden md:inline">チャット</span>
             </TabsTrigger>
-            <TabsTrigger value="counselors" className="flex items-center justify-center space-x-1 px-2 py-1.5">
+            <TabsTrigger value="counselors" className="flex items-center justify-center px-2 py-1.5">
               <Users className="w-4 h-4" />
               <span className="hidden md:inline">カウンセラー</span>
             </TabsTrigger>
-            <TabsTrigger value="maintenance" className="flex items-center justify-center space-x-1 px-2 py-1.5">
+            <TabsTrigger value="maintenance" className="flex items-center justify-center px-2 py-1.5">
               <Settings className="w-4 h-4" />
               <span className="hidden md:inline">設定</span>
             </TabsTrigger>
-            <TabsTrigger value="device-auth" className="flex items-center justify-center space-x-1 px-2 py-1.5">
+            <TabsTrigger value="device-auth" className="flex items-center justify-center px-2 py-1.5">
               <Shield className="w-4 h-4" />
               <span className="hidden md:inline">認証</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center justify-center space-x-1 px-2 py-1.5">
+            <TabsTrigger value="security" className="flex items-center justify-center px-2 py-1.5">
               <AlertTriangle className="w-4 h-4" />
               <span className="hidden md:inline">安全</span>
             </TabsTrigger>
