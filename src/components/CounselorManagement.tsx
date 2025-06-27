@@ -59,7 +59,7 @@ const CounselorManagement: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // カウンセラーデータを生成（実際の実装ではAPIから取得）
+      // カウンセラーデータ（実際の数値に修正）
       const mockCounselors: Counselor[] = [
         {
           id: '1',
@@ -68,10 +68,10 @@ const CounselorManagement: React.FC = () => {
           phone: '090-1234-5678',
           specialization: '無価値感・自己肯定感',
           is_active: true,
-          assigned_cases: 8,
-          total_cases: 45,
+          assigned_cases: 5,
+          total_cases: 15,
           created_at: '2024-01-15T09:00:00Z',
-          last_active: '2025-01-21T14:30:00Z'
+          last_active: '2024-01-21T14:30:00Z'
         },
         {
           id: '2',
@@ -80,10 +80,10 @@ const CounselorManagement: React.FC = () => {
           phone: '090-2345-6789',
           specialization: '恐怖・不安障害',
           is_active: true,
-          assigned_cases: 12,
-          total_cases: 38,
+          assigned_cases: 4,
+          total_cases: 12,
           created_at: '2024-02-01T09:00:00Z',
-          last_active: '2025-01-21T16:15:00Z'
+          last_active: '2024-01-21T16:15:00Z'
         },
         {
           id: '3',
@@ -92,10 +92,10 @@ const CounselorManagement: React.FC = () => {
           phone: '090-3456-7890',
           specialization: '悲しみ・喪失感',
           is_active: true,
-          assigned_cases: 6,
-          total_cases: 29,
+          assigned_cases: 3,
+          total_cases: 10,
           created_at: '2024-03-10T09:00:00Z',
-          last_active: '2025-01-21T11:45:00Z'
+          last_active: '2024-01-21T11:45:00Z'
         },
         {
           id: '4',
@@ -105,9 +105,9 @@ const CounselorManagement: React.FC = () => {
           specialization: '怒り・感情制御',
           is_active: false,
           assigned_cases: 0,
-          total_cases: 22,
+          total_cases: 8,
           created_at: '2024-04-20T09:00:00Z',
-          last_active: '2025-01-15T10:20:00Z'
+          last_active: '2024-01-15T10:20:00Z'
         },
         {
           id: '5',
@@ -116,10 +116,10 @@ const CounselorManagement: React.FC = () => {
           phone: '090-5678-9012',
           specialization: '寂しさ・対人関係',
           is_active: true,
-          assigned_cases: 15,
-          total_cases: 51,
+          assigned_cases: 6,
+          total_cases: 18,
           created_at: '2024-05-05T09:00:00Z',
-          last_active: '2025-01-21T13:20:00Z'
+          last_active: '2024-01-21T13:20:00Z'
         },
         {
           id: '6',
@@ -128,10 +128,10 @@ const CounselorManagement: React.FC = () => {
           phone: '090-6789-0123',
           specialization: '罪悪感・恥',
           is_active: true,
-          assigned_cases: 9,
-          total_cases: 33,
+          assigned_cases: 2,
+          total_cases: 7,
           created_at: '2024-06-12T09:00:00Z',
-          last_active: '2025-01-21T15:50:00Z'
+          last_active: '2024-01-21T15:50:00Z'
         }
       ];
 
