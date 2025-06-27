@@ -3,6 +3,7 @@ import { Calendar, Search, TrendingUp, Plus, Edit3, Trash2, ChevronLeft, Chevron
 import PrivacyConsent from './components/PrivacyConsent';
 import MaintenanceMode from './components/MaintenanceMode';
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
+import { useLocation, useNavigate } from 'react-router-dom';
 import AdminPanel from './components/AdminPanel';
 import DataMigration from './components/DataMigration';
 import DiaryPage from './pages/DiaryPage';
@@ -57,6 +58,8 @@ const App: React.FC = () => {
   const [showUserDataManagement, setShowUserDataManagement] = useState(false);
 
   const [dataLoading, setDataLoading] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
   const { isMaintenanceMode, isAdminBypass, config: maintenanceConfig, loading: maintenanceLoading } = useMaintenanceStatus();
   const { isConnected, currentUser, initializeUser } = useSupabase();
   const { isAutoSyncEnabled, toggleAutoSync } = useAutoSync();
@@ -221,6 +224,11 @@ const App: React.FC = () => {
       setCurrentPage('home');
       setIsMobileMenuOpen(false);
     }
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setIsMobileMenuOpen(false);
   };
 
   // カウンセラーアカウント情報
@@ -1079,14 +1087,10 @@ const App: React.FC = () => {
                       { key: 'data-migration', label: 'データ管理', icon: Settings }
                     ] : [])
                   ].map(({ key, label, icon: Icon }) => (
-                    <button
+                    <div
                       key={key}
-                      onClick={() => {
-                        setCurrentPage(key);
-                        setIsMobileMenuOpen(false);
-                        console.log('ページ変更:', key);
-                      }}
-                      className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md text-base font-jp-medium transition-colors ${
+                      onClick={() => handleNavigation(key)}
+                      className={`flex items-center space-x-3 w-full px-3 py-2 rounded-md text-base font-jp-medium transition-colors cursor-pointer ${
                         currentPage === key
                           ? 'text-blue-600 bg-blue-50'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -1094,7 +1098,7 @@ const App: React.FC = () => {
                     >
                       <Icon className="w-5 h-5" />
                       <span>{label}</span>
-                    </button>
+                    </div>
                   ))}
                   
                   {/* お問い合わせ */}
