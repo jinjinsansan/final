@@ -11,7 +11,8 @@ const WorthlessnessChart: React.FC = () => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
   const [loading, setLoading] = useState(true);
-  const [emotionCounts, setEmotionCounts] = useState<{[key: string]: number}>({});
+  const [allEmotionCounts, setAllEmotionCounts] = useState<{[key: string]: number}>({});
+  const [filteredEmotionCounts, setFilteredEmotionCounts] = useState<{[key: string]: number}>({});
 
   useEffect(() => {
     loadChartData();
@@ -43,12 +44,20 @@ const WorthlessnessChart: React.FC = () => {
         
         setChartData(formattedData);
         
-        // 感情の出現回数を集計
+        // 全期間の感情の出現回数を集計
         const counts: {[key: string]: number} = {};
         entries.forEach((entry: any) => {
           counts[entry.emotion] = (counts[entry.emotion] || 0) + 1;
         });
-        setEmotionCounts(counts);
+        setAllEmotionCounts(counts);
+        
+        // 選択された期間の感情の出現回数を集計
+        const filteredCounts: {[key: string]: number} = {};
+        const filteredAllEntries = filterByPeriod(entries, period);
+        filteredAllEntries.forEach((entry: any) => {
+          filteredCounts[entry.emotion] = (filteredCounts[entry.emotion] || 0) + 1;
+        });
+        setFilteredEmotionCounts(filteredCounts);
       }
     } catch (error) {
       console.error('チャートデータ読み込みエラー:', error);
@@ -93,13 +102,14 @@ const WorthlessnessChart: React.FC = () => {
     const latestData = chartData[chartData.length - 1];
     
     let shareText = `${username}の無価値感推移 📊\n\n`;
-    shareText += `🔵 自己肯定感: ${latestData.selfEsteemScore}\n`;
-    shareText += `🔴 無価値感: ${latestData.worthlessnessScore}\n\n`;
+    shareText += `🔵 自己肯定感: ${latestData?.selfEsteemScore || 0}\n`;
+    shareText += `🔴 無価値感: ${latestData?.worthlessnessScore || 0}\n\n`;
     
     // 感情の出現回数
-    if (Object.keys(emotionCounts).length > 0) {
+    const currentEmotionCounts = period === 'all' ? allEmotionCounts : filteredEmotionCounts;
+    if (Object.keys(currentEmotionCounts).length > 0) {
       shareText += `【感情の出現回数】\n`;
-      Object.entries(emotionCounts)
+      Object.entries(currentEmotionCounts)
         .sort(([, a], [, b]) => (b as number) - (a as number))
         .slice(0, 3)
         .forEach(([emotion, count]) => {
@@ -135,13 +145,14 @@ const WorthlessnessChart: React.FC = () => {
     const latestData = chartData[chartData.length - 1];
     
     let shareText = `${username}の無価値感推移 📊\n\n`;
-    shareText += `🔵 自己肯定感: ${latestData.selfEsteemScore}\n`;
-    shareText += `🔴 無価値感: ${latestData.worthlessnessScore}\n\n`;
+    shareText += `🔵 自己肯定感: ${latestData?.selfEsteemScore || 0}\n`;
+    shareText += `🔴 無価値感: ${latestData?.worthlessnessScore || 0}\n\n`;
     
     // 感情の出現回数
-    if (Object.keys(emotionCounts).length > 0) {
+    const currentEmotionCounts = period === 'all' ? allEmotionCounts : filteredEmotionCounts;
+    if (Object.keys(currentEmotionCounts).length > 0) {
       shareText += `【感情の出現回数】\n`;
-      Object.entries(emotionCounts)
+      Object.entries(currentEmotionCounts)
         .sort(([, a], [, b]) => (b as number) - (a as number))
         .slice(0, 3)
         .forEach(([emotion, count]) => {
@@ -326,11 +337,16 @@ const WorthlessnessChart: React.FC = () => {
             )}
             
             {/* 感情の出現頻度 */}
-            {Object.keys(emotionCounts).length > 0 && (
+            {Object.keys(period === 'all' ? allEmotionCounts : filteredEmotionCounts).length > 0 && (
               <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
-                <h3 className="font-jp-bold text-gray-900 mb-4">感情の出現頻度</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-jp-bold text-gray-900">感情の出現頻度</h3>
+                  <div className="text-xs text-gray-500">
+                    {period === 'week' ? '過去7日間' : period === 'month' ? '過去30日間' : '全期間'}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {Object.entries(emotionCounts)
+                  {Object.entries(period === 'all' ? allEmotionCounts : filteredEmotionCounts)
                     .sort(([, a], [, b]) => (b as number) - (a as number))
                     .map(([emotion, count], index) => (
                       <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
