@@ -82,6 +82,7 @@ export const supabase = (() => {
 
 // 接続テスト用の関数
 export const testSupabaseConnection = async () => {
+  console.log('Supabase接続テスト開始', new Date().toISOString());
   if (!supabase) {
     console.warn('接続テスト失敗: Supabaseクライアントが未初期化');
     return { 
@@ -102,8 +103,13 @@ export const testSupabaseConnection = async () => {
       console.log('Supabase接続テスト中...', new Date().toISOString());
     }
 
+    // タイムアウト付きのfetch
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒でタイムアウト
+    
     try {
       const { data, error } = await supabase.from('users').select('id').limit(1);
+      clearTimeout(timeoutId);
     
       if (error) {      
         console.error('接続テストエラー:', error.message, error);
@@ -129,14 +135,15 @@ export const testSupabaseConnection = async () => {
           details: error 
         };
       }
-      console.log('Supabase接続テスト成功');
+      console.log('Supabase接続テスト成功', new Date().toISOString());
       return { success: true, data };
-    } catch (queryError) {
-      console.error('Supabase接続テスト中のクエリエラー:', queryError);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      console.error('Supabase接続テスト中のクエリエラー:', fetchError);
       return { 
         success: false, 
-        error: queryError instanceof Error ? queryError.message : '不明なクエリエラー',
-        details: queryError
+        error: fetchError instanceof Error ? fetchError.message : '不明なクエリエラー',
+        details: fetchError
       };
     }
   } catch (error) {
@@ -308,7 +315,17 @@ export const userService = {
   },
 
   async getUserByUsername(lineUsername: string | null): Promise<User | null> {
-    if (!supabase) return null;
+    console.log(`ユーザー取得開始: "${lineUsername}" - ${new Date().toISOString()}`);
+    if (!supabase) {
+      console.log('Supabase未設定のためローカルストレージからユーザーIDを取得します');
+      // ローカルストレージからユーザーIDを取得
+      const userId = localStorage.getItem('supabase_user_id');
+      if (userId) {
+        console.log(`ローカルストレージからユーザーIDを取得: ${userId}`);
+        return { id: userId, line_username: lineUsername || '', created_at: new Date().toISOString() };
+      }
+      return null;
+    }
     if (!lineUsername) {
       console.error('ユーザー検索エラー: ユーザー名が指定されていません', new Date().toISOString());
       return null;
@@ -319,17 +336,25 @@ export const userService = {
     try {
       // Fetchリクエストをtry-catchで囲んで、ネットワークエラーを適切に処理
       try {
+        // タイムアウト付きのfetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒でタイムアウト
+        
         const { data, error } = await supabase
           .from('users')
           .select('*')
           .eq('line_username', lineUsername.trim())
           .maybeSingle();
         
+        clearTimeout(timeoutId);
+        
         console.log(`ユーザー検索クエリ実行完了: "${lineUsername.trim()}" - ${new Date().toISOString()}`);
         
         if (error) {
+          console.error(`ユーザー取得エラー: "${lineUsername}" - ${new Date().toISOString()}`, error);
           // ユーザーが見つからない場合は null を返す
           if (error.code === 'PGRST116' || error.message.includes('No rows found') || error.message.includes('not found')) {
+            console.log(`ユーザーが見つかりません: "${lineUsername}" - ${new Date().toISOString()}`);
             console.log(`ユーザー検索結果: "${lineUsername.trim()}" - ユーザーが見つかりません - ${timestamp}`);
             return null;
           }
@@ -339,6 +364,7 @@ export const userService = {
           throw error;
         }
         
+        console.log(`ユーザー取得成功: "${lineUsername}" - ${new Date().toISOString()}`);
         console.log(`ユーザー検索結果: "${lineUsername.trim()}" - ${data ? `ID: ${data.id} - 見つかりました` : '見つかりませんでした'} - ${timestamp}`);
         return data || null;
       } catch (fetchError) {
@@ -348,12 +374,13 @@ export const userService = {
         // オフラインモードの場合はローカルデータを使用
         console.log('ネットワーク接続エラー - ローカルモードで続行します');
         
-        // ローカルストレージからユーザーIDを取得
-        const localUserId = localStorage.getItem('supabase_user_id');
-        if (localUserId) {
-          console.log(`ローカルストレージからユーザーIDを取得: ${localUserId}`);
+        // Fetch失敗時にローカルストレージからユーザーIDを取得
+        const userId = localStorage.getItem('supabase_user_id');
+        if (userId) {
+          console.log(`ネットワークエラー発生、ローカルストレージからユーザーIDを取得: ${userId}`);
+          console.log(`ローカルストレージからユーザーIDを取得: ${userId}`);
           return {
-            id: localUserId,
+            id: userId,
             line_username: lineUsername.trim(),
             created_at: new Date().toISOString()
           };
@@ -363,7 +390,15 @@ export const userService = {
       }
       
     } catch (error) {
+      console.error(`ユーザー取得エラー: "${lineUsername}" - ${new Date().toISOString()}`, error);
       console.error(`ユーザー取得エラー: "${lineUsername.trim()}" - ${timestamp}`, error instanceof Error ? error.message : error);
+      
+      // Fetch失敗時にローカルストレージからユーザーIDを取得
+      const userId = localStorage.getItem('supabase_user_id');
+      if (userId) {
+        console.log(`ネットワークエラー発生、ローカルストレージからユーザーIDを取得: ${userId}`);
+        return { id: userId, line_username: lineUsername.trim(), created_at: new Date().toISOString() };
+      }
       
       // エラーが発生した場合でもアプリが動作し続けるようにnullを返す
       return null;

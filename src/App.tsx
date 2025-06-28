@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Search, BookOpen, HelpCircle, Settings, User } from 'lucide-react';
-import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { Heart, Search, BookOpen, HelpCircle, Settings, User, Home } from 'lucide-react';
 import { useSupabase } from './hooks/useSupabase';
+import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
 import { useAutoSync } from './hooks/useAutoSync';
 import { getCurrentUser } from './lib/deviceAuth';
 
@@ -26,72 +27,60 @@ import DeviceAuthLogin from './components/DeviceAuthLogin';
 import DeviceAuthRegistration from './components/DeviceAuthRegistration';
 import UserDataManagement from './components/UserDataManagement';
 
-const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('home');
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [showDataMigration, setShowDataMigration] = useState(false);
-  const [showUserDataManagement, setShowUserDataManagement] = useState(false);
+function App() {
+  const [privacyConsentGiven, setPrivacyConsentGiven] = useState<boolean | null>(null);
   const [lineUsername, setLineUsername] = useState<string | null>(null);
-  const [privacyConsentGiven, setPrivacyConsentGiven] = useState<boolean>(false);
-  const [isDeviceAuthMode, setIsDeviceAuthMode] = useState(false);
-  const [isDeviceRegistered, setIsDeviceRegistered] = useState(false);
+  const [showDeviceAuth, setShowDeviceAuth] = useState(false);
+  const [deviceAuthMode, setDeviceAuthMode] = useState<'login' | 'register'>('login');
+  const [isCounselor, setIsCounselor] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
   
-  // メンテナンスモードの状態を取得
-  const { isMaintenanceMode, config, isAdminBypass, refreshStatus } = useMaintenanceStatus();
+  const { isMaintenanceMode, config, refreshStatus, isAdminBypass } = useMaintenanceStatus();
+  const { isConnected, error, retryConnection, currentUser } = useSupabase();
   
-  // Supabase接続状態を取得
-  const { isConnected, error: supabaseError, retryConnection } = useSupabase();
-  
-  // 自動同期フックを使用
+  // 自動同期フックを初期化
   useAutoSync();
 
-  // 初期化
+  // 初期化時にプライバシー同意状態とLINEユーザー名を取得
   useEffect(() => {
-    // ローカルストレージからプライバシーポリシー同意状態を取得
-    const consentGiven = localStorage.getItem('privacyConsentGiven');
-    if (consentGiven === 'true') {
-      setPrivacyConsentGiven(true);
-    }
+    const consentGiven = localStorage.getItem('privacyConsentGiven') === 'true';
+    setPrivacyConsentGiven(consentGiven);
     
-    // ローカルストレージからLINEユーザー名を取得
     const savedUsername = localStorage.getItem('line-username');
     if (savedUsername) {
       setLineUsername(savedUsername);
     }
     
-    // デバイス認証モードかどうかをチェック
-    const deviceAuthEnabled = localStorage.getItem('device_auth_enabled') === 'true';
-    setIsDeviceAuthMode(deviceAuthEnabled);
-    
-    // デバイスが登録済みかどうかをチェック
-    const user = getCurrentUser();
-    setIsDeviceRegistered(!!user);
-    
     // カウンセラーとしてログインしているかチェック
     const counselorName = localStorage.getItem('current_counselor');
     if (counselorName) {
-      console.log('カウンセラーとしてログイン中:', counselorName);
+      setIsCounselor(true);
     }
   }, []);
 
-  // プライバシーポリシー同意処理
+  // プライバシーポリシーの同意処理
   const handlePrivacyConsent = (accepted: boolean) => {
     if (accepted) {
       localStorage.setItem('privacyConsentGiven', 'true');
       localStorage.setItem('privacyConsentDate', new Date().toISOString());
       setPrivacyConsentGiven(true);
       
-      // ユーザー名が設定されていない場合は仮のユーザー名を設定
-      if (!lineUsername) {
-        const tempUsername = `user_${Date.now()}`;
-        localStorage.setItem('line-username', tempUsername);
-        setLineUsername(tempUsername);
-      }
+      // デバイス認証画面を表示
+      setShowDeviceAuth(true);
+      setDeviceAuthMode('register');
     } else {
-      // 同意しなかった場合の処理
-      alert('プライバシーポリシーに同意いただけない場合、サービスをご利用いただけません。');
+      localStorage.setItem('privacyConsentGiven', 'false');
+      setPrivacyConsentGiven(false);
+      // 同意しない場合はウェルカムページに戻る
+      window.location.href = '/';
     }
+  };
+
+  // デバイス認証完了時の処理
+  const handleDeviceAuthComplete = (username: string) => {
+    setLineUsername(username);
+    localStorage.setItem('line-username', username);
+    setShowDeviceAuth(false);
   };
 
   // カウンセラーログイン処理
@@ -101,349 +90,196 @@ const App: React.FC = () => {
       const counselorName = prompt('カウンセラー名を入力してください', '心理カウンセラー');
       if (counselorName) {
         localStorage.setItem('current_counselor', counselorName);
-        setShowAdminPanel(true);
-        setActiveTab('admin');
-        alert(`${counselorName}としてログインしました。`);
-        
-        // メンテナンスモードの状態を更新
-        refreshStatus();
+        setIsCounselor(true);
+        alert(`${counselorName}としてログインしました`);
+        window.location.reload();
       }
     } else {
       alert('パスワードが正しくありません');
     }
   };
 
-  // デバイス認証ログイン成功時の処理
-  const handleDeviceAuthSuccess = (username: string) => {
-    localStorage.setItem('line-username', username);
-    setLineUsername(username);
-    setIsDeviceRegistered(true);
-    setActiveTab('diary');
+  // カウンセラーログアウト処理
+  const handleCounselorLogout = () => {
+    if (window.confirm('カウンセラーアカウントからログアウトしますか？')) {
+      localStorage.removeItem('current_counselor');
+      setIsCounselor(false);
+      alert('ログアウトしました');
+      window.location.reload();
+    }
   };
 
-  // メンテナンスモードが有効で管理者バイパスがない場合
+  // メンテナンスモード中の場合
   if (isMaintenanceMode && !isAdminBypass) {
     return (
       <MaintenanceMode 
         config={config!} 
-        onAdminLogin={handleCounselorLogin}
-        onRetry={refreshStatus}
+        onAdminLogin={() => refreshStatus()} 
+        onRetry={() => refreshStatus()}
       />
     );
   }
 
-  // プライバシーポリシーに同意していない場合
-  if (!privacyConsentGiven) {
+  // プライバシー同意が必要な場合
+  if (privacyConsentGiven === false || privacyConsentGiven === null) {
     return <PrivacyConsent onConsent={handlePrivacyConsent} />;
   }
 
-  // デバイス認証モードが有効で、デバイスが登録されていない場合
-  if (isDeviceAuthMode && !isDeviceRegistered) {
-    return (
-      <DeviceAuthRegistration 
-        onRegistrationComplete={handleDeviceAuthSuccess}
-        onBack={() => setIsDeviceAuthMode(false)}
-      />
-    );
+  // デバイス認証が必要な場合
+  if (showDeviceAuth) {
+    if (deviceAuthMode === 'login') {
+      return (
+        <DeviceAuthLogin
+          onLoginSuccess={handleDeviceAuthComplete}
+          onRegister={() => setDeviceAuthMode('register')}
+          onBack={() => setShowDeviceAuth(false)}
+        />
+      );
+    } else {
+      return (
+        <DeviceAuthRegistration
+          onRegistrationComplete={handleDeviceAuthComplete}
+          onBack={() => setShowDeviceAuth(false)}
+        />
+      );
+    }
   }
 
-  // デバイス認証モードが有効で、デバイスが登録済みの場合
-  if (isDeviceAuthMode && !getCurrentUser()) {
-    return (
-      <DeviceAuthLogin 
-        onLoginSuccess={handleDeviceAuthSuccess}
-        onRegister={() => setIsDeviceRegistered(false)}
-        onBack={() => setIsDeviceAuthMode(false)}
-      />
-    );
-  }
-
-  // メインコンテンツの表示
+  // メインアプリ
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* メンテナンスモード表示（管理者バイパス時） */}
-      {isMaintenanceMode && isAdminBypass && (
-        <div className="bg-red-100 p-2 text-center">
-          <div className="flex items-center justify-center space-x-2 text-red-800 text-sm font-jp-medium">
-            <span>⚠️ メンテナンスモード中（管理者アクセス）</span>
-          </div>
-        </div>
-      )}
-      
-      {/* ヘッダー */}
-      <header className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <Heart className="h-8 w-8 text-pink-500" />
-                <span className="ml-2 text-xl font-jp-bold text-gray-900">かんじょうにっき</span>
+    <Router>
+      <div className="min-h-screen bg-gray-100">
+        {/* ヘッダー */}
+        <header className="bg-white shadow-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <Link to="/" className="flex items-center space-x-2" onClick={() => setActiveTab('home')}>
+                  <Heart className="h-8 w-8 text-pink-500" />
+                  <span className="text-xl font-jp-bold text-gray-900">かんじょうにっき</span>
+                </Link>
               </div>
-            </div>
-            <div className="flex items-center">
-              {lineUsername && (
-                <span className="text-sm text-gray-600 mr-4">
-                  {lineUsername}さん
-                </span>
-              )}
-              <div className="relative">
-                <button
-                  onClick={() => {
-                    const menu = document.getElementById('user-menu');
-                    if (menu) {
-                      menu.classList.toggle('hidden');
-                    }
-                  }}
-                  className="p-2 rounded-full text-gray-500 hover:text-gray-700 focus:outline-none"
-                >
-                  <User className="h-6 w-6" />
-                </button>
-                <div
-                  id="user-menu"
-                  className="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
-                >
+              <div className="flex items-center space-x-4">
+                {lineUsername && (
+                  <div className="text-sm text-gray-600 font-jp-normal hidden sm:block">
+                    {lineUsername}さん
+                  </div>
+                )}
+                {isCounselor ? (
                   <button
-                    onClick={() => {
-                      setShowAdminPanel(false);
-                      setShowChat(false);
-                      setShowDataMigration(true);
-                      setShowUserDataManagement(false);
-                      setActiveTab('data');
-                      document.getElementById('user-menu')?.classList.add('hidden');
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={handleCounselorLogout}
+                    className="text-red-600 hover:text-red-800 text-sm font-jp-medium"
                   >
-                    データ管理
+                    カウンセラーログアウト
                   </button>
-                  <button
-                    onClick={() => {
-                      setShowAdminPanel(false);
-                      setShowChat(true);
-                      setShowDataMigration(false);
-                      setShowUserDataManagement(false);
-                      setActiveTab('chat');
-                      document.getElementById('user-menu')?.classList.add('hidden');
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    カウンセラーチャット
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowAdminPanel(false);
-                      setShowChat(false);
-                      setShowDataMigration(false);
-                      setShowUserDataManagement(true);
-                      setActiveTab('user-data');
-                      document.getElementById('user-menu')?.classList.add('hidden');
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    バックアップ・復元
-                  </button>
+                ) : (
                   <button
                     onClick={handleCounselorLogin}
-                    className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
+                    className="text-blue-600 hover:text-blue-800 text-sm font-jp-medium"
                   >
                     カウンセラーログイン
                   </button>
-                </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {showAdminPanel ? (
-          <AdminPanel />
-        ) : showChat ? (
-          <Chat />
-        ) : showDataMigration ? (
-          <DataMigration />
-        ) : showUserDataManagement ? (
-          <UserDataManagement />
-        ) : (
-          <div className="px-4 py-6 sm:px-0">
-            {activeTab === 'home' && <WelcomePage />}
-            {activeTab === 'diary' && <DiaryPage />}
-            {activeTab === 'search' && <DiarySearchPage />}
-            {activeTab === 'emotions' && <EmotionTypes />}
-            {activeTab === 'howto' && <HowTo />}
-            {activeTab === 'nextsteps' && <NextSteps />}
-            {activeTab === 'firststeps' && <FirstSteps />}
-            {activeTab === 'support' && <Support />}
-            {activeTab === 'privacy' && <PrivacyPolicy />}
+        {/* メインコンテンツ */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <Routes>
+            <Route path="/" element={<WelcomePage />} />
+            <Route path="/diary" element={<DiaryPage />} />
+            <Route path="/search" element={<DiarySearchPage />} />
+            <Route path="/emotions" element={<EmotionTypes />} />
+            <Route path="/howto" element={<HowTo />} />
+            <Route path="/nextsteps" element={<NextSteps />} />
+            <Route path="/firststeps" element={<FirstSteps />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/admin" element={isCounselor ? <AdminPanel /> : <Navigate to="/" />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/data" element={<DataMigration />} />
+            <Route path="/user-data" element={<UserDataManagement />} />
+          </Routes>
+        </main>
+
+        {/* フッターナビゲーション */}
+        <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between py-3">
+              <Link
+                to="/"
+                className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === 'home' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                }`}
+                onClick={() => setActiveTab('home')}
+              >
+                <Home className="h-6 w-6" />
+                <span className="text-xs font-jp-medium">ホーム</span>
+              </Link>
+              <Link
+                to="/diary"
+                className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === 'diary' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                }`}
+                onClick={() => setActiveTab('diary')}
+              >
+                <Heart className="h-6 w-6" />
+                <span className="text-xs font-jp-medium">日記</span>
+              </Link>
+              <Link
+                to="/search"
+                className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === 'search' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                }`}
+                onClick={() => setActiveTab('search')}
+              >
+                <Search className="h-6 w-6" />
+                <span className="text-xs font-jp-medium">検索</span>
+              </Link>
+              <Link
+                to="/emotions"
+                className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === 'emotions' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                }`}
+                onClick={() => setActiveTab('emotions')}
+              >
+                <BookOpen className="h-6 w-6" />
+                <span className="text-xs font-jp-medium">感情</span>
+              </Link>
+              <Link
+                to={isCounselor ? "/admin" : "/support"}
+                className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === 'support' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                }`}
+                onClick={() => setActiveTab('support')}
+              >
+                {isCounselor ? (
+                  <>
+                    <Settings className="h-6 w-6" />
+                    <span className="text-xs font-jp-medium">管理</span>
+                  </>
+                ) : (
+                  <>
+                    <HelpCircle className="h-6 w-6" />
+                    <span className="text-xs font-jp-medium">サポート</span>
+                  </>
+                )}
+              </Link>
+            </div>
+          </div>
+        </footer>
+
+        {/* メンテナンスモードバッジ（管理者アクセス時） */}
+        {isMaintenanceMode && isAdminBypass && (
+          <div className="fixed top-4 right-4 bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-jp-medium border border-red-200 shadow-sm">
+            メンテナンスモード中（管理者アクセス）
           </div>
         )}
-      </main>
-
-      {/* フッターナビゲーション */}
-      <footer className="bg-white shadow-md fixed bottom-0 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <button
-              onClick={() => {
-                setShowAdminPanel(false);
-                setShowChat(false);
-                setShowDataMigration(false);
-                setShowUserDataManagement(false);
-                setActiveTab('home');
-              }}
-              className={`flex flex-col items-center justify-center w-1/5 ${
-                activeTab === 'home' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Heart className="h-6 w-6" />
-              <span className="text-xs mt-1">ホーム</span>
-            </button>
-            <button
-              onClick={() => {
-                setShowAdminPanel(false);
-                setShowChat(false);
-                setShowDataMigration(false);
-                setShowUserDataManagement(false);
-                setActiveTab('diary');
-              }}
-              className={`flex flex-col items-center justify-center w-1/5 ${
-                activeTab === 'diary' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <BookOpen className="h-6 w-6" />
-              <span className="text-xs mt-1">日記</span>
-            </button>
-            <button
-              onClick={() => {
-                setShowAdminPanel(false);
-                setShowChat(false);
-                setShowDataMigration(false);
-                setShowUserDataManagement(false);
-                setActiveTab('search');
-              }}
-              className={`flex flex-col items-center justify-center w-1/5 ${
-                activeTab === 'search' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Search className="h-6 w-6" />
-              <span className="text-xs mt-1">検索</span>
-            </button>
-            <button
-              onClick={() => {
-                setShowAdminPanel(false);
-                setShowChat(false);
-                setShowDataMigration(false);
-                setShowUserDataManagement(false);
-                setActiveTab('emotions');
-              }}
-              className={`flex flex-col items-center justify-center w-1/5 ${
-                activeTab === 'emotions' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <HelpCircle className="h-6 w-6" />
-              <span className="text-xs mt-1">感情</span>
-            </button>
-            <button
-              onClick={() => {
-                setShowAdminPanel(false);
-                setShowChat(false);
-                setShowDataMigration(false);
-                setShowUserDataManagement(false);
-                setActiveTab('support');
-              }}
-              className={`flex flex-col items-center justify-center w-1/5 ${
-                activeTab === 'support' || activeTab === 'howto' || activeTab === 'nextsteps' || activeTab === 'firststeps' || activeTab === 'privacy'
-                  ? 'text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Settings className="h-6 w-6" />
-              <span className="text-xs mt-1">サポート</span>
-            </button>
-          </div>
-        </div>
-      </footer>
-
-      {/* サポートメニュー（サポートタブがアクティブな場合のみ表示） */}
-      {(activeTab === 'support' || activeTab === 'howto' || activeTab === 'nextsteps' || activeTab === 'firststeps' || activeTab === 'privacy') && (
-        <div className="fixed bottom-16 left-0 right-0 bg-white shadow-md border-t border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 py-2">
-            <div className="flex overflow-x-auto space-x-4 pb-2">
-              <button
-                onClick={() => setActiveTab('support')}
-                className={`px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-                  activeTab === 'support'
-                    ? 'bg-blue-100 text-blue-800 font-jp-medium'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                サポート付き
-              </button>
-              <button
-                onClick={() => setActiveTab('howto')}
-                className={`px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-                  activeTab === 'howto'
-                    ? 'bg-blue-100 text-blue-800 font-jp-medium'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                使い方
-              </button>
-              <button
-                onClick={() => setActiveTab('firststeps')}
-                className={`px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-                  activeTab === 'firststeps'
-                    ? 'bg-blue-100 text-blue-800 font-jp-medium'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                最初にやること
-              </button>
-              <button
-                onClick={() => setActiveTab('nextsteps')}
-                className={`px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-                  activeTab === 'nextsteps'
-                    ? 'bg-blue-100 text-blue-800 font-jp-medium'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                次にやること
-              </button>
-              <button
-                onClick={() => setActiveTab('privacy')}
-                className={`px-3 py-1 text-sm rounded-full whitespace-nowrap ${
-                  activeTab === 'privacy'
-                    ? 'bg-blue-100 text-blue-800 font-jp-medium'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                プライバシー
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 接続エラー表示 */}
-      {supabaseError && (
-        <div className="fixed bottom-20 right-4 bg-red-100 border border-red-200 rounded-lg p-3 shadow-lg max-w-xs">
-          <div className="flex items-start space-x-2">
-            <div className="w-2 h-2 bg-red-500 rounded-full mt-1.5"></div>
-            <div>
-              <p className="text-red-800 font-jp-medium text-sm">接続エラー</p>
-              <p className="text-red-700 text-xs mt-1">{supabaseError}</p>
-              <button
-                onClick={retryConnection}
-                className="text-xs text-blue-600 hover:text-blue-800 mt-2 underline"
-              >
-                再接続する
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </Router>
   );
-};
+}
 
 export default App;
