@@ -97,22 +97,25 @@ export const useSupabase = () => {
     // 管理者モードの場合は初期化をスキップ
     if (isAdminMode) {
       console.log('管理者モードのため、ユーザー初期化をスキップします - 管理者IDを返します', new Date().toISOString());
-      setCurrentUser({ id: 'admin', line_username: lineUsername.trim() });
-      return { id: 'admin', line_username: lineUsername.trim() };
+      const trimmedUsername = lineUsername.trim();
+      setCurrentUser({ id: 'admin', line_username: trimmedUsername });
+      return { id: 'admin', line_username: trimmedUsername };
     }
     
     if (!isConnected) {
       console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString());
-      return { id: null, line_username: lineUsername.trim() };
+      const trimmedUsername = lineUsername.trim();
+      return { id: null, line_username: trimmedUsername };
     }
 
     const startTime = new Date().toISOString();
-    console.log(`ユーザー初期化開始: "${lineUsername.trim()}" - ${startTime}`);
+    const trimmedUsername = lineUsername.trim();
+    console.log(`ユーザー初期化開始: "${trimmedUsername}" - ${startTime}`);
 
     // 既に初期化中の場合は処理をスキップ
     if (loading) {
-      console.log(`別の初期化処理が進行中のため、現在のユーザーを返します: ${lineUsername.trim()}`, new Date().toISOString());
-      return currentUser || { id: null, line_username: lineUsername.trim() };
+      console.log(`別の初期化処理が進行中のため、現在のユーザーを返します: ${trimmedUsername}`, new Date().toISOString());
+      return currentUser || { id: null, line_username: trimmedUsername };
     }
 
     setLoading(true);
@@ -120,7 +123,6 @@ export const useSupabase = () => {
     
     try {
       // 既存ユーザーを検索
-      const trimmedUsername = lineUsername.trim();
       let user = await userService.getUserByUsername(trimmedUsername);
       console.log('ユーザー検索結果:', user ? `ユーザーが見つかりました: ${user.id}` : 'ユーザーが見つかりませんでした - 新規作成を試みます', new Date().toISOString());
       
@@ -223,10 +225,10 @@ export const useSupabase = () => {
       const errorMessage = error instanceof Error ? error.message : '不明なエラー';
       setError(errorMessage);
       console.log(`ユーザー初期化エラー: ${errorMessage}`);
-      return { id: null, line_username: trimmedUsername.trim() };
+      return { id: null, line_username: trimmedUsername };
     } finally {
       const endTime = new Date().toISOString();
-      console.log(`ユーザー初期化完了: "${trimmedUsername.trim()}" - ${endTime}`);
+      console.log(`ユーザー初期化完了: "${trimmedUsername}" - ${endTime}`);
       setTimeout(() => {
         setLoading(false);
       }, 100);
