@@ -343,7 +343,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'home' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'home' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <Home className="w-5 h-5 mr-3" />
@@ -356,7 +356,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'howto' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'howto' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <HelpCircle className="w-5 h-5 mr-3" />
@@ -369,7 +369,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'first' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'first' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <FileText className="w-5 h-5 mr-3" />
@@ -382,7 +382,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'next' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'next' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <ArrowRight className="w-5 h-5 mr-3" />
@@ -395,7 +395,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'chart' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'chart' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <BarChart2 className="w-5 h-5 mr-3" />
@@ -408,7 +408,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'support' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'support' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <Shield className="w-5 h-5 mr-3" />
@@ -421,7 +421,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'privacy' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'privacy' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <Shield className="w-5 h-5 mr-3" />
@@ -434,7 +434,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'diary' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'diary' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <BookOpen className="w-5 h-5 mr-3" />
@@ -447,7 +447,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'search' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'search' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <Search className="w-5 h-5 mr-3" />
@@ -460,7 +460,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'worthlessness' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'worthlessness' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <BarChart className="w-5 h-5 mr-3" />
@@ -473,7 +473,7 @@ function App() {
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                activeTab === 'data' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'data' ? 'bg-amber-100 text-amber-900' : 'text-gray-700 hover:bg-amber-50'
               }`}
             >
               <Database className="w-5 h-5 mr-3" />
@@ -487,7 +487,7 @@ function App() {
                   toggleMenu();
                 }}
                 className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                  activeTab === 'admin' ? 'bg-green-100 text-green-900' : 'text-green-700 hover:bg-green-50'
+                  activeTab === 'admin' ? 'bg-green-100 text-green-900' : 'text-green-700 hover:bg-amber-50'
                 }`}
               >
                 <User className="w-5 h-5 mr-3" />
@@ -502,7 +502,7 @@ function App() {
                   toggleMenu();
                 }}
                 className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
-                  activeTab === 'backup' ? 'bg-green-100 text-green-900' : 'text-green-700 hover:bg-green-50'
+                  activeTab === 'backup' ? 'bg-green-100 text-green-900' : 'text-green-700 hover:bg-amber-50'
                 }`}
               >
                 <Database className="w-5 h-5 mr-3" />
@@ -513,7 +513,7 @@ function App() {
               href="https://line.me/R/ti/p/@namisapo"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-gray-100 text-base"
+              className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-amber-50 text-base"
               onClick={toggleMenu}
             >
               <ExternalLink className="w-5 h-5 mr-3" />
@@ -529,7 +529,7 @@ function App() {
                 }
                 toggleMenu();
               }}
-              className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-50 text-base"
+              className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-amber-50 text-base"
             >
               <LogOut className="w-5 h-5 mr-3" />
               <span className="font-jp-medium">ログアウト</span>
@@ -540,14 +540,14 @@ function App() {
             {isAdmin ? (
               <button
                 onClick={handleAdminLogout}
-                className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-100 text-base"
+                className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-amber-200 text-base"
               >
                 <span className="font-jp-medium">管理者ログアウト</span>
               </button>
             ) : (
               <button
                 onClick={() => setShowAdminLogin(true)}
-                className="flex items-center px-3 py-2 w-full rounded-md text-blue-700 hover:bg-blue-100 text-base"
+                className="flex items-center px-3 py-2 w-full rounded-md text-blue-700 hover:bg-amber-200 text-base"
               >
                 <span className="font-jp-medium">カウンセラーログイン</span>
               </button>
