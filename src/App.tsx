@@ -23,6 +23,7 @@ import FirstSteps from './pages/FirstSteps';
 import HowTo from './pages/HowTo';
 import NextSteps from './pages/NextSteps';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import WorthlessnessChart from './pages/WorthlessnessChart';
 import Support from './pages/Support';
 import WelcomePage from './pages/WelcomePage';
 
@@ -590,9 +591,9 @@ function App() {
             {activeTab === 'next' && <NextSteps />}
             {activeTab === 'support' && <Support />}
             {activeTab === 'privacy' && <PrivacyPolicy />}
+            {activeTab === 'worthlessness' && <WorthlessnessChart />}
             {activeTab === 'chat' && <Chat />}
             {activeTab === 'data' && <DataMigration />}
-           {activeTab === 'worthlessness' && <EmotionTypes />}
             {activeTab === 'backup' && <UserDataManagement />}
             {activeTab === 'admin' && isAdmin && <AdminPanel />}
           </div>
