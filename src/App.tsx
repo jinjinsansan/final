@@ -536,7 +536,7 @@ function App() {
             </button>
           </nav>
           
-          <div className="p-4 border-t border-amber-200 bg-amber-100 relative z-10">
+          <div className="p-4 border-t border-amber-200 relative z-10">
             {isAdmin ? (
               <button
                 onClick={handleAdminLogout}
@@ -547,7 +547,7 @@ function App() {
             ) : (
               <button
                 onClick={() => setShowAdminLogin(true)}
-                className="flex items-center px-3 py-2 w-full rounded-md text-blue-700 hover:bg-amber-200 text-base"
+                className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-amber-50 text-base"
               >
                 <span className="font-jp-medium">カウンセラーログイン</span>
               </button>
