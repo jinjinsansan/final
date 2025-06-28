@@ -264,7 +264,7 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Heart className="w-6 h-6 text-red-500" />
+              <Heart className="w-6 h-6 text-pink-500" />
               <h1 className="ml-2 text-xl font-jp-bold text-gray-900">かんじょうにっき</h1>
             </div>
             
@@ -294,7 +294,7 @@ function App() {
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Heart className="w-6 h-6 text-red-500" />
+                <Heart className="w-6 h-6 text-pink-500" />
                 <h2 className="ml-2 text-xl font-jp-bold text-gray-900">かんじょうにっき</h2>
               </div>
               <button

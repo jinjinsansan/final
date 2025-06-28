@@ -15,7 +15,7 @@ const WelcomePage: React.FC = () => {
       <div className="z-10 flex flex-col items-center text-center px-4 max-w-md">
         {/* ハートアイコン */}
         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg mb-8">
-          <Heart className="w-12 h-12 text-orange-400" />
+          <Heart className="w-12 h-12 text-pink-500" />
         </div>
         
         {/* タイトル */}
