@@ -79,24 +79,22 @@ function App() {
   // プライバシーポリシー同意処理
   const handlePrivacyConsent = (accepted: boolean) => {
     if (accepted) {
-      const username = prompt('LINEのユーザー名を入力してください');
-      if (username) {
-        localStorage.setItem('line-username', username);
-        localStorage.setItem('privacyConsentGiven', 'true');
-        localStorage.setItem('privacyConsentDate', new Date().toISOString());
-        setLineUsername(username);
-        
-        // 同意後に自動的にSupabaseユーザーを作成して同期を開始
-        if (isConnected && autoSync.isAutoSyncEnabled) {
-          setTimeout(() => {
-            autoSync.triggerManualSync().catch(error => {
-              console.error('初期同期エラー:', error);
-            });
-          }, 1000);
-        }
-        
-        setShowPrivacyConsent(false);
+      // プライバシーポリシー同意画面でユーザー名を入力してもらうため、promptは不要
+      const username = localStorage.getItem('line-username');
+      localStorage.setItem('privacyConsentGiven', 'true');
+      localStorage.setItem('privacyConsentDate', new Date().toISOString());
+      setLineUsername(username);
+      
+      // 同意後に自動的にSupabaseユーザーを作成して同期を開始
+      if (isConnected && autoSync.isAutoSyncEnabled) {
+        setTimeout(() => {
+          autoSync.triggerManualSync().catch(error => {
+            console.error('初期同期エラー:', error);
+          });
+        }, 1000);
       }
+      
+      setShowPrivacyConsent(false);
     } else {
       alert('プライバシーポリシーに同意いただけない場合、サービスをご利用いただけません。');
     }
