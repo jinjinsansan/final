@@ -30,7 +30,10 @@ const WelcomePage: React.FC = () => {
         
         {/* はじめるボタン */}
         <button 
-          onClick={() => window.location.href = '/diary'}
+          onClick={() => {
+            const event = new CustomEvent('startApp');
+            window.dispatchEvent(event);
+          }}
           className="bg-orange-400 hover:bg-orange-500 text-white px-10 py-3 rounded-full font-jp-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
         >
           はじめる

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, BookOpen, Search, BarChart2, HelpCircle, MessageCircle, Settings, Home, User } from 'lucide-react';
+import { Heart, BookOpen, Search, BarChart2, HelpCircle, MessageCircle, Settings, Home, User, Menu, X } from 'lucide-react';
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
 import { useSupabase } from './hooks/useSupabase';
 import { useAutoSync } from './hooks/useAutoSync';
@@ -37,6 +37,7 @@ function App() {
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [showWelcomePage, setShowWelcomePage] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // カスタムフックの使用
   const { isMaintenanceMode, config, isAdminBypass } = useMaintenanceStatus();
@@ -125,6 +126,24 @@ function App() {
     setActiveTab('diary');
   };
 
+  // WelcomePageからのイベントリスナー
+  useEffect(() => {
+    const handleStartApp = () => {
+      handleStartClick();
+    };
+    
+    window.addEventListener('startApp', handleStartApp);
+    
+    return () => {
+      window.removeEventListener('startApp', handleStartApp);
+    };
+  }, []);
+
+  // メニューの開閉
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
   // メンテナンスモードの場合
   if (isMaintenanceMode && !isAdminBypass) {
     return <MaintenanceMode config={config} onRetry={retryConnection} />;
@@ -203,7 +222,13 @@ function App() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
+            <button 
+              onClick={toggleMenu}
+              className="p-2 rounded-md text-gray-500 hover:text-gray-700 focus:outline-none"
+            >
+              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+            <div className="flex items-center flex-1 justify-center">
               <Heart className="w-6 h-6 text-red-500" />
               <h1 className="ml-2 text-xl font-jp-bold text-gray-900">かんじょうにっき</h1>
             </div>
@@ -218,6 +243,158 @@ function App() {
         </div>
       </header>
 
+      {/* サイドメニュー */}
+      <div className={`fixed inset-0 z-40 transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
+        <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={toggleMenu}></div>
+        <div className="relative max-w-xs w-full h-full bg-white shadow-xl flex flex-col">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Heart className="w-6 h-6 text-red-500" />
+                <h2 className="ml-2 text-xl font-jp-bold text-gray-900">かんじょうにっき</h2>
+              </div>
+              <button
+                onClick={toggleMenu}
+                className="p-2 rounded-md text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            {lineUsername && (
+              <div className="mt-4 flex items-center space-x-2">
+                <User className="w-5 h-5 text-gray-500" />
+                <span className="text-sm font-jp-medium text-gray-700">{lineUsername}さん</span>
+              </div>
+            )}
+          </div>
+          
+          <nav className="flex-1 px-2 py-4 bg-white space-y-1 overflow-y-auto">
+            <button
+              onClick={() => {
+                handleHomeClick();
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'home' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Home className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">ホーム</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('diary');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'diary' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <BookOpen className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">日記</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('search');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'search' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Search className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">検索</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('chart');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'chart' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <BarChart2 className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">感情</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('howto');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'howto' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <HelpCircle className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">使い方</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('chat');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'chat' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <MessageCircle className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">チャット</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('data');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'data' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Settings className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">設定</span>
+            </button>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setActiveTab('admin');
+                  setShowWelcomePage(false);
+                  toggleMenu();
+                }}
+                className={`flex items-center px-3 py-2 w-full rounded-md ${
+                  activeTab === 'admin' ? 'bg-green-100 text-green-900' : 'text-green-700 hover:bg-green-50'
+                }`}
+              >
+                <User className="w-5 h-5 mr-3" />
+                <span className="font-jp-medium">管理</span>
+              </button>
+            )}
+          </nav>
+          
+          <div className="p-4 border-t border-gray-200">
+            {isAdmin ? (
+              <button
+                onClick={handleAdminLogout}
+                className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-50"
+              >
+                <span className="font-jp-medium">管理者ログアウト</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowAdminLogin(true)}
+                className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-gray-100"
+              >
+                <span className="font-jp-medium">カウンセラーログイン</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
       {/* メインコンテンツ */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* ウェルカムページ表示 */}
@@ -328,110 +505,6 @@ function App() {
         )}
       </main>
 
-      {/* フッターナビゲーション */}
-      <footer className="bg-white shadow-lg border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <nav className="flex space-x-4 overflow-x-auto pb-2 w-full">
-              <button
-                onClick={handleHomeClick}
-                className={`flex flex-col items-center px-3 py-1 rounded-md transition-colors ${
-                  activeTab === 'home' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Home className="w-5 h-5" />
-                <span className="text-xs mt-1">ホーム</span>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('diary');
-                  setShowWelcomePage(false);
-                }}
-                className={`flex flex-col items-center px-3 py-1 rounded-md transition-colors ${
-                  activeTab === 'diary' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <BookOpen className="w-5 h-5" />
-                <span className="text-xs mt-1">日記</span>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('search');
-                  setShowWelcomePage(false);
-                }}
-                className={`flex flex-col items-center px-3 py-1 rounded-md transition-colors ${
-                  activeTab === 'search' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Search className="w-5 h-5" />
-                <span className="text-xs mt-1">検索</span>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('chart');
-                  setShowWelcomePage(false);
-                }}
-                className={`flex flex-col items-center px-3 py-1 rounded-md transition-colors ${
-                  activeTab === 'chart' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <BarChart2 className="w-5 h-5" />
-                <span className="text-xs mt-1">感情</span>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('howto');
-                  setShowWelcomePage(false);
-                }}
-                className={`flex flex-col items-center px-3 py-1 rounded-md transition-colors ${
-                  activeTab === 'howto' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <HelpCircle className="w-5 h-5" />
-                <span className="text-xs mt-1">使い方</span>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('chat');
-                  setShowWelcomePage(false);
-                }}
-                className={`flex flex-col items-center px-3 py-1 rounded-md transition-colors ${
-                  activeTab === 'chat' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span className="text-xs mt-1">チャット</span>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('data');
-                  setShowWelcomePage(false);
-                }}
-                className={`flex flex-col items-center px-3 py-1 rounded-md transition-colors ${
-                  activeTab === 'data' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Settings className="w-5 h-5" />
-                <span className="text-xs mt-1">設定</span>
-              </button>
-              {isAdmin && (
-                <button
-                  onClick={() => {
-                    setActiveTab('admin');
-                    setShowWelcomePage(false);
-                  }}
-                  className={`flex flex-col items-center px-3 py-1 rounded-md transition-colors ${
-                    activeTab === 'admin' ? 'text-green-600' : 'text-green-500 hover:text-green-700'
-                  }`}
-                >
-                  <User className="w-5 h-5" />
-                  <span className="text-xs mt-1">管理</span>
-                </button>
-              )}
-            </nav>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
