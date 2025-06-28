@@ -41,6 +41,7 @@ const App: React.FC = () => {
   const [showPrivacyConsent, setShowPrivacyConsent] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [lineUsername, setLineUsername] = useState<string | null>(null);
+  const [showInitialHome, setShowInitialHome] = useState(true);
   const [emotionPeriod, setEmotionPeriod] = useState<'all' | 'month' | 'week'>('all');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
@@ -694,68 +695,116 @@ const App: React.FC = () => {
     }
 
     if (currentPage === 'home') {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-50 flex items-center justify-center p-4 relative overflow-hidden">
-          {/* 水玉模様の装飾要素 */}
-          <div className="absolute inset-0 pointer-events-none">
-            {/* 大きな円形要素 */}
-            <div className="absolute top-20 left-20 w-32 h-32 bg-white rounded-full opacity-30 shadow-lg"></div>
-            <div className="absolute top-40 right-32 w-24 h-24 bg-orange-200 rounded-full opacity-40"></div>
-            <div className="absolute bottom-32 left-16 w-28 h-28 bg-amber-200 rounded-full opacity-35"></div>
-            <div className="absolute bottom-20 right-20 w-20 h-20 bg-yellow-200 rounded-full opacity-45"></div>
-            
-            {/* 中サイズの円形要素 */}
-            <div className="absolute top-32 left-1/3 w-16 h-16 bg-white rounded-full opacity-25"></div>
-            <div className="absolute top-60 right-1/4 w-14 h-14 bg-orange-100 rounded-full opacity-30"></div>
-            <div className="absolute bottom-40 left-1/2 w-18 h-18 bg-amber-100 rounded-full opacity-35"></div>
-            <div className="absolute bottom-60 right-1/3 w-12 h-12 bg-yellow-100 rounded-full opacity-40"></div>
-            
-            {/* 小さな円形要素 */}
-            <div className="absolute top-16 left-1/2 w-8 h-8 bg-white rounded-full opacity-20"></div>
-            <div className="absolute top-80 left-1/4 w-6 h-6 bg-orange-50 rounded-full opacity-25"></div>
-            <div className="absolute bottom-16 left-2/3 w-10 h-10 bg-amber-50 rounded-full opacity-30"></div>
-            <div className="absolute bottom-80 right-1/2 w-8 h-8 bg-yellow-50 rounded-full opacity-35"></div>
-            
-            {/* 追加の装飾円 */}
-            <div className="absolute top-1/4 right-16 w-22 h-22 bg-white rounded-full opacity-20 shadow-md"></div>
-            <div className="absolute top-3/4 left-1/4 w-26 h-26 bg-orange-100 rounded-full opacity-25"></div>
-            <div className="absolute top-1/2 right-1/4 w-14 h-14 bg-amber-100 rounded-full opacity-30"></div>
-            <div className="absolute top-2/3 left-1/3 w-16 h-16 bg-yellow-100 rounded-full opacity-25"></div>
-          </div>
-          
-          <div className="text-center text-gray-800">
-            {/* メインハートアイコン */}
-            <div className="mb-8 relative z-10">
-              <div className="inline-flex items-center justify-center w-32 h-32 bg-white rounded-full mb-6 shadow-lg">
-                <Heart className="w-16 h-16 text-orange-400" fill="currentColor" />
-              </div>
+      if (showInitialHome) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-50 flex items-center justify-center p-4 relative overflow-hidden">
+            {/* 水玉模様の装飾要素 */}
+            <div className="absolute inset-0 pointer-events-none">
+              {/* 大きな円形要素 */}
+              <div className="absolute top-20 left-20 w-32 h-32 bg-white rounded-full opacity-30 shadow-lg"></div>
+              <div className="absolute top-40 right-32 w-24 h-24 bg-orange-200 rounded-full opacity-40"></div>
+              <div className="absolute bottom-32 left-16 w-28 h-28 bg-amber-200 rounded-full opacity-35"></div>
+              <div className="absolute bottom-20 right-20 w-20 h-20 bg-yellow-200 rounded-full opacity-45"></div>
+              
+              {/* 中サイズの円形要素 */}
+              <div className="absolute top-32 left-1/3 w-16 h-16 bg-white rounded-full opacity-25"></div>
+              <div className="absolute top-60 right-1/4 w-14 h-14 bg-orange-100 rounded-full opacity-30"></div>
+              <div className="absolute bottom-40 left-1/2 w-18 h-18 bg-amber-100 rounded-full opacity-35"></div>
+              <div className="absolute bottom-60 right-1/3 w-12 h-12 bg-yellow-100 rounded-full opacity-40"></div>
+              
+              {/* 小さな円形要素 */}
+              <div className="absolute top-16 left-1/2 w-8 h-8 bg-white rounded-full opacity-20"></div>
+              <div className="absolute top-80 left-1/4 w-6 h-6 bg-orange-50 rounded-full opacity-25"></div>
+              <div className="absolute bottom-16 left-2/3 w-10 h-10 bg-amber-50 rounded-full opacity-30"></div>
+              <div className="absolute bottom-80 right-1/2 w-8 h-8 bg-yellow-50 rounded-full opacity-35"></div>
+              
+              {/* 追加の装飾円 */}
+              <div className="absolute top-1/4 right-16 w-22 h-22 bg-white rounded-full opacity-20 shadow-md"></div>
+              <div className="absolute top-3/4 left-1/4 w-26 h-26 bg-orange-100 rounded-full opacity-25"></div>
+              <div className="absolute top-1/2 right-1/4 w-14 h-14 bg-amber-100 rounded-full opacity-30"></div>
+              <div className="absolute top-2/3 left-1/3 w-16 h-16 bg-yellow-100 rounded-full opacity-25"></div>
             </div>
+            
+            <div className="text-center text-gray-800">
+              {/* メインハートアイコン */}
+              <div className="mb-8 relative z-10">
+                <div className="inline-flex items-center justify-center w-32 h-32 bg-white rounded-full mb-6 shadow-lg">
+                  <Heart className="w-16 h-16 text-orange-400" fill="currentColor" />
+                </div>
+              </div>
 
-            {/* メインタイトル */}
-            <h1 className="text-4xl md:text-6xl font-jp-bold mb-4 text-gray-800 relative z-10">
-              かんじょうにっき
-            </h1>
+              {/* メインタイトル */}
+              <h1 className="text-4xl md:text-6xl font-jp-bold mb-4 text-gray-800 relative z-10">
+                かんじょうにっき
+              </h1>
 
-            {/* サブタイトル */}
-            <p className="text-xl md:text-2xl font-jp-medium mb-6 text-gray-600 relative z-10">
-              自己肯定感を育てる感情日記アプリ
-            </p>
+              {/* サブタイトル */}
+              <p className="text-xl md:text-2xl font-jp-medium mb-6 text-gray-600 relative z-10">
+                自己肯定感を育てる感情日記アプリ
+              </p>
 
-            {/* はじめるボタン */}
-            <button
-              onClick={handleStartApp}
-              className="bg-orange-400 hover:bg-orange-500 text-white px-8 py-4 rounded-full font-jp-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl mb-8 relative z-10"
-            >
-              はじめる
-            </button>
+              {/* はじめるボタン */}
+              <button
+                onClick={handleStartApp}
+                className="bg-orange-400 hover:bg-orange-500 text-white px-8 py-4 rounded-full font-jp-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl mb-8 relative z-10"
+              >
+                はじめる
+              </button>
 
-            {/* 下部テキスト */}
-            <p className="mt-8 text-sm font-jp-normal text-gray-400 relative z-10">
-              一般社団法人NAMIDAサポート協会
-            </p>
+              {/* 下部テキスト */}
+              <p className="mt-8 text-sm font-jp-normal text-gray-400 relative z-10">
+                一般社団法人NAMIDAサポート協会
+              </p>
+            </div>
           </div>
-        </div>
-      );
+        );
+      } else if (lineUsername) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 relative overflow-hidden">
+            <div className="text-center text-gray-800">
+              {/* メインハートアイコン */}
+              <div className="mb-8 relative z-10">
+                <div className="inline-flex items-center justify-center w-32 h-32 bg-white rounded-full mb-6 shadow-lg">
+                  <Heart className="w-16 h-16 text-blue-500" fill="currentColor" />
+                </div>
+              </div>
+
+              {/* ウェルカムメッセージ */}
+              <h1 className="text-4xl font-jp-bold mb-4 text-gray-900 relative z-10">
+                ようこそ、{lineUsername}さん
+              </h1>
+
+              {/* サブタイトル */}
+              <p className="text-xl font-jp-medium mb-12 text-gray-700 relative z-10">
+                今日の気持ちを記録しましょう
+              </p>
+
+              {/* アクションボタン */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-lg relative z-10">
+                <button
+                  onClick={() => setCurrentPage('diary')}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-xl font-jp-bold text-xl shadow-lg transition-colors flex items-center justify-center space-x-3"
+                >
+                  <Edit3 className="w-6 h-6" />
+                  <span>日記を書く</span>
+                </button>
+                <button
+                  onClick={() => setCurrentPage('search')}
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-8 py-4 rounded-xl font-jp-bold text-xl shadow-lg transition-colors flex items-center justify-center space-x-3"
+                >
+                  <Search className="w-6 h-6" />
+                  <span>日記を検索</span>
+                </button>
+              </div>
+
+              {/* 下部テキスト */}
+              <p className="mt-16 text-sm font-jp-normal text-gray-400 relative z-10">
+                一般社団法人NAMIDAサポート協会
+              </p>
+            </div>
+          </div>
+        );
+      }
     }
 
     // その他のページのレンダリング
