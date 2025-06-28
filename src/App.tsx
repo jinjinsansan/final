@@ -79,7 +79,7 @@ function App() {
   // プライバシーポリシー同意処理
   const handlePrivacyConsent = (accepted: boolean) => {
     if (accepted) {
-      // プライバシーポリシー同意画面でユーザー名を入力してもらうため、promptは不要
+      // PrivacyConsentコンポーネントでユーザー名を入力してもらう
       const username = localStorage.getItem('line-username');
       localStorage.setItem('privacyConsentGiven', 'true');
       localStorage.setItem('privacyConsentDate', new Date().toISOString());
@@ -91,13 +91,13 @@ function App() {
           autoSync.triggerManualSync().catch(error => {
             console.error('初期同期エラー:', error);
           });
-      
+         }, 1000);
+       }
+       
       setShowPrivacyConsent(false);
     } else {
-        }, 1000);
       alert('プライバシーポリシーに同意いただけない場合、サービスをご利用いただけません。');
     }
-  };
   };
 
   // デバイス認証処理
