@@ -91,11 +91,9 @@ function App() {
           autoSync.triggerManualSync().catch(error => {
             console.error('初期同期エラー:', error);
           });
-        }, 1000);
-      }
       
       setShowPrivacyConsent(false);
-    } else {
+        }, 1000);
       alert('プライバシーポリシーに同意いただけない場合、サービスをご利用いただけません。');
     }
   };
