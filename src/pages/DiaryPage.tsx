@@ -111,14 +111,6 @@ const DiaryPage: React.FC = () => {
   // 前回の無価値感日記のスコアを取得
   useEffect(() => {
     try {
-      // ローカルストレージから日記データを取得
-      const savedEntries = localStorage.getItem('journalEntries');
-      if (savedEntries) {
-        const entries = JSON.parse(savedEntries);
-        
-        // 無価値感の日記を日付順に並べる
-        const worthlessnessEntries = entries
-    try {
       // 最初にやることページで保存されたスコアを取得
       const savedInitialScores = localStorage.getItem('initialScores');
       if (savedInitialScores) {
@@ -147,8 +139,29 @@ const DiaryPage: React.FC = () => {
           console.error('初期スコアの解析エラー:', error);
         }
       }
+      
+      // ローカルストレージから日記データを取得して前回の無価値感日記のスコアも取得
+      const savedEntries = localStorage.getItem('journalEntries');
+      if (savedEntries) {
+        const entries = JSON.parse(savedEntries);
+        
+        // 無価値感の日記を日付順に並べる
+        const worthlessnessEntries = entries
+          .filter((entry: any) => entry.emotion === '無価値感')
+          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        // 最新の無価値感日記があれば、そのスコアを前日のスコアとして設定
+        if (worthlessnessEntries.length > 0) {
+          const latestEntry = worthlessnessEntries[0];
+          setWorthlessnessScores(prev => ({
+            ...prev,
+            yesterdaySelfEsteem: latestEntry.selfEsteemScore,
+            yesterdayWorthlessness: latestEntry.worthlessnessScore
+          }));
+        }
+      }
     } catch (error) {
-      console.error('初期化エラー:', error);
+      console.error('前回の無価値感スコア取得エラー:', error);
     }
   }, []);
 
