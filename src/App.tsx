@@ -248,9 +248,9 @@ function App() {
       </header>
 
       {/* サイドメニュー */}
-      <div className={`fixed inset-0 z-40 transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
+      <div className={`fixed inset-0 z-40 ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} transition-opacity duration-300 ease-in-out`}>
         <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={toggleMenu}></div>
-        <div className="relative max-w-xs w-full h-full bg-white shadow-xl flex flex-col">
+        <div className={`relative max-w-xs w-full h-full bg-white shadow-xl flex flex-col transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -273,13 +273,13 @@ function App() {
           </div>
           
           <nav className="flex-1 px-2 py-4 bg-white space-y-1 overflow-y-auto">
-            <button
+            <button 
               onClick={() => {
                 setActiveTab('home');
                 setShowWelcomePage(true);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'home' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -292,7 +292,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'howto' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -305,7 +305,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'first' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -318,7 +318,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'next' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -331,7 +331,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'chart' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -344,7 +344,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'support' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -357,7 +357,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'privacy' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -370,7 +370,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'diary' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -383,7 +383,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'search' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -396,7 +396,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'worthlessness' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -409,7 +409,7 @@ function App() {
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
+              className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                 activeTab === 'data' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -423,7 +423,7 @@ function App() {
                   setShowWelcomePage(false);
                   toggleMenu();
                 }}
-                className={`flex items-center px-3 py-2 w-full rounded-md ${
+                className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                   activeTab === 'admin' ? 'bg-green-100 text-green-900' : 'text-green-700 hover:bg-green-50'
                 }`}
               >
@@ -438,7 +438,7 @@ function App() {
                   setShowWelcomePage(false);
                   toggleMenu();
                 }}
-                className={`flex items-center px-3 py-2 w-full rounded-md ${
+                className={`flex items-center px-3 py-2 w-full rounded-md text-base ${
                   activeTab === 'backup' ? 'bg-green-100 text-green-900' : 'text-green-700 hover:bg-green-50'
                 }`}
               >
@@ -450,7 +450,7 @@ function App() {
               href="https://line.me/R/ti/p/@namisapo"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-gray-100"
+              className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-gray-100 text-base"
               onClick={toggleMenu}
             >
               <ExternalLink className="w-5 h-5 mr-3" />
@@ -466,7 +466,7 @@ function App() {
                 }
                 toggleMenu();
               }}
-              className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-50"
+              className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-50 text-base"
             >
               <LogOut className="w-5 h-5 mr-3" />
               <span className="font-jp-medium">ログアウト</span>
@@ -477,14 +477,14 @@ function App() {
             {isAdmin ? (
               <button
                 onClick={handleAdminLogout}
-                className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-50"
+                className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-50 text-base"
               >
                 <span className="font-jp-medium">管理者ログアウト</span>
               </button>
             ) : (
               <button
                 onClick={() => setShowAdminLogin(true)}
-                className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-gray-100"
+                className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-gray-100 text-base"
               >
                 <span className="font-jp-medium">カウンセラーログイン</span>
               </button>
