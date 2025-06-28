@@ -1063,7 +1063,7 @@ const App: React.FC = () => {
               <div className="border-t border-gray-200 bg-white">
                 <div className="px-2 pt-2 pb-3 space-y-1">
                   {[
-                    { key: 'home', label: 'TOP', icon: Home },
+                    { key: 'home', label: 'ホーム', icon: Home },
                     { key: 'how-to', label: '使い方', icon: BookOpen },
                     { key: 'first-steps', label: '最初にやること', icon: Play },
                     { key: 'next-steps', label: '次にやること', icon: ArrowRight },
