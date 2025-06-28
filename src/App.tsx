@@ -307,11 +307,11 @@ function App() {
         <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={toggleMenu}></div>
         <div className={`relative max-w-md w-full h-full bg-amber-50 shadow-xl flex flex-col transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out overflow-hidden`}>
           {/* 装飾的な円形要素 */}
-          <div className="absolute top-20 left-10 w-24 h-24 bg-amber-100 rounded-full opacity-50"></div>
+          <div className="absolute top-20 left-40 w-24 h-24 bg-amber-100 rounded-full opacity-50"></div>
           <div className="absolute bottom-40 right-5 w-32 h-32 bg-amber-100 rounded-full opacity-50"></div>
-          <div className="absolute top-1/3 right-10 w-16 h-16 bg-amber-100 rounded-full opacity-30"></div>
+          <div className="absolute top-1/3 right-20 w-16 h-16 bg-amber-100 rounded-full opacity-30"></div>
           <div className="absolute bottom-1/4 left-5 w-20 h-20 bg-amber-100 rounded-full opacity-40"></div>
-          <div className="absolute top-2/3 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-amber-100 rounded-full opacity-20"></div>
+          <div className="absolute top-2/3 left-3/4 transform -translate-x-1/2 w-40 h-40 bg-amber-100 rounded-full opacity-20"></div>
           
           {/* メニュー内容 */}
           <div className="p-4 border-b border-gray-200">
@@ -540,7 +540,7 @@ function App() {
             {isAdmin ? (
               <button
                 onClick={handleAdminLogout}
-                className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-amber-200 text-base"
+                className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-amber-50 text-base"
               >
                 <span className="font-jp-medium">管理者ログアウト</span>
               </button>
