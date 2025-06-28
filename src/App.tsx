@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Search, TrendingUp, Plus, Edit3, Trash2, ChevronLeft, ChevronRight, Menu, X, BookOpen, Play, ArrowRight, Home, Heart, Share2, Shield, Settings, MessageCircle, RefreshCw, Database, AlertTriangle } from 'lucide-react';
+import homeBackground from './assets/home-background.jpg';
 import PrivacyConsent from './components/PrivacyConsent';
 import MaintenanceMode from './components/MaintenanceMode';
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
@@ -42,6 +43,7 @@ const App: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [lineUsername, setLineUsername] = useState<string | null>(null);
   const [showInitialHome, setShowInitialHome] = useState(true);
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState<boolean>(true);
   const [emotionPeriod, setEmotionPeriod] = useState<'all' | 'month' | 'week'>('all');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
@@ -212,6 +214,13 @@ const App: React.FC = () => {
       // 新規ユーザーはプライバシー同意から
       setShowPrivacyConsent(true);
     }
+  };
+
+  // ホームタブをクリックした時の処理
+  const handleHomeClick = () => {
+    setCurrentPage('home');
+    setShowWelcomeScreen(true);
+    setIsMobileMenuOpen(false);
   };
 
   // ログアウト処理
@@ -695,9 +704,16 @@ const App: React.FC = () => {
     }
 
     if (currentPage === 'home') {
-      if (showInitialHome) {
+      if (showInitialHome && showWelcomeScreen) {
         return (
-          <div className="min-h-screen bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-50 flex items-center justify-center p-4 relative overflow-hidden">
+          <div 
+            className="min-h-screen bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-50 flex items-center justify-center p-4 relative overflow-hidden"
+            style={{
+              backgroundImage: `url(${homeBackground})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
             {/* 水玉模様の装飾要素 */}
             <div className="absolute inset-0 pointer-events-none">
               {/* 大きな円形要素 */}
@@ -745,7 +761,10 @@ const App: React.FC = () => {
 
               {/* はじめるボタン */}
               <button
-                onClick={handleStartApp}
+                onClick={() => {
+                  setCurrentPage('diary');
+                  setShowWelcomeScreen(false);
+                }}
                 className="bg-orange-400 hover:bg-orange-500 text-white px-8 py-4 rounded-full font-jp-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl mb-8 relative z-10"
               >
                 はじめる
@@ -755,6 +774,37 @@ const App: React.FC = () => {
               <p className="mt-8 text-sm font-jp-normal text-gray-400 relative z-10">
                 一般社団法人NAMIDAサポート協会
               </p>
+            </div>
+          </div>
+        );
+      } else if (lineUsername && !showWelcomeScreen) {
+        return (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h1 className="text-2xl font-jp-bold text-gray-900 mb-6">ダッシュボード</h1>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                <h2 className="text-xl font-jp-bold text-gray-900 mb-4">最近の活動</h2>
+                <p className="text-gray-600 font-jp-normal">
+                  ここに最近の日記や活動が表示されます。
+                </p>
+              </div>
+              
+              <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+                <h2 className="text-xl font-jp-bold text-gray-900 mb-4">統計情報</h2>
+                <p className="text-gray-600 font-jp-normal">
+                  ここに感情の統計情報が表示されます。
+                </p>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <button
+                onClick={() => setShowWelcomeScreen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-jp-medium transition-colors"
+              >
+                TOP画面に戻る
+              </button>
             </div>
           </div>
         );
@@ -1015,10 +1065,7 @@ const App: React.FC = () => {
               <div className="flex justify-between items-center h-16">
                 <div className="flex items-center space-x-4">
                   <button
-                    onClick={() => {
-                      setCurrentPage('home');
-                      window.location.reload(); // ホームに戻る際に完全リロード
-                    }}
+                    onClick={handleHomeClick}
                     className="flex items-center space-x-2 text-gray-900 hover:text-blue-600 transition-colors mr-2"
                   >
                     <Heart className="w-6 h-6 text-pink-500" />
