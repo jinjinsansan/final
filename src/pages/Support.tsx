@@ -11,7 +11,7 @@ const Support: React.FC = () => {
         
         <div className="text-center mb-8">
           <p className="text-gray-700 font-jp-normal leading-relaxed text-sm sm:text-base">
-            一般社団法人NAMIDAサポート協会の専属カウンセラーが、<br />
+            一般社団法人NAMIDAサポート協会の専属カウンセラーが、
             かんじょうにっきの内容を定期的にチェックしています。
           </p>
         </div>
