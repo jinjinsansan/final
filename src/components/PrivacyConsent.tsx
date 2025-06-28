@@ -12,7 +12,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
   const [showBackupRestore, setShowBackupRestore] = useState(false);
   const [backupData, setBackupData] = useState<File | null>(null);
   const [restoreLoading, setRestoreLoading] = useState(false);
-  const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
+  const [restoreStatus, setRestoreStatus] = useState<{message: string, success: boolean} | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,14 +48,14 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setBackupData(e.target.files[0]);
-      setRestoreStatus(null);
+      setRestoreStatus(null); 
     }
   };
 
   // バックアップからの復元
   const handleRestoreBackup = async () => {
     if (!backupData) {
-      setRestoreStatus('バックアップファイルを選択してください。');
+      setRestoreStatus({message: 'バックアップファイルを選択してください。', success: false});
       return;
     }
     
@@ -64,7 +64,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
     }
     
     setRestoreLoading(true);
-    setRestoreStatus(null);
+    setRestoreStatus(null); 
     
     try {
       // ファイルを読み込み
@@ -73,14 +73,14 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
       fileReader.onload = (event) => {
         try {
           if (!event.target || typeof event.target.result !== 'string') {
-            throw new Error('ファイルの読み込みに失敗しました。');
+            throw new Error('ファイルの読み込みに失敗しました。'); 
           }
           
           const backupObject = JSON.parse(event.target.result);
           
           // バージョンチェック
           if (!backupObject.version) {
-            throw new Error('無効なバックアップファイルです。');
+            throw new Error('無効なバックアップファイルです。'); 
           }
           
           // データの復元
@@ -108,29 +108,29 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
             localStorage.setItem('privacyConsentDate', backupObject.privacyConsentDate);
           }
           
-          setRestoreStatus('データが正常に復元されました！同意して続行してください。');
+          setRestoreStatus({message: 'データが正常に復元されました！同意して続行してください。', success: true});
           
           // 同意チェックボックスを自動的にチェック
           setIsChecked(true);
           
         } catch (error) {
           console.error('データ復元エラー:', error);
-          setRestoreStatus('データの復元に失敗しました。有効なバックアップファイルか確認してください。');
+          setRestoreStatus({message: 'データの復元に失敗しました。有効なバックアップファイルか確認してください。', success: false});
           setRestoreLoading(false);
         }
       };
       
       fileReader.onerror = () => {
-        setRestoreStatus('ファイルの読み込みに失敗しました。');
+        setRestoreStatus({message: 'ファイルの読み込みに失敗しました。', success: false});
         setRestoreLoading(false);
       };
       
       fileReader.readAsText(backupData);
-      
+      setRestoreStatus({message: 'バックアップが正常に作成されました！', success: true});
     } catch (error) {
       console.error('バックアップ復元エラー:', error);
-      setRestoreStatus('バックアップの復元に失敗しました。');
-      setRestoreLoading(false);
+      setRestoreStatus({message: 'バックアップの復元に失敗しました。', success: false});
+      setRestoreStatus({message: 'バックアップの作成に失敗しました。', success: false});
     }
   };
 
@@ -204,18 +204,18 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
             
             {/* 復元ステータス表示 */}
             {restoreStatus && (
-              <div className={`mt-4 rounded-lg p-4 border ${
-                restoreStatus.includes('失敗') 
-                  ? 'bg-red-50 border-red-200 text-red-800' 
-                  : 'bg-green-50 border-green-200 text-green-800'
+              <div className={`mt-4 rounded-lg p-4 border animate-pulse ${
+                restoreStatus.success 
+                  ? 'bg-green-50 border-green-200 text-green-800' 
+                  : 'bg-red-50 border-red-200 text-red-800'
               }`}>
                 <div className="flex items-center space-x-2">
-                  {restoreStatus.includes('失敗') ? (
-                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                  ) : (
+                  {restoreStatus.success ? (
                     <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
                   )}
-                  <span className="font-jp-medium">{restoreStatus}</span>
+                  <span className="font-jp-medium">{restoreStatus.message}</span>
                 </div>
               </div>
             )}
@@ -320,7 +320,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
                 id="privacy-consent"
                 checked={isChecked}
                 onChange={(e) => setIsChecked(e.target.checked)}
-                className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
               />
               <label htmlFor="privacy-consent" className="text-sm text-gray-700 leading-relaxed">
                 上記のプライバシーポリシーの内容を理解し、個人情報の取り扱いについて同意します。
@@ -331,7 +331,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
               <button
                 type="submit"
                 disabled={!isChecked || restoreLoading}
-                className={`flex-1 py-3 px-6 rounded-lg font-jp-medium transition-all ${
+                className={`flex-1 py-3 px-6 rounded-lg font-jp-medium transition-all cursor-pointer ${
                   isChecked
                     ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -343,7 +343,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
                 type="button"
                 onClick={handleReject}
                 disabled={restoreLoading}
-                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-jp-medium transition-colors"
+                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-jp-medium transition-colors cursor-pointer"
               >
                 同意しない
               </button>
