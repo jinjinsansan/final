@@ -290,7 +290,7 @@ function App() {
       {/* サイドメニュー */}
       <div className={`fixed inset-0 z-40 ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} transition-opacity duration-300 ease-in-out`}>
         <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={toggleMenu}></div>
-        <div className={`relative max-w-xs w-full h-full bg-gradient-to-br from-amber-50 to-amber-100 shadow-xl flex flex-col transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
+        <div className={`relative max-w-xs w-full h-full bg-gradient-to-br from-blue-50 to-white shadow-xl flex flex-col transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -312,7 +312,7 @@ function App() {
             )}
           </div>
           
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto bg-gradient-to-b from-white to-blue-50">
             <button 
               onClick={() => {
                 setActiveTab('home');
@@ -513,18 +513,18 @@ function App() {
             </button>
           </nav>
           
-          <div className="p-4 border-t border-amber-200">
+          <div className="p-4 border-t border-blue-200 bg-blue-50">
             {isAdmin ? (
               <button
                 onClick={handleAdminLogout}
-                className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-50 text-base"
+                className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-100 text-base"
               >
                 <span className="font-jp-medium">管理者ログアウト</span>
               </button>
             ) : (
               <button
                 onClick={() => setShowAdminLogin(true)}
-                className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-gray-100 text-base"
+                className="flex items-center px-3 py-2 w-full rounded-md text-blue-700 hover:bg-blue-100 text-base"
               >
                 <span className="font-jp-medium">カウンセラーログイン</span>
               </button>
