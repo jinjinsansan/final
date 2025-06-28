@@ -36,6 +36,7 @@ function App() {
   const [isDeviceRegistration, setIsDeviceRegistration] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [showWelcomePage, setShowWelcomePage] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -93,16 +94,25 @@ function App() {
   // 管理者ログイン処理
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPassword === 'counselor123') {
-      const counselorName = prompt('カウンセラー名を入力してください');
-      if (counselorName) {
-        localStorage.setItem('current_counselor', counselorName);
+    // メールアドレスとパスワードの組み合わせをチェック
+    const counselorCredentials = [
+      { email: 'jin@namisapo.com', name: '心理カウンセラー仁', password: 'counselor123' },
+      { email: 'aoi@namisapo.com', name: '心理カウンセラーAOI', password: 'counselor123' },
+      { email: 'asami@namisapo.com', name: '心理カウンセラーあさみ', password: 'counselor123' },
+      { email: 'shu@namisapo.com', name: '心理カウンセラーSHU', password: 'counselor123' },
+      { email: 'yucha@namisapo.com', name: '心理カウンセラーゆーちゃ', password: 'counselor123' },
+      { email: 'sammy@namisapo.com', name: '心理カウンセラーSammy', password: 'counselor123' }
+    ];
+    
+    const counselor = counselorCredentials.find(c => c.email === adminEmail && c.password === adminPassword);
+    
+    if (counselor) {
+        localStorage.setItem('current_counselor', counselor.name);
         setIsAdmin(true);
         setShowAdminLogin(false);
-        alert(`${counselorName}としてログインしました。`);
-      }
+        alert(`${counselor.name}としてログインしました。`);
     } else {
-      alert('パスワードが正しくありません。');
+      alert('メールアドレスまたはパスワードが正しくありません。');
     }
   };
 
@@ -180,9 +190,28 @@ function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
-          <h1 className="text-2xl font-jp-bold text-gray-900 mb-6 text-center">カウンセラーログイン</h1>
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+              <Shield className="w-8 h-8 text-blue-600" />
+            </div>
+            <h1 className="text-2xl font-jp-bold text-gray-900 text-center">カウンセラーログイン</h1>
+            <p className="text-gray-600 text-sm mt-2">専用アカウントでログインしてください</p>
+          </div>
           
           <form onSubmit={handleAdminLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-jp-medium text-gray-700 mb-2">
+                メールアドレス
+              </label>
+              <input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                placeholder="例: jin@namisapo.com"
+              />
+            </div>
+            
             <div>
               <label className="block text-sm font-jp-medium text-gray-700 mb-2">
                 パスワード
@@ -192,8 +221,19 @@ function App() {
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal"
-                placeholder="パスワードを入力"
+                placeholder="パスワードを入力してください"
               />
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-start space-x-2">
+                <div className="text-blue-600 mt-0.5">🔒</div>
+                <div className="text-sm text-blue-800">
+                  <p className="font-jp-medium">カウンセラー専用アカウント</p>
+                  <p className="text-xs mt-1">登録されたカウンセラー用メールアドレスとパスワードを入力してください。</p>
+                  <p className="text-xs mt-1">※ アカウント情報は管理者にお問い合わせください</p>
+                </div>
+              </div>
             </div>
             
             <button
@@ -206,7 +246,7 @@ function App() {
             <button
               type="button"
               onClick={() => setShowAdminLogin(false)}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-jp-medium transition-colors"
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-jp-medium transition-colors mt-2"
             >
               キャンセル
             </button>
