@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BarChart2, Share2, Download, Filter, RefreshCw } from 'lucide-react';
+import { Calendar, LineChart, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
 
 interface InitialScore {
   selfEsteemScore: number;
@@ -285,7 +285,7 @@ const WorthlessnessChart: React.FC = () => {
           </div>
         ) : chartData.length === 0 ? (
           <div className="bg-gray-50 rounded-lg p-12 text-center">
-            <BarChart2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
               データがありません
             </h3>
@@ -320,7 +320,7 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
                 
                 {/* グラフ本体 */}
-                <div className="h-64 relative">
+                <div className="h-64 relative mb-8">
                   {/* Y軸 */}
                   <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-xs text-gray-500">
                     <div>100</div>
@@ -331,7 +331,7 @@ const WorthlessnessChart: React.FC = () => {
                   </div>
                   
                   {/* グラフエリア */}
-                  <div className="absolute left-10 right-0 top-0 bottom-0">
+                  <div className="absolute left-10 right-0 top-0 bottom-0 px-2">
                     {/* 水平線 */}
                     <div className="absolute left-0 right-0 top-0 h-px bg-gray-200"></div>
                     <div className="absolute left-0 right-0 top-1/4 h-px bg-gray-200"></div>
@@ -339,36 +339,84 @@ const WorthlessnessChart: React.FC = () => {
                     <div className="absolute left-0 right-0 top-3/4 h-px bg-gray-200"></div>
                     <div className="absolute left-0 right-0 bottom-0 h-px bg-gray-200"></div>
                     
-                    {/* データポイント */}
-                    <div className="h-full flex items-end">
+                    {/* 折れ線グラフ */}
+                    <div className="h-full relative">
+                      {/* 自己肯定感の折れ線 */}
+                      <svg className="absolute inset-0 w-full h-full overflow-visible">
+                        <polyline
+                          points={chartData.map((data, index) => {
+                            const xPos = (index / (chartData.length - 1)) * 100;
+                            const yPos = 100 - data.selfEsteemScore;
+                            return `${xPos}% ${yPos}%`;
+                          }).join(' ')}
+                          fill="none"
+                          stroke="#3b82f6"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {chartData.map((data, index) => {
+                          const xPos = (index / (chartData.length - 1)) * 100;
+                          const yPos = 100 - data.selfEsteemScore;
+                          return (
+                            <circle
+                              key={`self-esteem-${index}`}
+                              cx={`${xPos}%`}
+                              cy={`${yPos}%`}
+                              r="4"
+                              fill="#3b82f6"
+                              stroke="white"
+                              strokeWidth="1"
+                              className={`${index === 0 && period === 'all' && initialScore ? 'ring-2 ring-blue-300' : ''}`}
+                            >
+                              <title>自己肯定感: {data.selfEsteemScore}</title>
+                            </circle>
+                          );
+                        })}
+                      </svg>
+                      
+                      {/* 無価値感の折れ線 */}
+                      <svg className="absolute inset-0 w-full h-full overflow-visible">
+                        <polyline
+                          points={chartData.map((data, index) => {
+                            const xPos = (index / (chartData.length - 1)) * 100;
+                            const yPos = 100 - data.worthlessnessScore;
+                            return `${xPos}% ${yPos}%`;
+                          }).join(' ')}
+                          fill="none"
+                          stroke="#ef4444"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {chartData.map((data, index) => {
+                          const xPos = (index / (chartData.length - 1)) * 100;
+                          const yPos = 100 - data.worthlessnessScore;
+                          return (
+                            <circle
+                              key={`worthlessness-${index}`}
+                              cx={`${xPos}%`}
+                              cy={`${yPos}%`}
+                              r="4"
+                              fill="#ef4444"
+                              stroke="white"
+                              strokeWidth="1"
+                              className={`${index === 0 && period === 'all' && initialScore ? 'ring-2 ring-red-300' : ''}`}
+                            >
+                              <title>無価値感: {data.worthlessnessScore}</title>
+                            </circle>
+                          );
+                        })}
+                      </svg>
+                    </div>
+                    
+                    {/* X軸ラベル */}
+                    <div className="absolute left-0 right-0 bottom-[-24px] flex justify-between">
                       {chartData.map((data, index) => (
-                        <div key={index} className="flex-1 flex flex-col items-center justify-end h-full relative">
-                          <div className="flex items-end h-full">
-                            {/* 自己肯定感バー */}
-                            <div 
-                              className={`w-4 bg-blue-500 rounded-t-sm mx-1 ${
-                                index === 0 && period === 'all' && initialScore ? 'ring-2 ring-blue-300' : ''
-                              }`}
-                              style={{ height: `${data.selfEsteemScore}%` }}
-                              title={`自己肯定感: ${data.selfEsteemScore}`}
-                            ></div>
-                            
-                            {/* 無価値感バー */}
-                            <div 
-                              className={`w-4 bg-red-500 rounded-t-sm mx-1 ${
-                                index === 0 && period === 'all' && initialScore ? 'ring-2 ring-red-300' : ''
-                              }`}
-                              style={{ height: `${data.worthlessnessScore}%` }}
-                              title={`無価値感: ${data.worthlessnessScore}`}
-                            ></div>
-                          </div>
-                          
-                          {/* X軸ラベル */}
-                          <div className="absolute bottom-[-20px] text-xs text-gray-500">
-                            {index === 0 && period === 'all' && initialScore 
-                              ? '初期' 
-                              : formatDate(data.date)}
-                          </div>
+                        <div key={index} className="text-xs text-gray-500 transform -translate-x-1/2" style={{ left: `${(index / (chartData.length - 1)) * 100}%` }}>
+                          {index === 0 && period === 'all' && initialScore 
+                            ? '初期' 
+                            : formatDate(data.date)}
                         </div>
                       ))}
                     </div>
