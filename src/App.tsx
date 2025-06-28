@@ -305,7 +305,7 @@ function App() {
       {/* サイドメニュー */}
       <div className={`fixed inset-0 z-40 ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} transition-opacity duration-300 ease-in-out`}>
         <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={toggleMenu}></div>
-        <div className={`relative max-w-xs w-full h-full bg-amber-50 shadow-xl flex flex-col transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out overflow-hidden`}>
+        <div className={`relative max-w-md w-full h-full bg-amber-50 shadow-xl flex flex-col transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out overflow-hidden`}>
           {/* 装飾的な円形要素 */}
           <div className="absolute top-20 left-10 w-24 h-24 bg-amber-100 rounded-full opacity-50"></div>
           <div className="absolute bottom-40 right-5 w-32 h-32 bg-amber-100 rounded-full opacity-50"></div>
