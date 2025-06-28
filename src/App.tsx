@@ -250,7 +250,7 @@ function App() {
       {/* サイドメニュー */}
       <div className={`fixed inset-0 z-40 ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} transition-opacity duration-300 ease-in-out`}>
         <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={toggleMenu}></div>
-        <div className={`relative max-w-xs w-full h-full bg-white shadow-xl flex flex-col transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
+        <div className={`relative max-w-xs w-full h-full bg-gradient-to-br from-amber-50 to-amber-100 shadow-xl flex flex-col transform ${menuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -272,7 +272,7 @@ function App() {
             )}
           </div>
           
-          <nav className="flex-1 px-2 py-4 bg-white space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             <button 
               onClick={() => {
                 setActiveTab('home');
@@ -473,7 +473,7 @@ function App() {
             </button>
           </nav>
           
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-amber-200">
             {isAdmin ? (
               <button
                 onClick={handleAdminLogout}
