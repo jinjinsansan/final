@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, BookOpen, Search, BarChart2, HelpCircle, MessageCircle, Settings, Home, User, Menu, X } from 'lucide-react';
+import { Heart, BookOpen, Search, BarChart2, HelpCircle, MessageCircle, Settings, Home, User, Menu, X, FileText, ArrowRight, Shield, BarChart, Database, LogOut, ExternalLink } from 'lucide-react';
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
 import { useSupabase } from './hooks/useSupabase';
 import { useAutoSync } from './hooks/useAutoSync';
@@ -271,7 +271,8 @@ function App() {
           <nav className="flex-1 px-2 py-4 bg-white space-y-1 overflow-y-auto">
             <button
               onClick={() => {
-                handleHomeClick();
+                setActiveTab('home');
+                setShowWelcomePage(true);
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md ${
@@ -279,46 +280,7 @@ function App() {
               }`}
             >
               <Home className="w-5 h-5 mr-3" />
-              <span className="font-jp-medium">ホーム</span>
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('diary');
-                setShowWelcomePage(false);
-                toggleMenu();
-              }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
-                activeTab === 'diary' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <BookOpen className="w-5 h-5 mr-3" />
-              <span className="font-jp-medium">日記</span>
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('search');
-                setShowWelcomePage(false);
-                toggleMenu();
-              }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
-                activeTab === 'search' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <Search className="w-5 h-5 mr-3" />
-              <span className="font-jp-medium">検索</span>
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('chart');
-                setShowWelcomePage(false);
-                toggleMenu();
-              }}
-              className={`flex items-center px-3 py-2 w-full rounded-md ${
-                activeTab === 'chart' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <BarChart2 className="w-5 h-5 mr-3" />
-              <span className="font-jp-medium">感情</span>
+              <span className="font-jp-medium">TOP</span>
             </button>
             <button
               onClick={() => {
@@ -335,16 +297,107 @@ function App() {
             </button>
             <button
               onClick={() => {
-                setActiveTab('chat');
+                setActiveTab('first');
                 setShowWelcomePage(false);
                 toggleMenu();
               }}
               className={`flex items-center px-3 py-2 w-full rounded-md ${
-                activeTab === 'chat' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+                activeTab === 'first' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <MessageCircle className="w-5 h-5 mr-3" />
-              <span className="font-jp-medium">チャット</span>
+              <FileText className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">最初にやること</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('next');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'next' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <ArrowRight className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">次にやること</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('chart');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'chart' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <BarChart2 className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">感情の種類</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('support');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'support' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Shield className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">サポートについて</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('privacy');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'privacy' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Shield className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">同意文</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('diary');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'diary' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <BookOpen className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">日記</span>
+            </button>
+             <button
+              onClick={() => {
+                setActiveTab('search');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'search' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Search className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">日記検索</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('worthlessness');
+                setShowWelcomePage(false);
+                toggleMenu();
+              }}
+              className={`flex items-center px-3 py-2 w-full rounded-md ${
+                activeTab === 'worthlessness' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <BarChart className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">無価値感推移</span>
             </button>
             <button
               onClick={() => {
@@ -356,8 +409,8 @@ function App() {
                 activeTab === 'data' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <Settings className="w-5 h-5 mr-3" />
-              <span className="font-jp-medium">設定</span>
+              <Database className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">データ管理</span>
             </button>
             {isAdmin && (
               <button
@@ -371,9 +424,49 @@ function App() {
                 }`}
               >
                 <User className="w-5 h-5 mr-3" />
-                <span className="font-jp-medium">管理</span>
+                <span className="font-jp-medium">管理画面</span>
               </button>
             )}
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setActiveTab('backup');
+                  setShowWelcomePage(false);
+                  toggleMenu();
+                }}
+                className={`flex items-center px-3 py-2 w-full rounded-md ${
+                  activeTab === 'backup' ? 'bg-green-100 text-green-900' : 'text-green-700 hover:bg-green-50'
+                }`}
+              >
+                <Database className="w-5 h-5 mr-3" />
+                <span className="font-jp-medium">データ管理</span>
+              </button>
+            )}
+            <a
+              href="https://line.me/R/ti/p/@namisapo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-gray-100"
+              onClick={toggleMenu}
+            >
+              <ExternalLink className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">お問い合わせ</span>
+            </a>
+            <button
+              onClick={() => {
+                if (window.confirm('ログアウトしますか？')) {
+                  localStorage.removeItem('line-username');
+                  localStorage.removeItem('privacyConsentGiven');
+                  localStorage.removeItem('privacyConsentDate');
+                  window.location.reload();
+                }
+                toggleMenu();
+              }}
+              className="flex items-center px-3 py-2 w-full rounded-md text-red-700 hover:bg-red-50"
+            >
+              <LogOut className="w-5 h-5 mr-3" />
+              <span className="font-jp-medium">ログアウト</span>
+            </button>
           </nav>
           
           <div className="p-4 border-t border-gray-200">
@@ -491,7 +584,7 @@ function App() {
             )}
             {activeTab === 'diary' && <DiaryPage />}
             {activeTab === 'search' && <DiarySearchPage />}
-            {activeTab === 'chart' && <EmotionTypes />}
+           {activeTab === 'chart' && <EmotionTypes />}
             {activeTab === 'howto' && <HowTo />}
             {activeTab === 'first' && <FirstSteps />}
             {activeTab === 'next' && <NextSteps />}
@@ -499,6 +592,7 @@ function App() {
             {activeTab === 'privacy' && <PrivacyPolicy />}
             {activeTab === 'chat' && <Chat />}
             {activeTab === 'data' && <DataMigration />}
+           {activeTab === 'worthlessness' && <EmotionTypes />}
             {activeTab === 'backup' && <UserDataManagement />}
             {activeTab === 'admin' && isAdmin && <AdminPanel />}
           </div>
