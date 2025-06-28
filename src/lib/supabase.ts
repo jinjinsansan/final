@@ -310,37 +310,62 @@ export const userService = {
   async getUserByUsername(lineUsername: string | null): Promise<User | null> {
     if (!supabase) return null;
     if (!lineUsername) {
-      console.error('ユーザー検索エラー: ユーザー名が指定されていません');
+      console.error('ユーザー検索エラー: ユーザー名が指定されていません', new Date().toISOString());
       return null;
     }
 
     const timestamp = new Date().toISOString();
     console.log(`ユーザー検索開始 (userService): "${lineUsername.trim()}" - ${timestamp}`);
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('line_username', lineUsername.trim())
-        .maybeSingle();
-      
-      console.log(`ユーザー検索クエリ実行完了: "${lineUsername.trim()}" - ${new Date().toISOString()}`);
-      
-      if (error) {
-        // ユーザーが見つからない場合は null を返す
-        if (error.code === 'PGRST116' || error.message.includes('No rows found') || error.message.includes('not found')) {
-          console.log(`ユーザー検索結果: "${lineUsername.trim()}" - ユーザーが見つかりません - ${timestamp}`);
-          return null;
+      // Fetchリクエストをtry-catchで囲んで、ネットワークエラーを適切に処理
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('line_username', lineUsername.trim())
+          .maybeSingle();
+        
+        console.log(`ユーザー検索クエリ実行完了: "${lineUsername.trim()}" - ${new Date().toISOString()}`);
+        
+        if (error) {
+          // ユーザーが見つからない場合は null を返す
+          if (error.code === 'PGRST116' || error.message.includes('No rows found') || error.message.includes('not found')) {
+            console.log(`ユーザー検索結果: "${lineUsername.trim()}" - ユーザーが見つかりません - ${timestamp}`);
+            return null;
+          }
+          console.error(`ユーザー検索エラー: "${lineUsername.trim()}" - ${timestamp}`, error);
+          console.error('エラーコード:', error.code);
+          console.error('エラーメッセージ:', error.message);
+          throw error;
         }
-        console.error(`ユーザー検索エラー: "${lineUsername.trim()}" - ${timestamp}`, error);
-        console.error('エラーコード:', error.code);
-        console.error('エラーメッセージ:', error.message);
-        throw error;
+        
+        console.log(`ユーザー検索結果: "${lineUsername.trim()}" - ${data ? `ID: ${data.id} - 見つかりました` : '見つかりませんでした'} - ${timestamp}`);
+        return data || null;
+      } catch (fetchError) {
+        // ネットワークエラーなどのFetch失敗を処理
+        console.error(`Fetch失敗 (ネットワークエラー): "${lineUsername.trim()}" - ${new Date().toISOString()}`, fetchError);
+        
+        // オフラインモードの場合はローカルデータを使用
+        console.log('ネットワーク接続エラー - ローカルモードで続行します');
+        
+        // ローカルストレージからユーザーIDを取得
+        const localUserId = localStorage.getItem('supabase_user_id');
+        if (localUserId) {
+          console.log(`ローカルストレージからユーザーIDを取得: ${localUserId}`);
+          return {
+            id: localUserId,
+            line_username: lineUsername.trim(),
+            created_at: new Date().toISOString()
+          };
+        }
+        
+        return null;
       }
       
-      console.log(`ユーザー検索結果: "${lineUsername.trim()}" - ${data ? `ID: ${data.id} - 見つかりました` : '見つかりませんでした'} - ${timestamp}`);
-      return data || null;
     } catch (error) {
-      console.error(`ユーザー取得エラー: "${lineUsername.trim()}" - ${timestamp}`, error);
+      console.error(`ユーザー取得エラー: "${lineUsername.trim()}" - ${timestamp}`, error instanceof Error ? error.message : error);
+      
+      // エラーが発生した場合でもアプリが動作し続けるようにnullを返す
       return null;
     }
   },

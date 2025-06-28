@@ -43,10 +43,11 @@ export const useAutoSync = () => {
       console.log('自動同期: 接続状態が変わりました - 自動初期化を試みます', new Date().toISOString());
       const lineUsername = localStorage.getItem('line-username');
       if (lineUsername) {
-        console.log('自動同期: ユーザー名が見つかりました:', lineUsername, new Date().toISOString());
+        const trimmedUsername = lineUsername.trim();
+        console.log('自動同期: ユーザー名が見つかりました:', trimmedUsername, new Date().toISOString());
         // 少し遅延させて実行（他の初期化処理が完了するのを待つ）
         setTimeout(() => {
-          handleAutoInitialization(lineUsername);
+          handleAutoInitialization(trimmedUsername);
         }, 1000);
         hasInitializedRef.current = true;
       } else {
@@ -59,10 +60,11 @@ export const useAutoSync = () => {
   // 自動初期化処理
   const handleAutoInitialization = async (lineUsername: string) => {
     try {
-      console.log('自動同期: 自動初期化を開始します:', lineUsername, new Date().toISOString());
+      const trimmedUsername = lineUsername.trim();
+      console.log('自動同期: 自動初期化を開始します:', trimmedUsername, new Date().toISOString());
       setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
       
-      let user = await userService.getUserByUsername(lineUsername);
+      let user = await userService.getUserByUsername(trimmedUsername);
       console.log('自動同期: ユーザー検索結果:', user ? 'ユーザーが見つかりました' : 'ユーザーが見つかりませんでした');
       
       if (!user) {
@@ -71,15 +73,15 @@ export const useAutoSync = () => {
         }
         
         try {
-          logSecurityEvent('auto_sync_create_user', lineUsername, 'ユーザーが存在しないため、自動作成します');
+          logSecurityEvent('auto_sync_create_user', trimmedUsername, 'ユーザーが存在しないため、自動作成します');
         } catch (logError) {
           console.error('セキュリティログ記録エラー:', logError);
         }
         
-        user = await userService.createUser(lineUsername);
+        user = await userService.createUser(trimmedUsername);
         
         if (user) {
-          console.log('自動同期: ユーザーを作成しました:', user.id, new Date().toISOString());
+          console.log('自動同期: ユーザーを作成しました:', user.id, trimmedUsername, new Date().toISOString());
           setStatus(prev => ({ 
             ...prev, 
             userCreated: true, 
@@ -89,11 +91,11 @@ export const useAutoSync = () => {
           
           // ユーザー作成後、アプリの状態を更新
           if (initializeUser) {
-            await initializeUser(lineUsername); 
+            await initializeUser(trimmedUsername); 
           }
         }
       } else {
-        console.log('自動同期: ユーザーは既に存在します:', user.id, new Date().toISOString());
+        console.log('自動同期: ユーザーは既に存在します:', user.id, trimmedUsername, new Date().toISOString());
         setStatus(prev => ({ 
           ...prev, 
           userCreated: true, 
@@ -103,8 +105,8 @@ export const useAutoSync = () => {
         
         // 既存ユーザーの場合も、アプリの状態を更新
         if (initializeUser) {
-          console.log('自動同期: 既存ユーザーの状態を更新します', new Date().toISOString());
-          await initializeUser(lineUsername);
+          console.log('自動同期: 既存ユーザーの状態を更新します', trimmedUsername, new Date().toISOString());
+          await initializeUser(trimmedUsername);
         }
       }
 
@@ -116,8 +118,11 @@ export const useAutoSync = () => {
     } catch (error) {
       console.error('自動初期化エラー:', error);
       setStatus(prev => ({ 
-        ...prev, 
-        syncError: error instanceof Error ? error.message : '初期化に失敗しました',
+        ...prev,
+        // エラーメッセージを詳細に表示
+        syncError: error instanceof Error 
+          ? `初期化エラー: ${error.message}` 
+          : '初期化に失敗しました。ネットワーク接続を確認してください。',
         syncInProgress: false
       }));
     } finally {
