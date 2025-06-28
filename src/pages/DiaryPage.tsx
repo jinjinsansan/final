@@ -471,6 +471,17 @@ const DiaryPage: React.FC = () => {
   // 自己肯定感スコア変更時の無価値感スコア自動計算
   const handleSelfEsteemChange = (field: 'yesterdaySelfEsteem' | 'todaySelfEsteem', value: number) => {
     const worthlessnessField = field === 'yesterdaySelfEsteem' ? 'yesterdayWorthlessness' : 'todayWorthlessness';
+    
+    // 値が空の場合は両方のフィールドを空にする
+    if (value === null || isNaN(value)) {
+      setWorthlessnessScores(prev => ({
+        ...prev,
+        [field]: '',
+        [worthlessnessField]: ''
+      }));
+      return;
+    }
+    
     // 値を0〜100の間に制限
     const clampedValue = Math.min(Math.max(value, 0), 100);
     const calculatedWorthlessness = 100 - clampedValue;
@@ -485,6 +496,17 @@ const DiaryPage: React.FC = () => {
   // 無価値感スコア直接変更時の自己肯定感スコア自動計算
   const handleWorthlessnessChange = (field: 'yesterdayWorthlessness' | 'todayWorthlessness', value: number) => {
     const selfEsteemField = field === 'yesterdayWorthlessness' ? 'yesterdaySelfEsteem' : 'todaySelfEsteem';
+    
+    // 値が空の場合は両方のフィールドを空にする
+    if (value === null || isNaN(value)) {
+      setWorthlessnessScores(prev => ({
+        ...prev,
+        [field]: '',
+        [selfEsteemField]: ''
+      }));
+      return;
+    }
+    
     // 値を0〜100の間に制限
     const clampedValue = Math.min(Math.max(value, 0), 100);
     const calculatedSelfEsteem = 100 - clampedValue;
@@ -714,10 +736,10 @@ const DiaryPage: React.FC = () => {
                     <input
                       type="number"
                       min="1"
-                      max="100"
-                      value={worthlessnessScores.yesterdaySelfEsteem}
-                      onChange={(e) => handleSelfEsteemChange('yesterdaySelfEsteem', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                      max="99"
+                      value={worthlessnessScores.yesterdaySelfEsteem || ''}
+                      onChange={(e) => handleSelfEsteemChange('yesterdaySelfEsteem', e.target.value === '' ? NaN : parseInt(e.target.value))}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       placeholder="50"
                     />
                   </div>
@@ -728,10 +750,10 @@ const DiaryPage: React.FC = () => {
                     <input
                       type="number"
                       min="1"
-                      max="100"
-                      value={worthlessnessScores.yesterdayWorthlessness}
-                      onChange={(e) => handleWorthlessnessChange('yesterdayWorthlessness', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                      max="99"
+                      value={worthlessnessScores.yesterdayWorthlessness || ''}
+                      onChange={(e) => handleWorthlessnessChange('yesterdayWorthlessness', e.target.value === '' ? NaN : parseInt(e.target.value))}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       placeholder="50"
                     />
                   </div>
@@ -752,10 +774,10 @@ const DiaryPage: React.FC = () => {
                     <input
                       type="number"
                       min="1"
-                      max="100"
-                      value={worthlessnessScores.todaySelfEsteem}
-                      onChange={(e) => handleSelfEsteemChange('todaySelfEsteem', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                      max="99"
+                      value={worthlessnessScores.todaySelfEsteem || ''}
+                      onChange={(e) => handleSelfEsteemChange('todaySelfEsteem', e.target.value === '' ? NaN : parseInt(e.target.value))}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       placeholder="50"
                     />
                   </div>
@@ -766,10 +788,10 @@ const DiaryPage: React.FC = () => {
                     <input
                       type="number"
                       min="1"
-                      max="100"
-                      value={worthlessnessScores.todayWorthlessness}
-                      onChange={(e) => handleWorthlessnessChange('todayWorthlessness', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                      max="99"
+                      value={worthlessnessScores.todayWorthlessness || ''}
+                      onChange={(e) => handleWorthlessnessChange('todayWorthlessness', e.target.value === '' ? NaN : parseInt(e.target.value))}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       placeholder="50"
                     />
                   </div>

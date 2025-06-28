@@ -23,9 +23,19 @@ const FirstSteps: React.FC = () => {
 
   // 自己肯定感スコア変更時の無価値感スコア自動計算
   const handleSelfEsteemChange = (value: string) => {
-    const numValue = parseInt(value) || 0;
+    // 空の文字列の場合は空のまま保持
+    if (value === '') {
+      setScores({
+        ...scores,
+        selfEsteemScore: '',
+        worthlessnessScore: ''
+      });
+      return;
+    }
+    
+    const numValue = parseInt(value);
     // 値を0〜100の間に制限
-    const clampedValue = Math.min(Math.max(numValue, 0), 100);
+    const clampedValue = isNaN(numValue) ? 0 : Math.min(Math.max(numValue, 0), 100);
     const worthlessness = clampedValue > 0 ? (100 - clampedValue).toString() : '';
     setScores({
       ...scores,
@@ -36,9 +46,19 @@ const FirstSteps: React.FC = () => {
 
   // 無価値感スコア変更時の自己肯定感スコア自動計算
   const handleWorthlessnessChange = (value: string) => {
-    const numValue = parseInt(value) || 0;
+    // 空の文字列の場合は空のまま保持
+    if (value === '') {
+      setScores({
+        ...scores,
+        worthlessnessScore: '',
+        selfEsteemScore: ''
+      });
+      return;
+    }
+    
+    const numValue = parseInt(value);
     // 値を0〜100の間に制限
-    const clampedValue = Math.min(Math.max(numValue, 0), 100);
+    const clampedValue = isNaN(numValue) ? 0 : Math.min(Math.max(numValue, 0), 100);
     const selfEsteem = clampedValue > 0 ? (100 - clampedValue).toString() : '';
     setScores({
       ...scores,
@@ -51,8 +71,8 @@ const FirstSteps: React.FC = () => {
   const handleSave = () => {
     if (scores.selfEsteemScore && scores.worthlessnessScore && scores.measurementMonth && scores.measurementDay) {
       // スコアが0〜100の範囲内かチェック
-      const selfEsteemScore = parseInt(scores.selfEsteemScore);
-      const worthlessnessScore = parseInt(scores.worthlessnessScore);
+      const selfEsteemScore = parseInt(scores.selfEsteemScore) || 0;
+      const worthlessnessScore = parseInt(scores.worthlessnessScore) || 0;
       
       if (selfEsteemScore < 0 || selfEsteemScore > 100 || worthlessnessScore < 0 || worthlessnessScore > 100) {
         alert('スコアは0〜100の範囲内で入力してください。');
@@ -171,10 +191,10 @@ const FirstSteps: React.FC = () => {
                       <input
                         type="number"
                         min="1"
-                        max="100"
+                        max="99"
                         value={scores.selfEsteemScore}
                         onChange={(e) => handleSelfEsteemChange(e.target.value)}
-                        className="w-full px-3 py-2 border-b-2 border-gray-300 bg-transparent focus:border-blue-500 focus:outline-none font-jp-normal text-sm sm:text-base"
+                        className="w-full px-3 py-2 border-b-2 border-gray-300 bg-transparent focus:border-blue-500 focus:outline-none font-jp-normal text-sm sm:text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         placeholder="数値を入力"
                       />
                     ) : (
@@ -192,10 +212,10 @@ const FirstSteps: React.FC = () => {
                       <input
                         type="number"
                         min="1"
-                        max="100"
+                        max="99"
                         value={scores.worthlessnessScore}
                         onChange={(e) => handleWorthlessnessChange(e.target.value)}
-                        className="w-full px-3 py-2 border-b-2 border-gray-300 bg-transparent focus:border-blue-500 focus:outline-none font-jp-normal text-sm sm:text-base"
+                        className="w-full px-3 py-2 border-b-2 border-gray-300 bg-transparent focus:border-blue-500 focus:outline-none font-jp-normal text-sm sm:text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         placeholder="数値を入力"
                       />
                     ) : (
@@ -215,9 +235,9 @@ const FirstSteps: React.FC = () => {
                           type="number"
                           min="1"
                           max="12"
-                          value={scores.measurementMonth}
+                          value={scores.measurementMonth || ''}
                           onChange={(e) => setScores({...scores, measurementMonth: e.target.value})}
-                          className="w-12 sm:w-16 px-2 py-1 border-b-2 border-gray-300 bg-transparent focus:border-blue-500 focus:outline-none font-jp-normal text-center text-sm sm:text-base"
+                          className="w-12 sm:w-16 px-2 py-1 border-b-2 border-gray-300 bg-transparent focus:border-blue-500 focus:outline-none font-jp-normal text-center text-sm sm:text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           placeholder="月"
                         />
                         <span className="text-gray-700 font-jp-medium text-sm sm:text-base">月</span>
@@ -225,9 +245,9 @@ const FirstSteps: React.FC = () => {
                           type="number"
                           min="1"
                           max="31"
-                          value={scores.measurementDay}
+                          value={scores.measurementDay || ''}
                           onChange={(e) => setScores({...scores, measurementDay: e.target.value})}
-                          className="w-12 sm:w-16 px-2 py-1 border-b-2 border-gray-300 bg-transparent focus:border-blue-500 focus:outline-none font-jp-normal text-center text-sm sm:text-base"
+                          className="w-12 sm:w-16 px-2 py-1 border-b-2 border-gray-300 bg-transparent focus:border-blue-500 focus:outline-none font-jp-normal text-center text-sm sm:text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           placeholder="日"
                         />
                         <span className="text-gray-700 font-jp-medium text-sm sm:text-base">日</span>
