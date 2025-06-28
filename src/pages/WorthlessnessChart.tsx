@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, BarChart2, Share2, Download, Filter, RefreshCw } from 'lucide-react';
 
+interface InitialScore {
+  selfEsteemScore: number;
+  worthlessnessScore: number;
+  measurementMonth: string;
+  measurementDay: string;
+}
+
 interface EmotionCount {
   emotion: string;
   count: number;
@@ -19,6 +26,7 @@ const WorthlessnessChart: React.FC = () => {
   const [allEmotionCounts, setAllEmotionCounts] = useState<{[key: string]: number}>({});
   const [filteredEmotionCounts, setFilteredEmotionCounts] = useState<{[key: string]: number}>({});
   const [emotionCounts, setEmotionCounts] = useState<EmotionCount[]>([]);
+  const [initialScore, setInitialScore] = useState<InitialScore | null>(null);
 
   useEffect(() => {
     loadChartData();
@@ -28,7 +36,19 @@ const WorthlessnessChart: React.FC = () => {
     setLoading(true);
     try {
       // ローカルストレージから日記データを取得
+      const savedInitialScores = localStorage.getItem('initialScores');
       const savedEntries = localStorage.getItem('journalEntries');
+      
+      // 初期スコアを取得
+      if (savedInitialScores) {
+        try {
+          const parsedInitialScores = JSON.parse(savedInitialScores);
+          setInitialScore(parsedInitialScores);
+        } catch (error) {
+          console.error('初期スコア読み込みエラー:', error);
+        }
+      }
+      
       if (savedEntries) {
         const entries = JSON.parse(savedEntries);
         
@@ -41,12 +61,35 @@ const WorthlessnessChart: React.FC = () => {
         // 期間でフィルタリング
         const filteredEntries = filterByPeriod(worthlessnessEntries, period);
         
-        // チャートデータの形式に変換
-        const formattedData = filteredEntries.map((entry: any) => ({
+        // 初期スコアがあり、全期間表示の場合は初期スコアも追加
+        let formattedData = filteredEntries.map((entry: any) => ({
           date: entry.date,
           selfEsteemScore: entry.selfEsteemScore || 0,
           worthlessnessScore: entry.worthlessnessScore || 0
         }));
+        
+        // 初期スコアを追加（全期間表示の場合のみ）
+        if (initialScore && period === 'all' && formattedData.length > 0) {
+          // 初期スコアの日付を作成（最初の日記の前日）
+          const firstEntryDate = new Date(formattedData[0].date);
+          firstEntryDate.setDate(firstEntryDate.getDate() - 1);
+          const initialScoreDate = firstEntryDate.toISOString().split('T')[0];
+          
+          // 初期スコアが既に含まれていないか確認
+          const hasInitialScore = formattedData.some(data => 
+            data.selfEsteemScore === Number(initialScore.selfEsteemScore) && 
+            data.worthlessnessScore === Number(initialScore.worthlessnessScore)
+          );
+          
+          if (!hasInitialScore) {
+            // 初期スコアをデータの先頭に追加
+            formattedData = [{
+              date: initialScoreDate,
+              selfEsteemScore: Number(initialScore.selfEsteemScore),
+              worthlessnessScore: Number(initialScore.worthlessnessScore)
+            }, ...formattedData];
+          }
+        }
         
         setChartData(formattedData);
         
@@ -253,7 +296,12 @@ const WorthlessnessChart: React.FC = () => {
         ) : (
           <div className="space-y-6">
             {/* グラフ */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 overflow-x-auto">
+            <div className="bg-white rounded-lg p-4 border border-gray-200 overflow-x-auto relative">
+              {initialScore && period === 'all' && (
+                <div className="absolute top-2 left-2 bg-blue-50 rounded-lg p-2 border border-blue-200 text-xs">
+                  <span className="font-jp-medium text-blue-800">初期スコア表示中</span>
+                </div>
+              )}
               <div className="min-w-[600px]">
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center space-x-4">
@@ -275,11 +323,11 @@ const WorthlessnessChart: React.FC = () => {
                 <div className="h-64 relative">
                   {/* Y軸 */}
                   <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-xs text-gray-500">
-                    <span>100</span>
-                    <span>75</span>
-                    <span>50</span>
-                    <span>25</span>
-                    <span>0</span>
+                    <div>100</div>
+                    <div>75</div>
+                    <div>50</div>
+                    <div>25</div>
+                    <div>0</div>
                   </div>
                   
                   {/* グラフエリア */}
@@ -295,21 +343,31 @@ const WorthlessnessChart: React.FC = () => {
                     <div className="h-full flex items-end">
                       {chartData.map((data, index) => (
                         <div key={index} className="flex-1 flex flex-col items-center justify-end h-full relative">
-                          {/* 自己肯定感バー */}
-                          <div 
-                            className="w-4 bg-blue-500 rounded-t-sm mx-1"
-                            style={{ height: `${data.selfEsteemScore}%` }}
-                          ></div>
-                          
-                          {/* 無価値感バー */}
-                          <div 
-                            className="w-4 bg-red-500 rounded-t-sm mx-1 absolute bottom-0 left-6"
-                            style={{ height: `${data.worthlessnessScore}%` }}
-                          ></div>
+                          <div className="flex items-end h-full">
+                            {/* 自己肯定感バー */}
+                            <div 
+                              className={`w-4 bg-blue-500 rounded-t-sm mx-1 ${
+                                index === 0 && period === 'all' && initialScore ? 'ring-2 ring-blue-300' : ''
+                              }`}
+                              style={{ height: `${data.selfEsteemScore}%` }}
+                              title={`自己肯定感: ${data.selfEsteemScore}`}
+                            ></div>
+                            
+                            {/* 無価値感バー */}
+                            <div 
+                              className={`w-4 bg-red-500 rounded-t-sm mx-1 ${
+                                index === 0 && period === 'all' && initialScore ? 'ring-2 ring-red-300' : ''
+                              }`}
+                              style={{ height: `${data.worthlessnessScore}%` }}
+                              title={`無価値感: ${data.worthlessnessScore}`}
+                            ></div>
+                          </div>
                           
                           {/* X軸ラベル */}
                           <div className="absolute bottom-[-20px] text-xs text-gray-500">
-                            {formatDate(data.date)}
+                            {index === 0 && period === 'all' && initialScore 
+                              ? '初期' 
+                              : formatDate(data.date)}
                           </div>
                         </div>
                       ))}
@@ -322,8 +380,13 @@ const WorthlessnessChart: React.FC = () => {
             {/* 最新スコア */}
             {chartData.length > 0 && (
               <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-                <h3 className="font-jp-bold text-gray-900 mb-4">最新スコア</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-jp-bold text-gray-900">最新スコア</h3>
+                  <div className="text-xs text-gray-500">
+                    {formatDate(chartData[chartData.length - 1].date)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-white rounded-lg p-4 border border-blue-200">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700 font-jp-medium">自己肯定感</span>
@@ -341,6 +404,35 @@ const WorthlessnessChart: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                
+                {initialScore && period === 'all' && (
+                  <div className="mt-4 pt-4 border-t border-blue-200">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-jp-medium text-gray-900">初期スコア</h4>
+                      <div className="text-xs text-gray-500">
+                        {initialScore.measurementMonth}月{initialScore.measurementDay}日
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-white rounded-lg p-3 border border-blue-100">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-700 font-jp-medium text-sm">自己肯定感</span>
+                          <span className="text-xl font-jp-bold text-blue-600">
+                            {initialScore.selfEsteemScore}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 border border-red-100">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-700 font-jp-medium text-sm">無価値感</span>
+                          <span className="text-xl font-jp-bold text-red-600">
+                            {initialScore.worthlessnessScore}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             
