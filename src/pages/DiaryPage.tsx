@@ -118,21 +118,37 @@ const DiaryPage: React.FC = () => {
         
         // 無価値感の日記を日付順に並べる
         const worthlessnessEntries = entries
-          .filter((entry: any) => entry.emotion === '無価値感')
-          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        // 最新の無価値感日記があれば、そのスコアを前日のスコアとして設定
-        if (worthlessnessEntries.length > 0) {
-          const latestEntry = worthlessnessEntries[0];
-          setWorthlessnessScores(prev => ({
-            ...prev,
-            yesterdaySelfEsteem: latestEntry.selfEsteemScore,
-            yesterdayWorthlessness: latestEntry.worthlessnessScore
-          }));
+    try {
+      // 最初にやることページで保存されたスコアを取得
+      const savedInitialScores = localStorage.getItem('initialScores');
+      if (savedInitialScores) {
+        try {
+          const initialScores = JSON.parse(savedInitialScores);
+          // 数値型と文字列型の両方に対応
+          const selfEsteemScore = typeof initialScores.selfEsteemScore === 'string' 
+            ? parseInt(initialScores.selfEsteemScore) 
+            : initialScores.selfEsteemScore;
+            
+          const worthlessnessScore = typeof initialScores.worthlessnessScore === 'string'
+            ? parseInt(initialScores.worthlessnessScore)
+            : initialScores.worthlessnessScore;
+            
+          if (!isNaN(selfEsteemScore) && !isNaN(worthlessnessScore)) {
+            // 無価値感スコアの状態を更新
+            setWorthlessnessScores(prev => ({
+              ...prev,
+              yesterdaySelfEsteem: selfEsteemScore,
+              yesterdayWorthlessness: worthlessnessScore
+            }));
+            
+            console.log('初期スコアを読み込みました:', { selfEsteemScore, worthlessnessScore });
+          }
+        } catch (error) {
+          console.error('初期スコアの解析エラー:', error);
         }
       }
     } catch (error) {
-      console.error('前回の無価値感スコア取得エラー:', error);
+      console.error('初期化エラー:', error);
     }
   }, []);
 
@@ -150,6 +166,7 @@ const DiaryPage: React.FC = () => {
       // 最初にやることページで保存されたスコアを取得
       const savedInitialScores = localStorage.getItem('initialScores');
       let finalFormData = { ...formData };
+      let finalWorthlessnessScores = { ...worthlessnessScores };
       
       // 一番最初の日記で無価値感を選んだ場合、保存されたスコアを使用
       if (formData.emotion === '無価値感' && savedInitialScores) {
@@ -175,16 +192,18 @@ const DiaryPage: React.FC = () => {
             if (!isNaN(selfEsteemScore) && !isNaN(worthlessnessScore)) {
               finalFormData = {
                 ...formData,
-                selfEsteemScore: selfEsteemScore,
-                worthlessnessScore: worthlessnessScore
+                selfEsteemScore,
+                worthlessnessScore
               };
               
               // worthlessnessScoresの状態も更新
-              setWorthlessnessScores(prev => ({
-                ...prev,
+              finalWorthlessnessScores = {
+                ...worthlessnessScores,
                 todaySelfEsteem: selfEsteemScore,
                 todayWorthlessness: worthlessnessScore
-              }));
+              };
+              
+              setWorthlessnessScores(finalWorthlessnessScores);
             }
           } catch (error) {
             console.error('初期スコアの解析エラー:', error);
@@ -201,10 +220,14 @@ const DiaryPage: React.FC = () => {
         date: finalFormData.date,
         emotion: finalFormData.emotion,
         event: finalFormData.event,
-        realization: finalFormData.realization,
-        selfEsteemScore: finalFormData.emotion === '無価値感' ? worthlessnessScores.todaySelfEsteem : finalFormData.selfEsteemScore,
-        worthlessnessScore: finalFormData.emotion === '無価値感' ? worthlessnessScores.todayWorthlessness : finalFormData.worthlessnessScore
+        realization: finalFormData.realization
       };
+      
+      // 無価値感を選んだ場合はスコアを追加
+      if (finalFormData.emotion === '無価値感') {
+        newEntry.selfEsteemScore = finalWorthlessnessScores.todaySelfEsteem;
+        newEntry.worthlessnessScore = finalWorthlessnessScores.todayWorthlessness;
+      }
       
       entries.unshift(newEntry);
       localStorage.setItem('journalEntries', JSON.stringify(entries));
@@ -220,12 +243,23 @@ const DiaryPage: React.FC = () => {
         worthlessnessScore: 50,
         realization: ''
       });
-      setWorthlessnessScores({
-        yesterdaySelfEsteem: 50,
-        yesterdayWorthlessness: 50,
-        todaySelfEsteem: 50,
-        todayWorthlessness: 50
-      });
+      
+      // 無価値感を選んだ場合、次回のために今回のスコアを前日のスコアとして設定
+      if (finalFormData.emotion === '無価値感') {
+        setWorthlessnessScores({
+          yesterdaySelfEsteem: finalWorthlessnessScores.todaySelfEsteem,
+          yesterdayWorthlessness: finalWorthlessnessScores.todayWorthlessness,
+          todaySelfEsteem: 50,
+          todayWorthlessness: 50
+        });
+      } else {
+        setWorthlessnessScores({
+          yesterdaySelfEsteem: 50,
+          yesterdayWorthlessness: 50,
+          todaySelfEsteem: 50,
+          todayWorthlessness: 50
+        });
+      }
       
     } catch (error) {
       console.error('保存エラー:', error);

@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, BarChart2, Share2, Download, Filter, RefreshCw } from 'lucide-react';
 
+interface EmotionCount {
+  emotion: string;
+  count: number;
+}
+
 interface ChartData {
   date: string;
   selfEsteemScore: number;
@@ -13,6 +18,7 @@ const WorthlessnessChart: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [allEmotionCounts, setAllEmotionCounts] = useState<{[key: string]: number}>({});
   const [filteredEmotionCounts, setFilteredEmotionCounts] = useState<{[key: string]: number}>({});
+  const [emotionCounts, setEmotionCounts] = useState<EmotionCount[]>([]);
 
   useEffect(() => {
     loadChartData();
@@ -58,6 +64,14 @@ const WorthlessnessChart: React.FC = () => {
           filteredCounts[entry.emotion] = (filteredCounts[entry.emotion] || 0) + 1;
         });
         setFilteredEmotionCounts(filteredCounts);
+        
+        // 感情の出現回数を配列に変換してソート
+        const currentCounts = period === 'all' ? counts : filteredCounts;
+        const sortedEmotionCounts = Object.entries(currentCounts)
+          .map(([emotion, count]) => ({ emotion, count: count as number }))
+          .sort((a, b) => b.count - a.count);
+        
+        setEmotionCounts(sortedEmotionCounts);
       }
     } catch (error) {
       console.error('チャートデータ読み込みエラー:', error);
@@ -107,14 +121,11 @@ const WorthlessnessChart: React.FC = () => {
     
     // 感情の出現回数
     const currentEmotionCounts = period === 'all' ? allEmotionCounts : filteredEmotionCounts;
-    if (Object.keys(currentEmotionCounts).length > 0) {
+    if (emotionCounts.length > 0) {
       shareText += `【感情の出現回数】\n`;
-      Object.entries(currentEmotionCounts)
-        .sort(([, a], [, b]) => (b as number) - (a as number))
-        .slice(0, 3)
-        .forEach(([emotion, count]) => {
-          shareText += `${emotion}: ${count}回\n`;
-        });
+      emotionCounts.slice(0, 3).forEach(item => {
+        shareText += `${item.emotion}: ${item.count}回\n`;
+      });
     }
     
     shareText += `\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://apl.namisapo2.love/`;
@@ -150,14 +161,11 @@ const WorthlessnessChart: React.FC = () => {
     
     // 感情の出現回数
     const currentEmotionCounts = period === 'all' ? allEmotionCounts : filteredEmotionCounts;
-    if (Object.keys(currentEmotionCounts).length > 0) {
+    if (emotionCounts.length > 0) {
       shareText += `【感情の出現回数】\n`;
-      Object.entries(currentEmotionCounts)
-        .sort(([, a], [, b]) => (b as number) - (a as number))
-        .slice(0, 3)
-        .forEach(([emotion, count]) => {
-          shareText += `${emotion}: ${count}回\n`;
-        });
+      emotionCounts.slice(0, 3).forEach(item => {
+        shareText += `${item.emotion}: ${item.count}回\n`;
+      });
     }
     
     shareText += `\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://apl.namisapo2.love/`;
@@ -337,7 +345,7 @@ const WorthlessnessChart: React.FC = () => {
             )}
             
             {/* 感情の出現頻度 */}
-            {Object.keys(period === 'all' ? allEmotionCounts : filteredEmotionCounts).length > 0 && (
+            {emotionCounts.length > 0 && (
               <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-jp-bold text-gray-900">感情の出現頻度</h3>
@@ -346,16 +354,14 @@ const WorthlessnessChart: React.FC = () => {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {Object.entries(period === 'all' ? allEmotionCounts : filteredEmotionCounts)
-                    .sort(([, a], [, b]) => (b as number) - (a as number))
-                    .map(([emotion, count], index) => (
-                      <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
-                        <div className="text-center">
-                          <div className="text-lg font-jp-bold text-gray-900 mb-1">{emotion}</div>
-                          <div className="text-sm text-gray-600">{count}回</div>
-                        </div>
+                  {emotionCounts.map((item, index) => (
+                    <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                      <div className="text-center">
+                        <div className="text-lg font-jp-bold text-gray-900 mb-1">{item.emotion}</div>
+                        <div className="text-sm text-gray-600">{item.count}回</div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
