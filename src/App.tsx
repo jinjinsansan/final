@@ -3,7 +3,7 @@ import { Heart, BookOpen, Search, BarChart2, HelpCircle, MessageCircle, Settings
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
 import { useSupabase } from './hooks/useSupabase';
 import { useAutoSync } from './hooks/useAutoSync';
-import { isAuthenticated, getCurrentUser } from './lib/deviceAuth';
+import { isAuthenticated, getCurrentUser, getAuthSession } from './lib/deviceAuth';
 
 // コンポーネントのインポート
 import MaintenanceMode from './components/MaintenanceMode';
@@ -41,12 +41,12 @@ function App() {
   const [showWelcomePage, setShowWelcomePage] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // カスタムフックの使用
+  // カスタムフックの初期化
   const { isMaintenanceMode, config, isAdminBypass } = useMaintenanceStatus();
   const { isConnected, error: supabaseError, retryConnection } = useSupabase();
   
-  // 自動同期フックを使用
-  useAutoSync();
+  // 自動同期フックを初期化
+  const autoSync = useAutoSync();
 
   // 初期化
   useEffect(() => {
@@ -69,6 +69,13 @@ function App() {
     }
   }, []);
 
+  // 自動同期の状態を確認
+  useEffect(() => {
+    if (isConnected && autoSync.currentUser && autoSync.isAutoSyncEnabled) {
+      console.log('自動同期が有効です。5分ごとにデータが同期されます。');
+    }
+  }, [isConnected, autoSync.currentUser, autoSync.isAutoSyncEnabled]);
+
   // プライバシーポリシー同意処理
   const handlePrivacyConsent = (accepted: boolean) => {
     if (accepted) {
@@ -78,6 +85,16 @@ function App() {
         localStorage.setItem('privacyConsentGiven', 'true');
         localStorage.setItem('privacyConsentDate', new Date().toISOString());
         setLineUsername(username);
+        
+        // 同意後に自動的にSupabaseユーザーを作成して同期を開始
+        if (isConnected && autoSync.isAutoSyncEnabled) {
+          setTimeout(() => {
+            autoSync.triggerManualSync().catch(error => {
+              console.error('初期同期エラー:', error);
+            });
+          }, 1000);
+        }
+        
         setShowPrivacyConsent(false);
       }
     } else {
@@ -454,7 +471,7 @@ function App() {
               }`}
             >
               <Database className="w-5 h-5 mr-3" />
-              <span className="font-jp-medium">データ管理</span>
+              <span className="font-jp-medium">{isAdmin ? 'データ管理' : '同期設定'}</span>
             </button>
             {isAdmin && (
               <button

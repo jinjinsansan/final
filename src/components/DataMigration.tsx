@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info } from 'lucide-react';
 import { supabase, userService, syncService } from '../lib/supabase';
 import { useSupabase } from '../hooks/useSupabase';
+import { getCurrentUser } from '../lib/deviceAuth';
 
 const DataMigration: React.FC = () => {
   const [localDataCount, setLocalDataCount] = useState(0);
@@ -15,6 +16,7 @@ const DataMigration: React.FC = () => {
   const [syncDirection, setSyncDirection] = useState<'local-to-supabase' | 'supabase-to-local'>('local-to-supabase');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true);
 
   // 全体のデータ数を保持する状態
   const [totalLocalDataCount, setTotalLocalDataCount] = useState(0);
@@ -24,6 +26,10 @@ const DataMigration: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    
+    // 自動同期設定を読み込み
+    const autoSyncSetting = localStorage.getItem('auto_sync_enabled');
+    setAutoSyncEnabled(autoSyncSetting !== 'false'); // デフォルトはtrue
 
     // カウンセラーとしてログインしているかチェック
     const counselorName = localStorage.getItem('current_counselor');
@@ -106,6 +112,21 @@ const DataMigration: React.FC = () => {
     } catch (error) {
       console.error('全体データ読み込みエラー:', error);
     }
+  };
+
+  // 自動同期の有効/無効を切り替える
+  const toggleAutoSync = (enabled: boolean) => {
+    localStorage.setItem('auto_sync_enabled', enabled.toString());
+    setAutoSyncEnabled(enabled);
+    
+    try {
+      const user = getCurrentUser();
+      console.log(`自動同期が${enabled ? '有効' : '無効'}になりました - ユーザー: ${user?.lineUsername || 'unknown'}`);
+    } catch (error) {
+      console.error('ログ記録エラー:', error);
+    }
+    
+    setMigrationStatus(`自動同期が${enabled ? '有効' : '無効'}になりました`);
   };
 
   const handleCreateUser = async () => {
@@ -390,8 +411,8 @@ const DataMigration: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-          <Database className="w-8 h-8 text-blue-600" />
-          <h2 className="text-2xl font-jp-bold text-gray-900">データ管理</h2>
+            <Database className="w-8 h-8 text-blue-600" />
+            <h2 className="text-2xl font-jp-bold text-gray-900">データ管理</h2>
           </div>
           <button
             onClick={loadData}
@@ -452,43 +473,53 @@ const DataMigration: React.FC = () => {
           </div>
         </div>
 
-        {/* ユーザー作成セクション */}
-        {(!currentUser || !currentUser.id) && isConnected && !userExists && !isAdminMode && (
-          <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200 mb-6">
+        {/* 一般ユーザー向け自動同期設定 */}
+        {!isAdminMode && (
+          <div className="bg-blue-50 rounded-lg p-6 border border-blue-200 mb-6">
             <div className="flex items-start space-x-3 mb-4">
-              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1 flex-shrink-0" />
+              <RefreshCw className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-jp-bold text-gray-900 mb-2">Supabaseユーザーが見つかりません</h3>
+                <h3 className="font-jp-bold text-gray-900 mb-2">自動同期設定</h3>
                 <p className="text-gray-700 font-jp-normal mb-4">
-                  Supabaseにユーザーが存在しないため、データの同期ができません。ユーザーを作成してください。
+                  自動同期機能は5分ごとにデータをクラウドに保存します。端末を変更する際にもデータが引き継がれます。
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleCreateUser}
-              disabled={isCreatingUser}
-              className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full"
-            >
-              {isCreatingUser ? (
-                <RefreshCw className="w-5 h-5 animate-spin" />
-              ) : (
-                <Shield className="w-5 h-5" />
-              )}
-              <span>Supabaseユーザーを作成</span>
-            </button>
-            {userCreationError && (
-              <div className="mt-4 bg-red-50 rounded-lg p-4 border border-red-200">
-                <div className="flex items-center space-x-2">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
-                  <p className="text-red-800 font-jp-normal">{userCreationError}</p>
+            
+            <div className="flex items-center justify-between bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className={`w-3 h-3 rounded-full ${autoSyncEnabled ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <span className="font-jp-medium text-gray-900">自動同期</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={autoSyncEnabled} 
+                  onChange={(e) => toggleAutoSync(e.target.checked)}
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            
+            <div className="mt-4 bg-green-50 rounded-lg p-4 border border-green-200">
+              <div className="flex items-start space-x-2">
+                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-green-800 font-jp-normal">
+                  <p className="font-jp-medium mb-1">自動同期のメリット</p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li>端末変更時にデータが引き継がれます</li>
+                    <li>ブラウザのキャッシュクリアでデータが失われません</li>
+                    <li>カウンセラーがあなたの日記を確認できます</li>
+                  </ul>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
-
-        {/* データ移行セクション */}
-        {isConnected && (currentUser || isAdminMode) && (
+        
+        {/* 管理者向けデータ移行セクション */}
+        {isAdminMode && (
           <div className="bg-indigo-50 rounded-lg p-6 border border-indigo-200 mb-6">
             <div className="flex items-start space-x-3 mb-4">
               <Database className="w-6 h-6 text-indigo-600 mt-1 flex-shrink-0" />
@@ -501,7 +532,7 @@ const DataMigration: React.FC = () => {
             </div>
 
             {/* 同期方向選択 */}
-            <div className="mb-4">
+            <div className="mb-4 bg-white rounded-lg p-4 border border-gray-200">
               <div className="flex space-x-4">
                 <label className="flex items-center space-x-2">
                   <input
@@ -525,17 +556,15 @@ const DataMigration: React.FC = () => {
             </div>
 
             {/* 移行ボタン */}
-            {isAdminMode && (
-              <div className="bg-green-50 rounded-lg p-4 border border-green-200 mb-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Shield className="w-5 h-5 text-green-600" />
-                  <span className="font-jp-medium text-green-800">管理者モード</span>
-                </div>
-                <p className="text-sm text-green-700">
-                  管理者モードでは、すべてのユーザーのデータを管理できます。
-                </p>
+            <div className="bg-green-50 rounded-lg p-4 border border-green-200 mb-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <Shield className="w-5 h-5 text-green-600" />
+                <span className="font-jp-medium text-green-800">管理者モード</span>
               </div>
-            )}
+              <p className="text-sm text-green-700">
+                管理者モードでは、すべてのユーザーのデータを管理できます。
+              </p>
+            </div>
 
             <button
               onClick={handleMigrateData}
@@ -552,25 +581,10 @@ const DataMigration: React.FC = () => {
               <span>
                 {syncDirection === 'local-to-supabase'
                   ? 'ローカルデータをSupabaseに移行'
-                  : 'Supabaseデータをローカルに移行'}
+                  : 'Supabaseデータをローカルに移行'
+                }
               </span>
             </button>
-
-            {/* 同意履歴同期ボタン */}
-            {!isAdminMode && (
-            <button
-              onClick={handleSyncConsentHistories}
-              disabled={migrating}
-              className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full"
-            >
-              {migrating ? (
-                <RefreshCw className="w-5 h-5 animate-spin" />
-              ) : (
-                <Upload className="w-5 h-5" />
-              )}
-              <span>同意履歴をSupabaseに同期</span>
-            </button>
-            )}
 
             {/* 詳細設定 */}
             <div className="mt-4">
@@ -587,26 +601,6 @@ const DataMigration: React.FC = () => {
                 <div className="bg-white rounded-lg p-4 border border-indigo-200">
                 <h4 className="font-jp-bold text-gray-900 mb-3">詳細設定</h4>
                 <button
-                  onClick={handleBulkMigration}
-                  disabled={migrating}
-                  className="flex items-center justify-center space-x-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full"
-                >
-                  {migrating ? (
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Database className="w-5 h-5" />
-                  )}
-                  <span>大量データ移行（高度な処理）</span>
-                </button>
-                <p className="text-xs text-gray-500 mt-2">
-                  大量のデータを効率的に処理します。通常の移行で問題がある場合のみ使用してください。
-                </p>
-                </div>
-                
-                {isAdminMode && (
-                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                  <h4 className="font-jp-bold text-gray-900 mb-3">管理者機能</h4>
-                  <button
                     onClick={loadTotalData}
                     disabled={migrating}
                     className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full mb-3"
@@ -618,20 +612,23 @@ const DataMigration: React.FC = () => {
                     )}
                     <span>全体のデータ数を更新</span>
                   </button>
+                  
                   <button
-                    onClick={handleSyncConsentHistories}
+                    onClick={handleBulkMigration}
                     disabled={migrating}
-                    className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full mb-3"
+                    className="flex items-center justify-center space-x-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full mb-3"
                   >
                     {migrating ? (
                       <RefreshCw className="w-5 h-5 animate-spin" />
                     ) : (
-                      <Upload className="w-5 h-5" />
+                      <Database className="w-5 h-5" />
                     )}
-                    <span>すべての同意履歴を同期</span>
+                    <span>大量データ移行（高度な処理）</span>
                   </button>
+                  <p className="text-xs text-gray-500 mt-2">
+                    大量のデータを効率的に処理します。通常の移行で問題がある場合のみ使用してください。
+                  </p>
                 </div>
-                )}
               </div>
             )}
           </div>
@@ -668,22 +665,44 @@ const DataMigration: React.FC = () => {
         )}
 
         {/* 説明セクション */}
-        <div className={`mt-6 ${isAdminMode ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} rounded-lg p-4 border`}>
+        <div className={`mt-6 ${isAdminMode ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} rounded-lg p-4 border ${!isAdminMode && !migrationStatus ? 'animate-pulse' : ''}`}>
           <div className="flex items-start space-x-3">
             <Info className={`w-5 h-5 ${isAdminMode ? 'text-green-600' : 'text-blue-600'} mt-0.5 flex-shrink-0`} />
             <div className={`text-sm ${isAdminMode ? 'text-green-800' : 'text-blue-800'} font-jp-normal`}>
-              <p className="font-jp-medium mb-2">データ管理について</p>
+              <p className="font-jp-medium mb-2">{isAdminMode ? 'データ管理について' : '自動同期について'}</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>ローカルデータはブラウザに保存されています</li>
-                <li>Supabaseデータはクラウドに保存されます</li>
-                <li>{isAdminMode ? '管理者モードでは全体のデータ数が表示されます' : 'データの同期は手動で行う必要があります'}</li>
-                <li>ブラウザのキャッシュをクリアするとローカルデータは失われます</li>
-                <li>端末を変更する場合は、先にデータをSupabaseに移行してください</li>
+                {isAdminMode ? (
+                  <>
+                    <li>ローカルデータはブラウザに保存されています</li>
+                    <li>Supabaseデータはクラウドに保存されます</li>
+                    <li>管理者モードでは全体のデータ数が表示されます</li>
+                    <li>ブラウザのキャッシュをクリアするとローカルデータは失われます</li>
+                    <li>端末を変更する場合は、先にデータをSupabaseに移行してください</li>
+                  </>
+                ) : (
+                  <>
+                    <li>自動同期は5分ごとにバックグラウンドで実行されます</li>
+                    <li>ブラウザのキャッシュをクリアしても、データは安全に保存されます</li>
+                    <li>端末を変更する場合も、自動的にデータが引き継がれます</li>
+                    <li>自動同期を無効にすると、データが失われる可能性があります</li>
+                  </>
+                )}
                 {isAdminMode && <li className="font-jp-bold text-green-700">管理者モードでは、すべてのユーザーのデータを管理できます</li>}
               </ul>
             </div>
           </div>
         </div>
+        
+        {/* 最終同期時間表示 */}
+        {!isAdminMode && (
+          <div className="mt-4 text-center text-sm text-gray-500">
+            <p>
+              {localStorage.getItem('last_sync_time') 
+                ? `最終同期: ${new Date(localStorage.getItem('last_sync_time') || '').toLocaleString('ja-JP')}` 
+                : '同期履歴はまだありません'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

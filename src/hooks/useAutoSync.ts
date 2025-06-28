@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSupabase } from './useSupabase';
 import { userService, syncService, consentService } from '../lib/supabase';
-import { getCurrentUser, logSecurityEvent } from '../lib/deviceAuth';
+import { getCurrentUser, logSecurityEvent, getAuthSession } from '../lib/deviceAuth';
 
 interface AutoSyncStatus {
   isAutoSyncEnabled: boolean;
@@ -13,8 +13,9 @@ interface AutoSyncStatus {
 
 export const useAutoSync = () => {
   const { isConnected, currentUser, initializeUser } = useSupabase();
+  const [isFirstRun, setIsFirstRun] = useState(true);
   const [status, setStatus] = useState<AutoSyncStatus>({
-    isAutoSyncEnabled: false,
+    isAutoSyncEnabled: true, // デフォルトで有効
     lastSyncTime: null,
     syncInProgress: false,
     syncError: null,
@@ -26,7 +27,8 @@ export const useAutoSync = () => {
 
   // 自動同期の設定を読み込み
   useEffect(() => {
-    const autoSyncEnabled = localStorage.getItem('auto_sync_enabled') === 'true';
+    // 明示的に無効化されていない限り有効とする
+    const autoSyncEnabled = localStorage.getItem('auto_sync_enabled') !== 'false';
     const lastSync = localStorage.getItem('last_sync_time');
     
     setStatus(prev => ({
@@ -40,7 +42,7 @@ export const useAutoSync = () => {
   // 接続状態が変わった時の自動処理
   useEffect(() => {
     if (!hasInitializedRef.current && isConnected) {
-      console.log('自動同期: 接続状態が変わりました - 自動初期化を試みます', new Date().toISOString());
+      console.log('自動同期: 接続状態が変わりました - 自動初期化を開始します', new Date().toISOString());
       const lineUsername = localStorage.getItem('line-username');
       if (lineUsername) {
         const trimmedUsername = lineUsername.trim();
@@ -57,6 +59,24 @@ export const useAutoSync = () => {
     }
   }, [isConnected]);
 
+  // 初回実行時に自動的にユーザー作成と同期を行う
+  useEffect(() => {
+    if (isFirstRun && isConnected && status.isAutoSyncEnabled) {
+      const lineUsername = localStorage.getItem('line-username');
+      const session = getAuthSession();
+      
+      if (lineUsername && !session) {
+        console.log('初回実行: 自動ユーザー作成と同期を開始します', new Date().toISOString());
+        setTimeout(() => {
+          handleAutoInitialization(lineUsername);
+          setIsFirstRun(false);
+        }, 2000);
+      } else {
+        setIsFirstRun(false);
+      }
+    }
+  }, [isFirstRun, isConnected, status.isAutoSyncEnabled]);
+
   // 自動初期化処理
   const handleAutoInitialization = async (lineUsername: string) => {
     try {
@@ -66,7 +86,7 @@ export const useAutoSync = () => {
       
       let user = await userService.getUserByUsername(trimmedUsername);
       console.log('自動同期: ユーザー検索結果:', user ? 'ユーザーが見つかりました' : 'ユーザーが見つかりませんでした');
-      
+
       if (!user) {
         if (import.meta.env.DEV) {
           console.log('ユーザーが存在しないため、自動作成します', new Date().toISOString());
@@ -79,7 +99,7 @@ export const useAutoSync = () => {
         }
         
         user = await userService.createUser(trimmedUsername);
-        
+
         if (user) {
           console.log('自動同期: ユーザーを作成しました:', user.id, trimmedUsername, new Date().toISOString());
           setStatus(prev => ({ 
@@ -110,8 +130,8 @@ export const useAutoSync = () => {
         }
       }
 
-      // 2. 自動同期が有効な場合のみデータ同期
-      if (status.isAutoSyncEnabled && user) {
+      // 自動同期が有効な場合はデータ同期を実行
+      if (user) {
         console.log('自動同期: データ同期を開始します', new Date().toISOString());
         await performAutoSync(user.id);
       }
@@ -133,7 +153,7 @@ export const useAutoSync = () => {
   // 自動同期実行
   const performAutoSync = async (userId: string) => {
     try {
-      if (!userId || typeof userId !== 'string') {
+      if (!userId || typeof userId !== 'string' || !status.isAutoSyncEnabled) {
         console.error('自動同期エラー: 無効なユーザーID:', userId);
         setStatus(prev => ({ 
           ...prev, 
@@ -206,7 +226,7 @@ export const useAutoSync = () => {
   };
 
   // 自動同期の有効/無効切り替え
-  const toggleAutoSync = (enabled: boolean) => {
+  const toggleAutoSync = async (enabled: boolean) => {
     localStorage.setItem('auto_sync_enabled', enabled.toString());
 
     try {
@@ -219,13 +239,13 @@ export const useAutoSync = () => {
     setStatus(prev => ({ ...prev, isAutoSyncEnabled: enabled }));
 
     // 即座に同期を実行（非同期で）
-    setTimeout(() => {
-      if (enabled && isConnected && currentUser) {
-        performAutoSync(currentUser.id).catch(error => {
-          console.error('自動同期実行エラー:', error);
-        });
+    if (enabled && isConnected && currentUser) {
+      try {
+        await performAutoSync(currentUser.id);
+      } catch (error) {
+        console.error('自動同期実行エラー:', error);
       }
-    }, 0);
+    }
   };
 
   // 手動同期実行
@@ -253,7 +273,7 @@ export const useAutoSync = () => {
   };
 
   // 定期同期の設定（5分間隔）
-  useEffect(() => {    
+  useEffect(() => {
     if (status.isAutoSyncEnabled && isConnected && currentUser) {
       // 前回のタイマーをクリア
       if (syncTimeoutRef.current) {
@@ -262,7 +282,7 @@ export const useAutoSync = () => {
       
       syncTimeoutRef.current = setInterval(() => {
         performAutoSync(currentUser.id).catch(error => {
-          console.error('定期同期エラー:', error);
+          console.error('自動同期エラー:', error);
         });
       }, 5 * 60 * 1000); // 5分
 
@@ -276,11 +296,21 @@ export const useAutoSync = () => {
     }
   }, [status.isAutoSyncEnabled, isConnected, currentUser]);
 
+  // コンポーネントがアンマウントされる際にタイマーをクリア
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearInterval(syncTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return {
     ...status,
     toggleAutoSync,
     triggerManualSync,
     isConnected,
-    currentUser
+    currentUser,
+    performAutoSync
   };
 };
