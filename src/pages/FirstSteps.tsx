@@ -24,10 +24,12 @@ const FirstSteps: React.FC = () => {
   // 自己肯定感スコア変更時の無価値感スコア自動計算
   const handleSelfEsteemChange = (value: string) => {
     const numValue = parseInt(value) || 0;
-    const worthlessness = numValue > 0 ? (100 - numValue).toString() : '';
+    // 値を0〜100の間に制限
+    const clampedValue = Math.min(Math.max(numValue, 0), 100);
+    const worthlessness = clampedValue > 0 ? (100 - clampedValue).toString() : '';
     setScores({
       ...scores,
-      selfEsteemScore: value,
+      selfEsteemScore: clampedValue.toString(),
       worthlessnessScore: worthlessness
     });
   };
@@ -35,10 +37,12 @@ const FirstSteps: React.FC = () => {
   // 無価値感スコア変更時の自己肯定感スコア自動計算
   const handleWorthlessnessChange = (value: string) => {
     const numValue = parseInt(value) || 0;
-    const selfEsteem = numValue > 0 ? (100 - numValue).toString() : '';
+    // 値を0〜100の間に制限
+    const clampedValue = Math.min(Math.max(numValue, 0), 100);
+    const selfEsteem = clampedValue > 0 ? (100 - clampedValue).toString() : '';
     setScores({
       ...scores,
-      worthlessnessScore: value,
+      worthlessnessScore: clampedValue.toString(),
       selfEsteemScore: selfEsteem
     });
   };
@@ -46,10 +50,19 @@ const FirstSteps: React.FC = () => {
   // 保存処理
   const handleSave = () => {
     if (scores.selfEsteemScore && scores.worthlessnessScore && scores.measurementMonth && scores.measurementDay) {
+      // スコアが0〜100の範囲内かチェック
+      const selfEsteemScore = parseInt(scores.selfEsteemScore);
+      const worthlessnessScore = parseInt(scores.worthlessnessScore);
+      
+      if (selfEsteemScore < 0 || selfEsteemScore > 100 || worthlessnessScore < 0 || worthlessnessScore > 100) {
+        alert('スコアは0〜100の範囲内で入力してください。');
+        return;
+      }
+      
       // 保存前に値を数値型に変換して確実に計算が正しくなるようにする
       const numericScores = {
-        selfEsteemScore: parseInt(scores.selfEsteemScore),
-        worthlessnessScore: parseInt(scores.worthlessnessScore),
+        selfEsteemScore: selfEsteemScore,
+        worthlessnessScore: worthlessnessScore,
         measurementMonth: scores.measurementMonth,
         measurementDay: scores.measurementDay
       };

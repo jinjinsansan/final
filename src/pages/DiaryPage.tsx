@@ -168,8 +168,35 @@ const DiaryPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.emotion || !formData.event.trim()) {
-      alert('感情と出来事を入力してください。');
+    // 入力バリデーション
+    if (!formData.emotion) {
+      alert('感情を選択してください。');
+      return;
+    }
+    
+    if (!formData.event.trim()) {
+      alert('出来事を入力してください。');
+      return;
+    }
+    
+    // 無価値感を選んだ場合、スコアが0〜100の範囲内かチェック
+    if (formData.emotion === '無価値感') {
+      if (worthlessnessScores.todaySelfEsteem < 0 || worthlessnessScores.todaySelfEsteem > 100 ||
+          worthlessnessScores.todayWorthlessness < 0 || worthlessnessScores.todayWorthlessness > 100) {
+        alert('スコアは0〜100の範囲内で入力してください。');
+        return;
+      }
+      
+      if (worthlessnessScores.yesterdaySelfEsteem < 0 || worthlessnessScores.yesterdaySelfEsteem > 100 ||
+          worthlessnessScores.yesterdayWorthlessness < 0 || worthlessnessScores.yesterdayWorthlessness > 100) {
+        alert('前日のスコアは0〜100の範囲内で入力してください。');
+        return;
+      }
+    }
+    
+    if (formData.emotion === '無価値感' && 
+        (worthlessnessScores.todaySelfEsteem + worthlessnessScores.todayWorthlessness !== 100)) {
+      alert('自己肯定感スコアと無価値感スコアの合計は100になるように設定してください。');
       return;
     }
 
@@ -197,23 +224,29 @@ const DiaryPage: React.FC = () => {
             const selfEsteemScore = typeof initialScores.selfEsteemScore === 'string' 
               ? parseInt(initialScores.selfEsteemScore) 
               : initialScores.selfEsteemScore;
-              
+            
+            // 値を0〜100の間に制限
+            const clampedSelfEsteemScore = Math.min(Math.max(selfEsteemScore, 0), 100);
+            
             const worthlessnessScore = typeof initialScores.worthlessnessScore === 'string'
               ? parseInt(initialScores.worthlessnessScore)
               : initialScores.worthlessnessScore;
-              
-            if (!isNaN(selfEsteemScore) && !isNaN(worthlessnessScore)) {
+            
+            // 値を0〜100の間に制限
+            const clampedWorthlessnessScore = Math.min(Math.max(worthlessnessScore, 0), 100);
+            
+            if (!isNaN(clampedSelfEsteemScore) && !isNaN(clampedWorthlessnessScore)) {
               finalFormData = {
                 ...formData,
-                selfEsteemScore,
-                worthlessnessScore
+                selfEsteemScore: clampedSelfEsteemScore,
+                worthlessnessScore: clampedWorthlessnessScore
               };
               
               // worthlessnessScoresの状態も更新
               finalWorthlessnessScores = {
                 ...worthlessnessScores,
-                todaySelfEsteem: selfEsteemScore,
-                todayWorthlessness: worthlessnessScore
+                todaySelfEsteem: clampedSelfEsteemScore,
+                todayWorthlessness: clampedWorthlessnessScore
               };
               
               setWorthlessnessScores(finalWorthlessnessScores);
@@ -438,11 +471,13 @@ const DiaryPage: React.FC = () => {
   // 自己肯定感スコア変更時の無価値感スコア自動計算
   const handleSelfEsteemChange = (field: 'yesterdaySelfEsteem' | 'todaySelfEsteem', value: number) => {
     const worthlessnessField = field === 'yesterdaySelfEsteem' ? 'yesterdayWorthlessness' : 'todayWorthlessness';
-    const calculatedWorthlessness = 100 - value;
+    // 値を0〜100の間に制限
+    const clampedValue = Math.min(Math.max(value, 0), 100);
+    const calculatedWorthlessness = 100 - clampedValue;
     
     setWorthlessnessScores(prev => ({
       ...prev,
-      [field]: value,
+      [field]: clampedValue,
       [worthlessnessField]: calculatedWorthlessness
     }));
   };
@@ -450,11 +485,13 @@ const DiaryPage: React.FC = () => {
   // 無価値感スコア直接変更時の自己肯定感スコア自動計算
   const handleWorthlessnessChange = (field: 'yesterdayWorthlessness' | 'todayWorthlessness', value: number) => {
     const selfEsteemField = field === 'yesterdayWorthlessness' ? 'yesterdaySelfEsteem' : 'todaySelfEsteem';
-    const calculatedSelfEsteem = 100 - value;
+    // 値を0〜100の間に制限
+    const clampedValue = Math.min(Math.max(value, 0), 100);
+    const calculatedSelfEsteem = 100 - clampedValue;
     
     setWorthlessnessScores(prev => ({
       ...prev,
-      [field]: value,
+      [field]: clampedValue,
       [selfEsteemField]: calculatedSelfEsteem
     }));
   };
