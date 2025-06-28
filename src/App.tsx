@@ -93,9 +93,11 @@ function App() {
           });
       
       setShowPrivacyConsent(false);
+    } else {
         }, 1000);
       alert('プライバシーポリシーに同意いただけない場合、サービスをご利用いただけません。');
     }
+  };
   };
 
   // デバイス認証処理
