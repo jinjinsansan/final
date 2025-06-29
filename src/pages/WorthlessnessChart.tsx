@@ -385,7 +385,7 @@ const WorthlessnessChart: React.FC = () => {
                           }).join(' ')}
                           fill="none"
                           stroke="#3b82f6"
-                          strokeWidth="3"
+                          strokeWidth="4"
                           strokeLinejoin="round"
                           strokeLinecap="round"
                        />
@@ -419,7 +419,7 @@ const WorthlessnessChart: React.FC = () => {
                           }).join(' ')}
                           fill="none"
                           stroke="#ef4444"
-                          strokeWidth="3"
+                          strokeWidth="4"
                           strokeLinejoin="round"
                           strokeLinecap="round"
                        />
