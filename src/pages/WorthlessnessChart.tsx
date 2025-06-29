@@ -62,10 +62,17 @@ const WorthlessnessChart: React.FC = () => {
         console.log('全エントリー数:', entries?.length || 0);
         
         // 無価値感の日記のみをフィルタリング
-        const worthlessnessEntries = entries?.filter((entry: any) => entry.emotion === '無価値感') || [];
+        // 無価値感とポジティブな感情の日記をフィルタリング
+        const scoreEntries = entries?.filter((entry: any) => 
+          entry.emotion === '無価値感' || 
+          entry.emotion === '嬉しい' || 
+          entry.emotion === '感謝' || 
+          entry.emotion === '達成感' || 
+          entry.emotion === '幸せ'
+        ) || [];
         
         // 日記データをフォーマット
-        let formattedData = worthlessnessEntries.map((entry: any) => ({
+        let formattedData = scoreEntries.map((entry: any) => ({
           date: entry.date,
           selfEsteemScore: typeof entry.selfEsteemScore === 'number' ? entry.selfEsteemScore : 
                           (typeof entry.selfEsteemScore === 'string' ? parseInt(entry.selfEsteemScore) : 0),
@@ -344,11 +351,11 @@ const WorthlessnessChart: React.FC = () => {
         ) : displayedData.length === 0 ? (
           <div className="bg-gray-50 rounded-lg p-12 text-center">
             <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
-              データがありません
+            <h3 className="text-lg font-jp-medium text-gray-500 mb-4">
+              グラフデータがありません
             </h3>
-            <p className="text-gray-400 font-jp-normal mb-4">
-              選択した期間に無価値感を選んだ日記がありません
+            <p className="text-gray-400 font-jp-normal mb-6">
+              選択した期間に無価値感またはポジティブな感情を選んだ日記がありません
             </p>
             <button
               onClick={loadChartData}
@@ -372,11 +379,11 @@ const WorthlessnessChart: React.FC = () => {
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
                       <span className="text-sm font-jp-medium text-gray-700">自己肯定感</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <div className="w-4 h-4 bg-red-500 rounded-full"></div>
                       <span className="text-sm font-jp-medium text-gray-700">無価値感</span>
                     </div>
                   </div>
@@ -534,10 +541,13 @@ const WorthlessnessChart: React.FC = () => {
             ) : (
               <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
                 <div className="flex items-start space-x-3">
-                  <div className="text-yellow-500 text-xl">⚠️</div>
+                  <div className="text-yellow-500 text-2xl">⚠️</div>
                   <div>
-                    <p className="text-yellow-800 font-jp-medium">
-                      無価値感を選んだ日記がありません。無価値感を選んだ日記を書くとグラフが表示されます。
+                    <p className="text-yellow-800 font-jp-medium mb-2">
+                      スコアデータがありません
+                    </p>
+                    <p className="text-yellow-700 font-jp-normal text-sm">
+                      無価値感またはポジティブな感情（嬉しい、感謝、達成感、幸せ）を選んだ日記を書くとグラフが表示されます。
                     </p>
                   </div>
                 </div>
