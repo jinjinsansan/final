@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Calendar, LineChart, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
-
 dayjs.extend(isBetween);
 
 // 日付を正規化する関数（時間部分を削除）
@@ -31,27 +30,24 @@ interface EmotionCount {
   count: number;
 }
 
-interface ScoreEntry {
-  date: string;
-  selfEsteemScore: number | string;
-  worthlessnessScore: number | string;
-}
-
 interface ChartData {
   date: string;
   selfEsteemScore: number | string;
   worthlessnessScore: number | string;
 }
 
+type RangeKey = 'week' | 'month' | 'all';
+
 const WorthlessnessChart: React.FC = () => {
-  const [period, setPeriod] = useState<'week' | 'month' | 'all'>('month');
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [period, setPeriod] = useState<RangeKey>('week');
   const [loading, setLoading] = useState(true);
   const [allEmotionCounts, setAllEmotionCounts] = useState<{[key: string]: number}>({});
   const [filteredEmotionCounts, setFilteredEmotionCounts] = useState<{[key: string]: number}>({});
   const [emotionCounts, setEmotionCounts] = useState<EmotionCount[]>([]);
   const [initialScore, setInitialScore] = useState<InitialScore | null>(null);
 
+  // データの最小・最大値を保持する状態
   const [dataRange, setDataRange] = useState({
     minVal: 0,
     maxVal: 100,
@@ -183,24 +179,38 @@ const WorthlessnessChart: React.FC = () => {
         
         setEmotionCounts(sortedEmotionCounts);
       }
-      
     } catch (error) {
-      console.error('チャートデータの読み込みエラー:', error);
+      console.error('チャートデータ読み込みエラー:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterByPeriod = (entries: any[], period: RangeKey, today: Date) => {
-    if (period === 'all') return entries;
+  const filterByPeriod = (entries: any[], selectedPeriod: RangeKey, today: Date) => {
+    if (!entries || entries.length === 0) {
+      return [];
+    }
     
-    const days = period === 'week' ? 7 : 30;
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - days + 1);
+    if (selectedPeriod === 'all') {
+      return entries;
+    }
+    
+    // データが持つ最新日を基準にする
+    const latestDate = entries.reduce((max, entry) => {
+      const entryDate = new Date(entry.date);
+      return entryDate > max ? entryDate : max;
+    }, new Date(0));
+    
+    const startDate = new Date(latestDate);
+    if (selectedPeriod === 'week') {
+      startDate.setDate(startDate.getDate() - 6); // 7日間（当日含む）
+    } else {
+      startDate.setDate(startDate.getDate() - 29); // 30日間（当日含む）
+    }
     
     return entries.filter((entry: any) => {
-      const entryDate = normalizeDate(entry.date);
-      return entryDate >= startDate && entryDate <= today;
+      const entryDate = new Date(entry.date);
+      return entryDate >= startDate && entryDate <= latestDate;
     });
   };
 
@@ -227,7 +237,6 @@ const WorthlessnessChart: React.FC = () => {
     shareText += `🔴 無価値感: ${latestData?.worthlessnessScore || 0}\n\n`;
     
     // 感情の出現回数
-    const currentEmotionCounts = period === 'all' ? allEmotionCounts : filteredEmotionCounts;
     if (emotionCounts.length > 0) {
       shareText += `【感情の出現回数】\n`;
       emotionCounts.slice(0, 3).forEach(item => {
@@ -248,13 +257,11 @@ const WorthlessnessChart: React.FC = () => {
       navigator.clipboard.writeText(shareText).then(() => {
         alert('シェア用テキストをクリップボードにコピーしました！\nSNSに貼り付けてシェアしてください。');
       }).catch(() => {
-        // クリップボードAPIも使えない場合は手動でテキストを表示
         prompt('以下のテキストをコピーしてSNSでシェアしてください:', shareText);
       });
     }
   };
 
-  // Twitterでシェア
   const handleTwitterShare = () => {
     if (chartData.length === 0) {
       alert('共有するデータがありません。');
@@ -269,7 +276,6 @@ const WorthlessnessChart: React.FC = () => {
     shareText += `🔴 無価値感: ${latestData?.worthlessnessScore || 0}\n\n`;
     
     // 感情の出現回数
-    const currentEmotionCounts = period === 'all' ? allEmotionCounts : filteredEmotionCounts;
     if (emotionCounts.length > 0) {
       shareText += `【感情の出現回数】\n`;
       emotionCounts.slice(0, 3).forEach(item => {
@@ -280,27 +286,13 @@ const WorthlessnessChart: React.FC = () => {
     shareText += `\n#かんじょうにっき #感情日記 #自己肯定感\n\nhttps://apl.namisapo2.love/`;
     
     const encodedShareText = encodeURIComponent(shareText);
-    
-    // Twitterシェア用URL
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodedShareText}`;
     
-    // 新しいウィンドウでTwitterシェアを開く
     window.open(twitterUrl, '_blank');
   };
 
-  if (loading) {
-    return (
-      <div className="w-full max-w-4xl mx-auto space-y-6 px-2">
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-          <span className="ml-2 text-gray-600 font-jp-medium">読み込み中...</span>
-        </div>
-      </div>
-    );
-  }
-
   // 表示用データを準備
-  const displayedData = (() => {
+  const displayedData = useMemo(() => {
     if (period === 'all' || chartData.length === 0) return chartData;
     
     // データが持つ最新日を基準にする
@@ -318,7 +310,7 @@ const WorthlessnessChart: React.FC = () => {
     
     // データが 0 件ならフォールバックで全件返す（表示が空にならない保険）
     return filtered.length ? filtered : chartData;
-  })();
+  }, [chartData, period]);
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6 px-2">
@@ -382,7 +374,13 @@ const WorthlessnessChart: React.FC = () => {
         {/* 検索結果エリア */}
         <div className="space-y-6">
           {/* チャート表示エリア */}
-          {displayedData.length === 0 ? (
+          {loading ? (
+            <div className="bg-gray-50 rounded-lg p-12 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600">
+                <span className="sr-only">読み込み中...</span>
+              </div>
+            </div>
+          ) : displayedData.length === 0 ? (
             <div className="bg-gray-50 rounded-lg p-12 text-center">
               <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
@@ -626,6 +624,5 @@ const WorthlessnessChart: React.FC = () => {
     </div>
   );
 };
-
 
 export default WorthlessnessChart;
