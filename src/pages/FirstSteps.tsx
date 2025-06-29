@@ -71,12 +71,7 @@ const FirstSteps: React.FC = () => {
   const handleSave = () => {
     if (scores.selfEsteemScore && scores.worthlessnessScore && scores.measurementMonth && scores.measurementDay) {
       // スコアが0〜100の範囲内かチェック（文字列型の場合も考慮）
-      const selfEsteemScore = typeof scores.selfEsteemScore === 'string' 
-        ? parseInt(scores.selfEsteemScore) || 0 
-        : scores.selfEsteemScore || 0;
-      const worthlessnessScore = typeof scores.worthlessnessScore === 'string'
-        ? parseInt(scores.worthlessnessScore) || 0
-        : scores.worthlessnessScore || 0;
+      const selfEsteemScore = typeof scores.selfEsteemScore === 'string'
         : scores.selfEsteemScore || 0;
       const worthlessnessScore = typeof scores.worthlessnessScore === 'string'
         ? parseInt(scores.worthlessnessScore) || 0
@@ -95,7 +90,6 @@ const FirstSteps: React.FC = () => {
         measurementDay: scores.measurementDay
       };
       
-      console.log('保存するスコア:', numericScores);
       console.log('保存するスコア:', numericScores);
       localStorage.setItem('initialScores', JSON.stringify(numericScores));
       setIsSaved(true);
