@@ -81,9 +81,9 @@ function App() {
   // 自動同期の状態を確認
   useEffect(() => {
     if (isConnected && autoSync.currentUser && autoSync.isAutoSyncEnabled) {
-      console.log('自動同期が有効です。5分ごとにデータが同期されます。');
+      console.log('自動同期が有効です。5分ごとにデータが同期されます。', new Date().toISOString());
+      setShowSyncStatus(true);
     }
-    setShowSyncStatus(true);
   }, [isConnected, autoSync.currentUser, autoSync.isAutoSyncEnabled]);
 
   // プライバシーポリシー同意処理

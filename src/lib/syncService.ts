@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, adminSupabase } from './supabase';
 
 // 同期サービス
 export const syncService = {
@@ -167,6 +167,39 @@ export const syncService = {
       );
       
       return false;
+    }
+  }
+
+  // ユーザーの日記エントリー数を取得する関数
+  getUserEntryCount: async (userId: string) => {
+    try {
+      if (!supabase) return { data: 0, error: new Error('Supabase接続がありません') };
+      
+      const { count, error } = await supabase
+        .from('diary_entries')
+        .select('id', { count: 'exact' })
+        .eq('user_id', userId);
+      
+      return { data: count || 0, error };
+    } catch (error) {
+      console.error('エントリー数取得エラー:', error);
+      return { data: 0, error };
+    }
+  },
+  
+  // 全ユーザーの日記エントリー数を取得する関数
+  getTotalEntryCount: async () => {
+    try {
+      if (!adminSupabase) return { data: 0, error: new Error('管理者接続がありません') };
+      
+      const { count, error } = await adminSupabase
+        .from('diary_entries')
+        .select('id', { count: 'exact' });
+      
+      return { data: count || 0, error };
+    } catch (error) {
+      console.error('全エントリー数取得エラー:', error);
+      return { data: 0, error };
     }
   }
 };
