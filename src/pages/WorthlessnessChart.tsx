@@ -272,31 +272,6 @@ const WorthlessnessChart: React.FC = () => {
     window.open(twitterUrl, '_blank');
   };
 
-  // グラフの描画に必要なデータを計算
-  const calculateChartDimensions = () => {
-    if (chartData.length === 0) return null;
-    
-    // Y軸の最大値と最小値を計算
-    const allValues = chartData.flatMap(data => [
-      Number(data.selfEsteemScore) || 0,
-      Number(data.worthlessnessScore) || 0
-    ]);
-    
-    const maxValue = Math.max(...allValues, 100);
-    const minValue = Math.min(...allValues, 0);
-    
-    // X軸のラベル
-    const labels = chartData.map(data => formatDate(data.date));
-    
-    return {
-      maxValue,
-      minValue,
-      labels,
-      selfEsteemValues: chartData.map(data => Number(data.selfEsteemScore) || 0),
-      worthlessnessValues: chartData.map(data => Number(data.worthlessnessScore) || 0)
-    };
-  };
-
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6 px-2">
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -411,11 +386,11 @@ const WorthlessnessChart: React.FC = () => {
                 <div className="relative w-full h-64 border-l border-b border-gray-300">
                   {/* Y軸目盛り */}
                   <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between">
-                    <div className="absolute top-0 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">100</div>
-                    <div className="absolute top-1/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">75</div>
-                    <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">50</div>
-                    <div className="absolute top-3/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">25</div>
-                    <div className="absolute bottom-0 left-0 transform translate-y-1/2 -translate-x-2 text-xs text-gray-500">0</div>
+                    <div className="absolute top-0 left-0 transform -translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">100</div>
+                    <div className="absolute top-1/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">75</div>
+                    <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">50</div>
+                    <div className="absolute top-3/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">25</div>
+                    <div className="absolute bottom-0 left-0 transform translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">0</div>
                   </div>
                   
                   {/* 水平グリッド線 */}
@@ -450,7 +425,7 @@ const WorthlessnessChart: React.FC = () => {
                           }).join(' ')}
                           fill="none"
                           stroke="#3b82f6"
-                          strokeWidth="2"
+                          strokeWidth="3"
                           strokeLinejoin="round"
                           strokeLinecap="round"
                           strokeDasharray="0"
@@ -465,7 +440,7 @@ const WorthlessnessChart: React.FC = () => {
                           }).join(' ')}
                           fill="none"
                           stroke="#ef4444"
-                          strokeWidth="2"
+                          strokeWidth="3"
                           strokeLinejoin="round"
                           strokeLinecap="round"
                           strokeDasharray="0"
@@ -485,17 +460,17 @@ const WorthlessnessChart: React.FC = () => {
                           <circle
                             cx={xPos}
                             cy={selfEsteemYPos}
-                            r="3"
+                            r="4"
                             fill="#3b82f6"
                             stroke="white"
-                            strokeWidth="1"
+                            strokeWidth="2"
                           />
                           <text
                             x={xPos}
-                            y={selfEsteemYPos - 5}
+                            y={selfEsteemYPos - 8}
                             textAnchor="middle"
                             fill="#3b82f6"
-                            fontSize="10"
+                            fontSize="14"
                             fontWeight="bold"
                             className="chart-label"
                           >
@@ -506,17 +481,17 @@ const WorthlessnessChart: React.FC = () => {
                           <circle
                             cx={xPos}
                             cy={worthlessnessYPos}
-                            r="3"
+                            r="4"
                             fill="#ef4444"
                             stroke="white"
-                            strokeWidth="1"
+                            strokeWidth="2"
                           />
                           <text
                             x={xPos}
-                            y={worthlessnessYPos - 5}
+                            y={worthlessnessYPos - 8}
                             textAnchor="middle"
                             fill="#ef4444"
-                            fontSize="10"
+                            fontSize="14"
                             fontWeight="bold"
                             className="chart-label"
                           >
@@ -532,7 +507,7 @@ const WorthlessnessChart: React.FC = () => {
                     {chartData.map((data, index) => (
                       <div 
                         key={`x-label-${index}`} 
-                        className="text-xs text-gray-500 transform -translate-x-1/2"
+                        className="text-xs font-bold text-gray-700 transform -translate-x-1/2"
                         style={{ 
                           left: `${(index / (chartData.length - 1)) * 100}%`,
                           position: 'absolute'
@@ -548,38 +523,28 @@ const WorthlessnessChart: React.FC = () => {
               </div>
             </div>
             
-            {/* グラフのスタイル */}
-            <style jsx>{`
-              .graph-grid {
-                stroke-dasharray: 2 2;
-              }
-              .chart-label {
-                pointer-events: none;
-              }
-            `}</style>
-            
             {/* 最新スコア */}
             {chartData.length > 0 ? (
               <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-jp-bold text-gray-900">最新スコア</h3>
-                  <div className="text-xs text-gray-500">
+                  <h3 className="font-jp-bold text-gray-900 text-lg">最新スコア</h3>
+                  <div className="text-sm font-medium text-gray-700">
                     {formatDate(chartData[chartData.length - 1].date)}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-white rounded-lg p-4 border border-blue-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-700 font-jp-medium">自己肯定感スコア</span>
-                      <span className="text-2xl font-jp-bold text-blue-600">
+                      <span className="text-gray-700 font-jp-medium text-lg">自己肯定感スコア</span>
+                      <span className="text-3xl font-jp-bold text-blue-600">
                         {chartData[chartData.length - 1].selfEsteemScore}
                       </span>
                     </div>
                   </div>
                   <div className="bg-white rounded-lg p-4 border border-red-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-700 font-jp-medium">無価値感スコア</span>
-                      <span className="text-2xl font-jp-bold text-red-600">
+                      <span className="text-gray-700 font-jp-medium text-lg">無価値感スコア</span>
+                      <span className="text-3xl font-jp-bold text-red-600">
                         {chartData[chartData.length - 1].worthlessnessScore}
                       </span>
                     </div>
@@ -589,24 +554,24 @@ const WorthlessnessChart: React.FC = () => {
                 {initialScore && period === 'all' && (
                   <div className="mt-4 pt-4 border-t border-blue-200">
                     <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-jp-medium text-gray-900">初期スコア</h4>
-                      <div className="text-xs text-gray-500">
+                      <h4 className="font-jp-medium text-gray-900 text-base">初期スコア</h4>
+                      <div className="text-sm font-medium text-gray-700">
                         {initialScore.measurementMonth}月{initialScore.measurementDay}日
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-white rounded-lg p-3 border border-blue-100">
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-700 font-jp-medium text-sm">自己肯定感スコア</span>
-                          <span className="text-xl font-jp-bold text-blue-600">
+                          <span className="text-gray-700 font-jp-medium text-base">自己肯定感スコア</span>
+                          <span className="text-2xl font-jp-bold text-blue-600">
                             {initialScore.selfEsteemScore}
                           </span>
                         </div>
                       </div>
                       <div className="bg-white rounded-lg p-3 border border-red-100">
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-700 font-jp-medium text-sm">無価値感スコア</span>
-                          <span className="text-xl font-jp-bold text-red-600">
+                          <span className="text-gray-700 font-jp-medium text-base">無価値感スコア</span>
+                          <span className="text-2xl font-jp-bold text-red-600">
                             {initialScore.worthlessnessScore}
                           </span>
                         </div>
@@ -632,8 +597,8 @@ const WorthlessnessChart: React.FC = () => {
             {emotionCounts.length > 0 && (
               <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-jp-bold text-gray-900">感情の出現頻度</h3>
-                  <div className="text-xs text-gray-500">
+                  <h3 className="font-jp-bold text-gray-900 text-lg">感情の出現頻度</h3>
+                  <div className="text-sm font-medium text-gray-700">
                     {period === 'week' ? '過去7日間' : period === 'month' ? '過去30日間' : '全期間'}
                   </div>
                 </div>
@@ -642,7 +607,7 @@ const WorthlessnessChart: React.FC = () => {
                     <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
                       <div className="text-center">
                         <div className="text-lg font-jp-bold text-gray-900 mb-1">{item.emotion}</div>
-                        <div className="text-sm text-gray-600">{item.count}回</div>
+                        <div className="text-base font-medium text-gray-600">{item.count}回</div>
                       </div>
                     </div>
                   ))}
