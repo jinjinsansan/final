@@ -80,20 +80,12 @@ function App() {
   const handlePrivacyConsent = (accepted: boolean) => {
     if (accepted) {
       // PrivacyConsentコンポーネントでユーザー名を入力してもらう
-      const username = localStorage.getItem('line-username');
       localStorage.setItem('privacyConsentGiven', 'true');
       localStorage.setItem('privacyConsentDate', new Date().toISOString());
-      setLineUsername(username);
       
-      // 同意後に自動的にSupabaseユーザーを作成して同期を開始
-      if (isConnected && autoSync.isAutoSyncEnabled) {
-        setTimeout(() => {
-          autoSync.triggerManualSync().catch(error => {
-            console.error('初期同期エラー:', error);
-          });
-         }, 1000);
-       }
-       
+      // プライバシーポリシー同意後、デバイス認証画面へ
+      setShowDeviceAuth(true);
+      setIsDeviceRegistration(true);
       setShowPrivacyConsent(false);
     } else {
       alert('プライバシーポリシーに同意いただけない場合、サービスをご利用いただけません。');
@@ -104,6 +96,15 @@ function App() {
   const handleDeviceAuthLogin = (username: string) => {
     setLineUsername(username);
     setShowDeviceAuth(false);
+    
+    // デバイス認証後に自動的にSupabaseユーザーを作成して同期を開始
+    if (isConnected && autoSync.isAutoSyncEnabled) {
+      setTimeout(() => {
+        autoSync.triggerManualSync().catch(error => {
+          console.error('初期同期エラー:', error);
+        });
+      }, 1000);
+    }
   };
 
   // 管理者ログイン処理
