@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSupabase } from './useSupabase';
-import { supabase, userService, syncService, diaryService, adminSupabase } from '../lib/supabase';
+import { userService, syncService } from '../lib/supabase';
 import { getCurrentUser, logSecurityEvent, getAuthSession } from '../lib/deviceAuth';
 
 interface AutoSyncStatus {
@@ -177,7 +177,7 @@ export const useAutoSync = () => {
       // 日記データの同期
       if (localEntries) {
         const entries = JSON.parse(localEntries);
-        if (entries && entries.length > 0) {
+        if (entries && entries.length > 0 && syncService) {
           console.log(`自動同期: ${entries.length}件の日記データを同期します - ユーザーID: ${userId}`, new Date().toISOString());
           await syncService.migrateLocalData(userId);
           diarySync = true;
@@ -189,53 +189,9 @@ export const useAutoSync = () => {
       
       // 最新の日記エントリーを直接Supabaseに保存（バックアップとして）
       try {
-        const localEntries = localStorage.getItem('journalEntries');
-        if (localEntries && supabase) { 
-          const entries = JSON.parse(localEntries);
-          // 最新の5件のエントリーを取得
-          const recentEntries = entries && entries.length > 0 ? entries.slice(0, 5) : [];
-          
-          for (const entry of recentEntries) {
-            try {
-              // 既存のエントリーをチェック
-              const { data: existingEntry } = await supabase
-                .from('diary_entries')
-                .select('id')
-                .eq('id', entry.id)
-                .maybeSingle();
-              
-              if (existingEntry) {
-                // 既存のエントリーを更新
-                await supabase
-                  .from('diary_entries')
-                  .update({
-                    date: entry.date,
-                    emotion: entry.emotion,
-                    event: entry.event,
-                    realization: entry.realization,
-                    self_esteem_score: entry.selfEsteemScore || 0,
-                    worthlessness_score: entry.worthlessnessScore || 0
-                  })
-                  .eq('id', entry.id);
-              } else {
-                // 新規エントリーを作成
-                await supabase
-                  .from('diary_entries')
-                  .insert([{
-                    id: entry.id,
-                    user_id: userId,
-                    date: entry.date,
-                    emotion: entry.emotion,
-                    event: entry.event,
-                    realization: entry.realization,
-                    self_esteem_score: entry.selfEsteemScore || 0,
-                    worthlessness_score: entry.worthlessnessScore || 0
-                  }]);
-              }
-            } catch (entryError) {
-              console.error(`エントリー ${entry.id} の同期エラー:`, entryError);
-            }
-          }
+        // 直接同期は syncService を使用するように変更
+        if (syncService) {
+          await syncService.syncRecentEntries(userId);
         }
       } catch (directSyncError) {
         console.error('直接同期エラー:', directSyncError);
@@ -244,7 +200,7 @@ export const useAutoSync = () => {
       // 同意履歴の同期
       if (localConsents) {
         const consents = JSON.parse(localConsents);
-        if (consents && consents.length > 0) {
+        if (consents && consents.length > 0 && syncService) {
           console.log(`自動同期: ${consents.length}件の同意履歴を同期します`, new Date().toISOString());
           await syncService.syncConsentHistories();
           consentSync = true;

@@ -2,9 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
 // 環境変数からSupabase接続情報を取得（デバッグ用にコンソール出力）
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 
 // 接続情報のデバッグ出力（本番環境では詳細を隠す）
 console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 8)}...` : 'not set');
@@ -13,12 +13,23 @@ console.log('Supabase Service Role Key:', supabaseServiceRoleKey ? 'Service Role
 
 // Supabaseクライアントの作成（環境変数が設定されている場合のみ）
 export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
   : null;
   
 // 管理者用Supabaseクライアント（サービスロールキーを使用）
 export const adminSupabase = supabaseUrl && supabaseServiceRoleKey
-  ? createClient(supabaseUrl, supabaseServiceRoleKey)
+  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    })
   : null;
 
 // Supabase接続テスト関数
@@ -493,7 +504,7 @@ export const syncService = {
   // ローカルデータをSupabaseに移行
   migrateLocalData: async (userId: string) => {
     try {
-      if (!supabase) {
+      if (!supabase || !userId) {
         console.log('Supabase接続がないため、データ移行をスキップします', new Date().toISOString());
         return false;
       }
@@ -595,6 +606,99 @@ export const syncService = {
       return true;
     } catch (error) {
       console.error('データ移行エラー:', error);
+      return false;
+    }
+  },
+
+  // 最新の日記エントリーのみを同期する関数
+  syncRecentEntries: async (userId: string) => {
+    try {
+      if (!supabase || !userId) {
+        console.log('Supabase接続がないため、最新エントリー同期をスキップします');
+        return false;
+      }
+
+      const localEntries = localStorage.getItem('journalEntries');
+      if (!localEntries) {
+        console.log('ローカルエントリーがないため、最新エントリー同期をスキップします');
+        return false;
+      }
+
+      const entries = JSON.parse(localEntries);
+      // 最新の5件のエントリーを取得
+      const recentEntries = entries && entries.length > 0 ? entries.slice(0, 5) : [];
+      
+      if (recentEntries.length === 0) {
+        console.log('同期する最新エントリーがありません');
+        return false;
+      }
+
+      console.log(`最新の${recentEntries.length}件のエントリーを同期します`);
+      
+      let successCount = 0;
+      for (const entry of recentEntries) {
+        try {
+          // 既存のエントリーをチェック
+          const { data: existingEntry, error: checkError } = await supabase
+            .from('diary_entries')
+            .select('id')
+            .eq('id', entry.id)
+            .maybeSingle();
+          
+          if (checkError) {
+            console.error(`エントリー ${entry.id} の確認エラー:`, checkError);
+            continue;
+          }
+          
+          if (existingEntry) {
+            // 既存のエントリーを更新
+            const { error: updateError } = await supabase
+              .from('diary_entries')
+              .update({
+                date: entry.date,
+                emotion: entry.emotion,
+                event: entry.event,
+                realization: entry.realization,
+                self_esteem_score: entry.selfEsteemScore || 0,
+                worthlessness_score: entry.worthlessnessScore || 0
+              })
+              .eq('id', entry.id);
+              
+            if (updateError) {
+              console.error(`エントリー ${entry.id} の更新エラー:`, updateError);
+            } else {
+              successCount++;
+            }
+          } else {
+            // 新規エントリーを作成
+            const { error: insertError } = await supabase
+              .from('diary_entries')
+              .insert([{
+                id: entry.id,
+                user_id: userId,
+                date: entry.date,
+                emotion: entry.emotion,
+                event: entry.event,
+                realization: entry.realization,
+                self_esteem_score: entry.selfEsteemScore || 0,
+                worthlessness_score: entry.worthlessnessScore || 0
+              }]);
+              
+            if (insertError) {
+              console.error(`エントリー ${entry.id} の作成エラー:`, insertError);
+            } else {
+              successCount++;
+            }
+          }
+        } catch (entryError) {
+          console.error(`エントリー ${entry.id} の同期エラー:`, entryError);
+        }
+      }
+      
+      console.log(`最新エントリー同期完了: ${successCount}/${recentEntries.length}件成功`);
+      return successCount > 0;
+    } catch (error) {
+      console.error('最新エントリー同期エラー:', error);
       return false;
     }
   },
