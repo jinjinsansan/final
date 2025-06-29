@@ -41,6 +41,14 @@
   }
   
   /* グラフ用スタイル */
+  .graph-line {
+    stroke-width: 1;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  
+  /* グラフ用スタイル */
   .graph-chart {
     font-size: 10px;
   }

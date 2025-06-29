@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, LineChart, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
 
+// 数値→SVG 座標変換関数
+const toX = (i: number, total: number) => (i / (total - 1)) * 100;
+const toY = (score: number) => 5 + (90 - (score / 100) * 90); // 5% 上下余白
+
 // 日付を正規化する関数（時間部分を削除）
 const normalizeDate = (dateString: string): Date => {
   const date = new Date(dateString);
@@ -383,115 +387,75 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
                 
                 {/* グラフ本体 */}
-                <div className="relative w-full h-64 overflow-hidden">
-                  {/* Y軸目盛り */}
-                  <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between">
-                    <div className="absolute top-0 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">100</div>
-                    <div className="absolute top-1/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">75</div>
-                    <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">50</div>
-                    <div className="absolute top-3/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">25</div>
-                    <div className="absolute bottom-0 left-0 transform translate-y-1/2 -translate-x-2 text-xs text-gray-500">0</div>
-                  </div>
-                  
-                  {/* 水平グリッド線 */}
-                  <div className="absolute left-10 right-0 top-0 h-px bg-gray-100"></div>
-                  <div className="absolute left-10 right-0 top-1/4 h-px bg-gray-100"></div>
-                  <div className="absolute left-10 right-0 top-1/2 h-px bg-gray-100"></div>
-                  <div className="absolute left-10 right-0 top-3/4 h-px bg-gray-100"></div>
-                  <div className="absolute left-10 right-0 bottom-0 h-px bg-gray-100"></div>
-                  
-                  {/* 折れ線グラフ */}
-                  <svg 
-                    viewBox="0 0 100 100" 
+                <div className="relative w-full h-60 overflow-hidden">
+                  <svg
+                    viewBox="0 0 100 100"
                     preserveAspectRatio="none"
-                    className="absolute top-0 left-10 right-0 bottom-0 w-[calc(100%-40px)] h-full overflow-visible"
+                    className="absolute inset-0 w-full h-full overflow-visible"
                   >
-                    {/* 自己肯定感と無価値感の折れ線 */}
-                    {chartData.length > 1 && (
-                      <>
-                        {/* 自己肯定感の折れ線 */}
-                        <polyline
-                          points={chartData.map((data, index) => {
-                            const xPos = (index / (chartData.length - 1)) * 100;
-                            const yPos = 100 - Number(data.selfEsteemScore || 0);
-                            return `${xPos},${yPos}`;
-                          }).join(' ')}
-                          fill="none"
-                          stroke="#3b82f6"
-                          strokeWidth="1.5"
-                          strokeLinejoin="round"
-                          strokeLinecap="round"
-                        />
-                        
-                        {/* 無価値感の折れ線 */}
-                        <polyline
-                          points={chartData.map((data, index) => {
-                            const xPos = (index / (chartData.length - 1)) * 100;
-                            const yPos = 100 - Number(data.worthlessnessScore || 0);
-                            return `${xPos},${yPos}`;
-                          }).join(' ')}
-                          fill="none"
-                          stroke="#ef4444"
-                          strokeWidth="1.5"
-                          strokeLinejoin="round"
-                          strokeLinecap="round"
-                        />
-                      </>
-                    )}
-                    
-                    {/* データポイント */}
-                    {chartData.map((data, index) => {
-                      const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
-                      const selfEsteemYPos = 100 - Number(data.selfEsteemScore || 0);
-                      const worthlessnessYPos = 100 - Number(data.worthlessnessScore || 0);
-                      
-                      return (
-                        <g key={`data-point-${index}`}>
-                          {/* 自己肯定感のデータポイント */}
-                          <circle
-                            cx={xPos}
-                            cy={selfEsteemYPos}
-                            r="2.5"
-                            fill="#3b82f6"
-                            stroke="white"
-                            strokeWidth="0.5"
-                          >
-                            <title>{`${data.date} 自己肯定感: ${data.selfEsteemScore}`}</title>
-                          </circle>
-                          
-                          {/* 無価値感のデータポイント */}
-                          <circle
-                            cx={xPos}
-                            cy={worthlessnessYPos}
-                            r="2.5"
-                            fill="#ef4444"
-                            stroke="white"
-                            strokeWidth="0.5"
-                          >
-                            <title>{`${data.date} 無価値感: ${data.worthlessnessScore}`}</title>
-                          </circle>
+                    {/* グリッド線 & 目盛ラベル (0,25,50,75,100) */}
+                    <g className="graph-grid" stroke="#e5e7eb" strokeWidth="0.5" vectorEffect="non-scaling-stroke">
+                      {[0,25,50,75,100].map(val => (
+                        <g key={val}>
+                          <line x1="0" y1={toY(val)} x2="100" y2={toY(val)} />
+                          <text
+                            x="-2" y={toY(val)+0.8}
+                            fontSize="3" textAnchor="end" fill="#6b7280"
+                            style={{ userSelect:'none' }}
+                          >{val}</text>
                         </g>
+                      ))}
+                    </g>
+
+                    {/* 折れ線 */}
+                    {['selfEsteemScore','worthlessnessScore'].map((key,idx)=>(
+                      <polyline
+                        key={key}
+                        points={chartData.map((d,i)=>`${toX(i,chartData.length)},${toY(Number(d[key]||0))}`).join(' ')}
+                        fill="none"
+                        stroke={idx===0 ? '#3b82f6' : '#ef4444'}
+                        className="graph-line"
+                      />
+                    ))}
+
+                    {/* データ点 (ホバー時に数値表示) */}
+                    {chartData.map((d,i)=>{
+                      const x = toX(i, chartData.length);
+                      return (
+                        <React.Fragment key={`points-${i}`}>
+                          {['selfEsteemScore','worthlessnessScore'].map((key,idx)=>(
+                            <circle
+                              key={`${key}-${i}`}
+                              cx={x} cy={toY(Number(d[key]||0))}
+                              r="1.6"
+                              fill={idx===0 ? '#3b82f6' : '#ef4444'}
+                              stroke="#ffffff" strokeWidth="0.3"
+                              vectorEffect="non-scaling-stroke"
+                              className={`${i === 0 && period === 'all' && initialScore ? 'ring-2 ring-opacity-50 ring-offset-1 ring-' + (idx === 0 ? 'blue' : 'red') + '-300' : ''}`}
+                            >
+                              <title>{`${d.date} ${idx===0?'自己肯定感':'無価値感'} ${d[key]}`}</title>
+                            </circle>
+                          ))}
+                        </React.Fragment>
                       );
                     })}
-                  </svg>
-                  
-                  {/* X軸ラベル */}
-                  <div className="absolute left-10 right-0 bottom-0 transform translate-y-6 flex justify-between">
+                    
+                    {/* X軸ラベル */}
                     {chartData.map((data, index) => (
-                      <div 
-                        key={`x-label-${index}`} 
-                        className="text-xs text-gray-500 transform -translate-x-1/2"
-                        style={{ 
-                          left: `${(index / (chartData.length - 1)) * 100}%`,
-                          position: 'absolute'
-                        }}
+                      <text
+                        key={`x-label-${index}`}
+                        x={toX(index, chartData.length)}
+                        y="98"
+                        fontSize="3"
+                        textAnchor="middle"
+                        fill="#6b7280"
                       >
                         {index === 0 && period === 'all' && initialScore 
                           ? '初期' 
                           : formatDate(data.date)}
-                      </div>
+                      </text>
                     ))}
-                  </div>
+                  </svg>
                 </div>
               </div>
             </div>
@@ -609,3 +573,13 @@ const WorthlessnessChart: React.FC = () => {
 };
 
 export default WorthlessnessChart;
+
+// グラフ用スタイル
+const styles = `
+.graph-line {
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+`;
