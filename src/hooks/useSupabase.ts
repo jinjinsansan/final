@@ -14,15 +14,6 @@ export const useSupabase = () => {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    // ローカルモードが有効な場合は接続チェックをスキップ
-    if (import.meta.env.VITE_LOCAL_MODE === 'true') {
-      console.log('ローカルモードが有効です - Supabase接続チェックをスキップします');
-      setIsConnected(false);
-      setLoading(false);
-      setIsInitializing(false);
-      return;
-    }
-    
     checkConnection(true);
     
     // カウンセラーとしてログインしているかチェック
@@ -41,7 +32,7 @@ export const useSupabase = () => {
   const checkConnection = async (isInitialCheck = false) => {
     // ローカルモードが有効な場合は接続チェックをスキップ
     if (import.meta.env.VITE_LOCAL_MODE === 'true') {
-      console.log('ローカルモードが有効です - 接続チェックをスキップします');
+      console.log('ローカルモードが有効です - Supabase接続チェックをスキップします');
       setIsConnected(false);
       setIsInitializing(false);
       setLoading(false);
@@ -91,18 +82,6 @@ export const useSupabase = () => {
         setIsConnected(true);
         setError(null);
         setIsInitializing(false);
-      }
-    } catch (error) {
-      console.error('接続チェックエラー:', error);
-      setError(error instanceof Error ? error.message : '不明なエラー');
-      setIsConnected(false);
-    } finally {
-      setIsInitializing(false);
-      setLoading(false);
-    }
-  };
-  
-  // 接続を再試行する関数
   const retryConnection = () => {
     if (retryCount < 5) {
       console.log(`接続を再試行します... (${retryCount + 1}/5)`);

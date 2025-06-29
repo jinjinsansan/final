@@ -52,14 +52,8 @@ const AdminPanel: React.FC = () => {
   const loadEntries = () => {
     console.log('日記データを読み込み中...');
     setLoading(true);
-    try {
-      // Supabaseから直接データを取得
-      fetchEntriesFromSupabase();
-    } catch (error) {
-      console.error('データ読み込みエラー:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Supabaseから直接データを取得
+    fetchEntriesFromSupabase();
   };
 
   // Supabaseから直接データを取得する関数
@@ -85,6 +79,7 @@ const AdminPanel: React.FC = () => {
       if (error) {
         console.error('日記データ取得エラー:', error);
         setStatus({message: 'データの取得に失敗しました: ' + error.message, type: 'error'});
+        setLoading(false);
         return;
       }
       
@@ -93,6 +88,7 @@ const AdminPanel: React.FC = () => {
         setEntries([]);
         setFilteredEntries([]);
         setStatus({message: '日記データが見つかりません', type: 'info'});
+        setLoading(false);
         return;
       }
       
@@ -125,12 +121,13 @@ const AdminPanel: React.FC = () => {
       setStatus({message: 'データの取得中にエラーが発生しました: ' + (error instanceof Error ? error.message : '不明なエラー'), type: 'error'});
     } finally {
       setIsSyncInProgress(false);
+      setLoading(false);
     }
   };
   
   // 管理者用データを同期する関数
   const handleSyncAdminData = async () => {
-    console.log('管理者用データを同期中...');
+    console.log('管理者データを同期中...');
     setIsSyncInProgress(true);
     setStatus({message: 'データを同期中...', type: 'info'});
     
@@ -165,7 +162,6 @@ const AdminPanel: React.FC = () => {
     if (!selectedEntry) return;
     
     setSavingMemo(true);
-    
     try {
       // Supabaseの更新（接続されている場合）
       if (supabase && selectedEntry.id) {
@@ -227,6 +223,34 @@ const AdminPanel: React.FC = () => {
       
       alert('メモを保存しました！');
       setShowEntryDetails(false);
+    } catch (error) {
+      console.error('メモ保存エラー:', error);
+      alert('メモの保存に失敗しました。もう一度お試しください。');
+    } finally {
+      setSavingMemo(false);
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: string) => {
+    if (!window.confirm('この日記を削除してもよろしいですか？この操作は元に戻せません。')) {
+      return;
+    }
+    
+    setDeleting(true);
+    
+    try {
+      // Supabaseの更新（接続されている場合）
+      if (supabase) {
+        console.log('Supabaseから日記を削除:', entryId);
+        try {
+          const { error } = await supabase
+            .from('diary_entries')
+            .delete()
+            .eq('id', entryId);
+          
+          if (error) {
+            console.error('Supabase削除エラー:', error);
+            throw new Error('Supabaseからの削除に失敗しました');
           }
         } catch (supabaseError) {
           console.error('Supabase接続エラー:', supabaseError);
