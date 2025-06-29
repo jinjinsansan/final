@@ -3,7 +3,7 @@ import { Heart, BookOpen, Search, BarChart2, HelpCircle, MessageCircle, Settings
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
 import { useSupabase } from './hooks/useSupabase';
 import { useAutoSync } from './hooks/useAutoSync';
-import { isAuthenticated, getCurrentUser, getAuthSession } from './lib/deviceAuth';
+import { getCurrentUser, getAuthSession } from './lib/deviceAuth';
 
 // コンポーネントのインポート
 import MaintenanceMode from './components/MaintenanceMode';
@@ -14,6 +14,7 @@ import Chat from './components/Chat';
 import DataMigration from './components/DataMigration';
 import AdminPanel from './components/AdminPanel';
 import UserDataManagement from './components/UserDataManagement';
+import SyncStatusIndicator from './components/SyncStatusIndicator';
 
 // ページコンポーネントのインポート
 import DiaryPage from './pages/DiaryPage';
@@ -40,6 +41,7 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showWelcomePage, setShowWelcomePage] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showSyncStatus, setShowSyncStatus] = useState(false);
 
   // カスタムフックの初期化
   const { isMaintenanceMode, config, isAdminBypass } = useMaintenanceStatus();
@@ -54,6 +56,7 @@ function App() {
   // 初期化
   useEffect(() => {
     // プライバシーポリシー同意状態の確認
+    console.log('App初期化中...');
     const consentGiven = localStorage.getItem('privacyConsentGiven');
     if (consentGiven !== 'true') {
       setShowPrivacyConsent(true);
@@ -70,6 +73,9 @@ function App() {
     if (currentCounselor) {
       setIsAdmin(true);
     }
+    
+    // 同期ステータスを表示
+    setShowSyncStatus(true);
   }, []);
 
   // 自動同期の状態を確認
@@ -77,6 +83,7 @@ function App() {
     if (isConnected && autoSync.currentUser && autoSync.isAutoSyncEnabled) {
       console.log('自動同期が有効です。5分ごとにデータが同期されます。');
     }
+    setShowSyncStatus(true);
   }, [isConnected, autoSync.currentUser, autoSync.isAutoSyncEnabled]);
 
   // プライバシーポリシー同意処理
@@ -89,7 +96,7 @@ function App() {
       setLineUsername(username);
       
       // 同意後に自動的にSupabaseユーザーを作成して同期を開始
-      if (isConnected && autoSync.isAutoSyncEnabled) {
+      if (isConnected) {
         setTimeout(() => {
           autoSync.triggerManualSync().catch(error => {
             console.error('初期同期エラー:', error);
@@ -97,7 +104,7 @@ function App() {
          }, 1000);
        }
        
-      setShowPrivacyConsent(false);
+       setShowPrivacyConsent(false);
     } else {
       alert('プライバシーポリシーに同意いただけない場合、サービスをご利用いただけません。');
     }
@@ -619,6 +626,13 @@ function App() {
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   <span className="text-green-800 font-jp-medium text-sm">ローカルモードで動作中（Supabase接続なし）</span>
                 </div>
+              </div>
+            )}
+
+            {/* 同期ステータス表示 */}
+            {showSyncStatus && !isAdmin && (
+              <div className="mb-4">
+                <SyncStatusIndicator />
               </div>
             )}
 

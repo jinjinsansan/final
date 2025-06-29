@@ -161,15 +161,57 @@ export const userService = {
 // 日記サービス
 export const diaryService = {
   // 日記エントリーを作成
-  createEntry: async (entryData: any) => {
+  createEntry: async (entryData: any) => { 
     try {
       if (!supabase) return null;
       
-      const { data, error } = await supabase
+      // 既存のエントリーをチェック
+      const { data: existingEntry, error: checkError } = await supabase
         .from('diary_entries')
-        .insert([entryData])
-        .select()
-        .single();
+        .select('id')
+        .eq('id', entryData.id)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error('日記エントリー確認エラー:', checkError);
+        throw checkError;
+      }
+      
+      let data;
+      let error;
+      
+      if (existingEntry) {
+        // 既存のエントリーを更新
+        console.log('既存の日記エントリーを更新:', entryData.id);
+        const result = await supabase
+          .from('diary_entries')
+          .update({
+            user_id: entryData.user_id,
+            date: entryData.date,
+            emotion: entryData.emotion,
+            event: entryData.event,
+            realization: entryData.realization,
+            self_esteem_score: entryData.self_esteem_score,
+            worthlessness_score: entryData.worthlessness_score
+          })
+          .eq('id', entryData.id)
+          .select()
+          .single();
+          
+        data = result.data;
+        error = result.error;
+      } else {
+        // 新規エントリーを作成
+        console.log('新規日記エントリーを作成:', entryData.id);
+        const result = await supabase
+          .from('diary_entries')
+          .insert([entryData])
+          .select()
+          .single();
+          
+        data = result.data;
+        error = result.error;
+      }
       
       if (error) throw error;
       
@@ -298,60 +340,99 @@ export const syncService = {
   // ローカルデータをSupabaseに移行
   migrateLocalData: async (userId: string) => {
     try {
-      if (!supabase) return false;
+      if (!supabase) {
+        console.log('Supabase接続がないため、データ移行をスキップします');
+        return false;
+      }
       
       // ローカルストレージから日記データを取得
       const savedEntries = localStorage.getItem('journalEntries');
-      if (!savedEntries) return false;
+      if (!savedEntries) {
+        console.log('ローカルストレージに日記データがないため、データ移行をスキップします');
+        return false;
+      }
       
       const entries = JSON.parse(savedEntries);
-      if (!entries || entries.length === 0) return false;
+      if (!entries || entries.length === 0) {
+        console.log('日記エントリーが空のため、データ移行をスキップします');
+        return false;
+      }
+      
+      console.log(`${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`);
       
       // 各エントリーをSupabaseに保存
+      let successCount = 0;
+      let errorCount = 0;
       for (const entry of entries) {
         // 既存のエントリーをチェック
-        const { data: existingEntry } = await supabase
-          .from('diary_entries')
-          .select('id')
-          .eq('id', entry.id)
-          .maybeSingle();
-        
-        if (existingEntry) {
-          // 既存のエントリーを更新
-          await supabase
+        try {
+          const { data: existingEntry, error: checkError } = await supabase
             .from('diary_entries')
-            .update({
-              date: entry.date,
-              emotion: entry.emotion,
-              event: entry.event,
-              realization: entry.realization,
-              self_esteem_score: entry.selfEsteemScore || 0,
-              worthlessness_score: entry.worthlessnessScore || 0,
-              counselor_memo: entry.counselor_memo,
-              is_visible_to_user: entry.is_visible_to_user,
-              counselor_name: entry.counselor_name
-            })
-            .eq('id', entry.id);
-        } else {
-          // 新しいエントリーを作成
-          await supabase
-            .from('diary_entries')
-            .insert([{
-              id: entry.id,
-              user_id: userId,
-              date: entry.date,
-              emotion: entry.emotion,
-              event: entry.event,
-              realization: entry.realization,
-              self_esteem_score: entry.selfEsteemScore || 0,
-              worthlessness_score: entry.worthlessnessScore || 0,
-              counselor_memo: entry.counselor_memo,
-              is_visible_to_user: entry.is_visible_to_user,
-              counselor_name: entry.counselor_name
-            }]);
+            .select('id')
+            .eq('id', entry.id)
+            .maybeSingle();
+          
+          if (checkError) {
+            console.error(`エントリー ${entry.id} の確認エラー:`, checkError);
+            errorCount++;
+            continue;
+          }
+          
+          if (existingEntry) {
+            // 既存のエントリーを更新
+            const { error: updateError } = await supabase
+              .from('diary_entries')
+              .update({
+                date: entry.date,
+                emotion: entry.emotion,
+                event: entry.event,
+                realization: entry.realization,
+                self_esteem_score: entry.selfEsteemScore || 0,
+                worthlessness_score: entry.worthlessnessScore || 0,
+                counselor_memo: entry.counselor_memo,
+                is_visible_to_user: entry.is_visible_to_user,
+                counselor_name: entry.counselor_name
+              })
+              .eq('id', entry.id);
+              
+            if (updateError) {
+              console.error(`エントリー ${entry.id} の更新エラー:`, updateError);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          } else {
+            // 新しいエントリーを作成
+            const { error: insertError } = await supabase
+              .from('diary_entries')
+              .insert([{
+                id: entry.id,
+                user_id: userId,
+                date: entry.date,
+                emotion: entry.emotion,
+                event: entry.event,
+                realization: entry.realization,
+                self_esteem_score: entry.selfEsteemScore || 0,
+                worthlessness_score: entry.worthlessnessScore || 0,
+                counselor_memo: entry.counselor_memo,
+                is_visible_to_user: entry.is_visible_to_user,
+                counselor_name: entry.counselor_name
+              }]);
+              
+            if (insertError) {
+              console.error(`エントリー ${entry.id} の作成エラー:`, insertError);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          }
+        } catch (entryError) {
+          console.error(`エントリー ${entry.id} の処理中にエラーが発生:`, entryError);
+          errorCount++;
         }
       }
       
+      console.log(`同期完了: 成功=${successCount}, 失敗=${errorCount}`);
       return true;
     } catch (error) {
       console.error('データ移行エラー:', error);

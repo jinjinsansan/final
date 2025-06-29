@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Save } from 'lucide-react';
+import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Save, ArrowUpDown } from 'lucide-react';
 import { supabase, userService, syncService } from '../lib/supabase';
 import { useSupabase } from '../hooks/useSupabase';
 import { getCurrentUser } from '../lib/deviceAuth';
@@ -18,6 +18,7 @@ const DataMigration: React.FC = () => {
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true);
   const [backupInProgress, setBackupInProgress] = useState(false);
+  const [forceSyncInProgress, setForceSyncInProgress] = useState(false);
 
   // 全体のデータ数を保持する状態
   const [totalLocalDataCount, setTotalLocalDataCount] = useState(0);
@@ -116,6 +117,44 @@ const DataMigration: React.FC = () => {
       }
     } catch (error) {
       console.error('全体データ読み込みエラー:', error);
+    }
+  };
+
+  // 強制同期を実行する関数
+  const handleForceSync = async () => {
+    if (!isConnected || !currentUser) {
+      alert('Supabaseに接続されていないか、ユーザーが設定されていません。');
+      return;
+    }
+    
+    if (!window.confirm('強制同期を実行しますか？このプロセスでは、ローカルデータをSupabaseに強制的に同期します。')) {
+      return;
+    }
+    
+    setForceSyncInProgress(true);
+    setMigrationStatus('強制同期を実行中...');
+    
+    try {
+      // ローカルデータをSupabaseに同期
+      const success = await syncService.migrateLocalData(currentUser.id);
+      
+      if (success) {
+        setMigrationStatus('強制同期が完了しました！');
+        
+        // データ数を再読み込み
+        await loadDataInfo();
+        
+        // 最終同期時間を更新
+        const now = new Date().toISOString();
+        localStorage.setItem('last_sync_time', now);
+      } else {
+        setMigrationStatus('強制同期に失敗しました。もう一度お試しください。');
+      }
+    } catch (error) {
+      console.error('強制同期エラー:', error);
+      setMigrationStatus('強制同期中にエラーが発生しました: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setForceSyncInProgress(false);
     }
   };
 
@@ -272,6 +311,22 @@ const DataMigration: React.FC = () => {
                   </ul>
                 </div>
               </div>
+            </div>
+            
+            {/* 強制同期ボタン */}
+            <div className="mt-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+              <div className="flex items-start space-x-3 mb-4">
+                <ArrowUpDown className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-jp-bold text-gray-900 mb-2">強制同期</h4>
+                  <p className="text-sm text-gray-700 font-jp-normal mb-4">同期が正常に動作していない場合、強制的にローカルデータをSupabaseに同期します。</p>
+                </div>
+              </div>
+              <button
+                onClick={handleForceSync}
+                disabled={forceSyncInProgress || !isConnected}
+                className="flex items-center justify-center space-x-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-jp-medium transition-colors w-full"
+              >{forceSyncInProgress ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowUpDown className="w-4 h-4" />} <span>強制同期を実行</span></button>
             </div>
             
             {/* データバックアップセクション */}
