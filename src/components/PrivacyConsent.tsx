@@ -153,7 +153,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
           <p className="text-gray-600 font-jp-normal">
             本サービス「かんじょうにっき」では、次の情報を取得し、下記の目的で利用します。
           </p>
-
+          
           {/* LINEユーザー名入力フォーム */}
           <div className="mt-6 bg-white rounded-lg p-6 border border-blue-200 shadow-sm">
             <div className="flex items-center space-x-3 mb-4">
@@ -175,94 +175,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
               </div>
             </div>
           </div>
-          
-          {/* バックアップ復元ボタン */}
-          <div className="mt-4">
-            <button
-              onClick={() => setShowBackupRestore(!showBackupRestore)}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-100 text-purple-800 rounded-lg border border-purple-200 text-sm font-jp-medium hover:bg-purple-200 transition-colors mx-auto"
-            >
-              <Upload className="w-4 h-4" />
-              <span>バックアップから復元</span>
-            </button>
-          </div>
         </div>
-
-        {/* バックアップ復元セクション */}
-        {showBackupRestore && (
-          <div className="bg-purple-50 rounded-xl p-6 border border-purple-200 mb-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <Upload className="w-6 h-6 text-purple-600" />
-              <h3 className="text-lg font-jp-bold text-gray-900">バックアップからデータを復元</h3>
-            </div>
-            
-            <p className="text-gray-700 font-jp-normal mb-4 text-sm">
-              以前作成したバックアップファイルからデータを復元できます。プライバシーポリシーに同意する前にデータを復元することで、以前の設定やデータを引き継ぐことができます。
-            </p>
-            
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-sm file:font-jp-medium
-                    file:bg-purple-100 file:text-purple-700
-                    hover:file:bg-purple-200
-                    cursor-pointer"
-                />
-              </div>
-              
-              <button
-                onClick={handleRestoreBackup}
-                disabled={restoreLoading || !backupData}
-                className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full"
-              >
-                {restoreLoading ? (
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Upload className="w-5 h-5" />
-                )}
-                <span>バックアップから復元</span>
-              </button>
-            </div>
-            
-            {/* 復元ステータス表示 */}
-            {restoreStatus && (
-              <div className={`mt-4 rounded-lg p-4 border animate-pulse ${
-                restoreStatus.success 
-                  ? 'bg-green-50 border-green-200 text-green-800' 
-                  : 'bg-red-50 border-red-200 text-red-800'
-              }`}>
-                <div className="flex items-center space-x-2">
-                  {restoreStatus.success ? (
-                    <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                  )}
-                  <span className="font-jp-medium">{restoreStatus.message}</span>
-                </div>
-              </div>
-            )}
-            
-            <div className="mt-4 bg-yellow-50 rounded-lg p-3 border border-yellow-200">
-              <div className="flex items-start space-x-2">
-                <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-yellow-800 font-jp-normal">
-                  <p className="font-jp-medium mb-1">注意事項</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>データを復元した後も、プライバシーポリシーへの同意が必要です</li>
-                    <li>バックアップファイルには個人情報が含まれています</li>
-                    <li>復元後は「同意して開始」ボタンをクリックしてください</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="space-y-6 mb-8">
           <div className="bg-blue-50 rounded-lg p-6">
@@ -379,15 +292,108 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
           </form>
         </div>
 
-        <div className="mt-6 pt-6 border-t text-center">
-          <p className="text-xs text-gray-500 mb-2">
-            <button
-              onClick={() => setShowBackupRestore(!showBackupRestore)}
-              className="text-blue-600 hover:text-blue-800 hover:underline"
-            >
-              バックアップから復元
-            </button>
-          </p>
+        {/* バックアップ復元セクション - ページ下部に移動 */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="text-center mb-4">
+            <h3 className="text-lg font-jp-bold text-gray-900">データ復元について</h3>
+            <p className="text-gray-600 font-jp-normal text-sm mt-2">
+              以前使用していたデータを復元することができます
+            </p>
+          </div>
+          
+          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200 mb-4">
+            <div className="flex items-start space-x-3">
+              <Upload className="w-5 h-5 text-purple-600 mt-1 flex-shrink-0" />
+              <div className="text-sm text-purple-800 font-jp-normal">
+                <p className="font-jp-medium mb-2">データ復元機能について</p>
+                <p className="mb-2">以前作成したバックアップファイルからデータを復元できます。端末変更時や再インストール時に便利です。</p>
+                <p>プライバシーポリシーに同意する前にデータを復元することで、以前の設定やデータをそのまま引き継ぐことができます。</p>
+              </div>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => setShowBackupRestore(!showBackupRestore)}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-jp-medium transition-colors mx-auto"
+          >
+            <Upload className="w-4 h-4" />
+            <span>バックアップから復元する</span>
+          </button>
+          
+          {/* バックアップ復元セクション */}
+          {showBackupRestore && (
+            <div className="mt-4 bg-white rounded-lg p-6 border border-purple-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <Upload className="w-6 h-6 text-purple-600" />
+                <h3 className="text-lg font-jp-bold text-gray-900">バックアップからデータを復元</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileChange}
+                    className="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-lg file:border-0
+                      file:text-sm file:font-jp-medium
+                      file:bg-purple-100 file:text-purple-700
+                      hover:file:bg-purple-200
+                      cursor-pointer"
+                  />
+                </div>
+                
+                <button
+                  onClick={handleRestoreBackup}
+                  disabled={restoreLoading || !backupData}
+                  className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full"
+                >
+                  {restoreLoading ? (
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Upload className="w-5 h-5" />
+                  )}
+                  <span>バックアップから復元</span>
+                </button>
+              </div>
+              
+              {/* 復元ステータス表示 */}
+              {restoreStatus && (
+                <div className={`mt-4 rounded-lg p-4 border animate-pulse ${
+                  restoreStatus.success 
+                    ? 'bg-green-50 border-green-200 text-green-800' 
+                    : 'bg-red-50 border-red-200 text-red-800'
+                }`}>
+                  <div className="flex items-center space-x-2">
+                    {restoreStatus.success ? (
+                      <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                    )}
+                    <span className="font-jp-medium">{restoreStatus.message}</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-4 bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-yellow-800 font-jp-normal">
+                    <p className="font-jp-medium mb-1">注意事項</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>データを復元した後も、プライバシーポリシーへの同意が必要です</li>
+                      <li>バックアップファイルには個人情報が含まれています</li>
+                      <li>復元後は「同意して開始」ボタンをクリックしてください</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
             このアプリケーションは個人情報保護法に準拠して設計されています
           </p>
