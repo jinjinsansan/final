@@ -106,6 +106,38 @@ const DiaryPage: React.FC = () => {
       selectedBg: 'bg-pink-200',
       selectedBorder: 'border-pink-500'
     }
+    { 
+      name: '不安', 
+      bgColor: 'bg-teal-100', 
+      borderColor: 'border-teal-300',
+      textColor: 'text-teal-800',
+      selectedBg: 'bg-teal-200',
+      selectedBorder: 'border-teal-500'
+    },
+    { 
+      name: '嫉妬', 
+      bgColor: 'bg-lime-100', 
+      borderColor: 'border-lime-300',
+      textColor: 'text-lime-800',
+      selectedBg: 'bg-lime-200',
+      selectedBorder: 'border-lime-500'
+    },
+    { 
+      name: '焦り', 
+      bgColor: 'bg-amber-100', 
+      borderColor: 'border-amber-300',
+      textColor: 'text-amber-800',
+      selectedBg: 'bg-amber-200',
+      selectedBorder: 'border-amber-500'
+    },
+    { 
+      name: '後悔', 
+      bgColor: 'bg-cyan-100', 
+      borderColor: 'border-cyan-300',
+      textColor: 'text-cyan-800',
+      selectedBg: 'bg-cyan-200',
+      selectedBorder: 'border-cyan-500'
+    }
   ];
 
   // 前回の無価値感日記のスコアを取得

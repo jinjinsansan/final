@@ -59,6 +59,34 @@ const EmotionTypes: React.FC = () => {
       borderColor: 'border-gray-300',
       description: '消えてしまいたい、存在意義がない、役に立たない、劣等感、みじめな気持ち、自己否定、価値がない'
     }
+    {
+      name: '不安',
+      color: 'teal-500',
+      bgColor: 'bg-teal-100',
+      borderColor: 'border-teal-200',
+      description: '落ち着かない、そわそわする、将来が見えない、何かが起こりそうな予感、心配が止まらない'
+    },
+    {
+      name: '嫉妬',
+      color: 'lime-500',
+      bgColor: 'bg-lime-100',
+      borderColor: 'border-lime-200',
+      description: '他人と比べてしまう、妬ましい、羨ましい、自分も欲しいと思う、不公平感'
+    },
+    {
+      name: '焦り',
+      color: 'amber-500',
+      bgColor: 'bg-amber-100',
+      borderColor: 'border-amber-200',
+      description: '時間がない、間に合わない、慌てる、思考が整理できない、落ち着きがなくなる'
+    },
+    {
+      name: '後悔',
+      color: 'cyan-500',
+      bgColor: 'bg-cyan-100',
+      borderColor: 'border-cyan-200',
+      description: 'やり直したい、違う選択をすればよかった、過去に戻りたい、自分を責める気持ち'
+    }
   ];
 
   return (
