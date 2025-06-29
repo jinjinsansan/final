@@ -49,13 +49,20 @@
   
   /* グラフの点の太さを一定に保つ */
   .graph-svg circle {
+  }
+  
+  /* グラフの点の太さを一定に保つ */
+  .graph-svg circle {
     vector-effect: non-scaling-stroke;
+    r: 2;
     r: 2;
   }
   
   /* グラフのテキスト */
   .graph-svg text {
     font-family: 'Noto Sans JP', system-ui, sans-serif;
+    font-size: 3px;
+    user-select: none;
     font-size: 3px;
     user-select: none;
   }
