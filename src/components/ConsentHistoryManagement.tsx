@@ -37,6 +37,7 @@ const ConsentHistoryManagement: React.FC = () => {
   const loadConsentHistories = async () => {
     setLoading(true);
     try {
+      console.log('同意履歴を読み込み中...');
       if (isConnected) {
         // Supabaseから読み込み
         const supabaseHistories = await consentService.getAllConsentHistories();
@@ -74,6 +75,7 @@ const ConsentHistoryManagement: React.FC = () => {
   const handleSyncToSupabase = async () => {
     if (!isConnected) {
       alert('Supabaseに接続されていません。');
+      console.log('Supabase未接続のため同期をスキップ');
       return;
     }
 
@@ -97,6 +99,7 @@ const ConsentHistoryManagement: React.FC = () => {
   const handleSyncFromSupabase = async () => {
     if (!isConnected) {
       alert('Supabaseに接続されていません。');
+      console.log('Supabase未接続のため同期をスキップ');
       return;
     }
 
@@ -162,6 +165,7 @@ const ConsentHistoryManagement: React.FC = () => {
   const exportToCSV = () => {
     if (filteredHistories.length === 0) {
       alert('エクスポートするデータがありません。');
+      console.log('エクスポート対象データなし');
       return;
     }
 
