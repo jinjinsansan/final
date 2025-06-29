@@ -42,7 +42,7 @@ const WorthlessnessChart: React.FC = () => {
   const [emotionCounts, setEmotionCounts] = useState<EmotionCount[]>([]);
   const [initialScore, setInitialScore] = useState<InitialScore | null>(null);
 
-  // データの最小・最大値を保持する状態
+  // データ範囲を保持する状態
   const [dataRange, setDataRange] = useState({
     minVal: 0,
     maxVal: 100,
@@ -135,12 +135,9 @@ const WorthlessnessChart: React.FC = () => {
           Number(d.worthlessnessScore ?? 0)
         ]);
 
-        let minVal = Math.min(...allScores);
-        let maxVal = Math.max(...allScores);
-
         // 上下に 10pt の余白を持たせつつ 0‒100 にクリップ
-        minVal = Math.max(0, minVal - 10);
-        maxVal = Math.min(100, maxVal + 10);
+        let minVal = Math.max(0, Math.min(...allScores) - 10);
+        let maxVal = Math.min(100, Math.max(...allScores) + 10);
         const yRange = maxVal - minVal || 1;   // 0 除算防止
 
         // データ範囲を更新
@@ -227,7 +224,7 @@ const WorthlessnessChart: React.FC = () => {
   };
 
   // 座標変換関数
-  const toX = (i: number, total: number) => (i / (total - 1)) * 100;
+  const toX = (i: number, total: number) => (i / (total - 1)) * 120;  // 横幅 120 に拡大
   const toY = (val: number) => ((dataRange.maxVal - val) / dataRange.yRange) * 100;
 
   const handleShare = () => {
@@ -413,71 +410,51 @@ const WorthlessnessChart: React.FC = () => {
                 {/* グラフ本体 */}
                 <div className="relative w-full h-60 overflow-hidden">
                   <svg
-                    viewBox="0 0 100 100"
-                    preserveAspectRatio="none" 
-                    className="absolute inset-0 w-full h-full overflow-visible"
+                    viewBox="0 0 120 100"
+                    preserveAspectRatio="xMinYMid meet"
+                    className="absolute inset-0 w-full h-full graph-svg"
                   >
-                    {/* グリッド線 & 目盛ラベル */}
-                    {(()=>{
-                      // 4 分割目盛 (0,25,50,75,100) をレンジ内に再計算
-                      const ticks = [0,0.25,0.5,0.75,1].map(t=>dataRange.minVal + t*dataRange.yRange);
-                      return (
-                        <g stroke="#e5e7eb" strokeWidth="0.4" vectorEffect="non-scaling-stroke">
-                          {ticks.map((v,idx)=>(
-                            <g key={idx}>
-                              <line x1="0" y1={toY(v)} x2="100" y2={toY(v)} />
-                              <text
-                                x="2" y={toY(v)-1.5}
-                                fontSize="3" fill="#6b7280"
-                                style={{userSelect:'none'}}
-                              >
-                                {Math.round(v)}
-                              </text>
-                            </g>
-                          ))}
+                    {/* 目盛線 */}
+                    <g stroke="#e5e7eb" strokeWidth="0.4" vectorEffect="non-scaling-stroke">
+                      {[0,25,50,75,100].map((tick)=>(
+                        <g key={tick}>
+                          <line x1="0" y1={toY(tick)} x2="120" y2={toY(tick)}/>
+                          <text
+                            x="0" y={toY(tick)-1.5} fontSize="3"
+                            fill="#9ca3af" textAnchor="start" style={{userSelect:'none'}}
+                          >{tick}</text>
                         </g>
-                      );
-                    })()}
+                      ))}
+                    </g>
 
                     {/* 折れ線 */}
                     {[
-                      {key:'selfEsteemScore', color:'#3b82f6'},
-                      {key:'worthlessnessScore', color:'#ef4444'}
-                    ].map(({key,color})=>(
+                      {k:'selfEsteemScore',c:'#3b82f6'},
+                      {k:'worthlessnessScore',c:'#ef4444'}
+                    ].map(({k,c})=>(
                       <polyline
-                        key={key}
-                        points={chartData.map((d,i)=>`${toX(i,chartData.length)},${toY(Number(d[key]||0))}`).join(' ')}
-                        fill="none"
-                        stroke={color}
-                        strokeWidth="1.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                        key={k}
+                        points={chartData.map((d,i)=>`${toX(i,chartData.length)},${toY(+d[k]||0)}`).join(' ')}
+                        fill="none" stroke={c} strokeWidth="1"
+                        strokeLinecap="round" strokeLinejoin="round"
                         vectorEffect="non-scaling-stroke"
                       />
                     ))}
 
-                    {/* データ点 (ホバー時に数値表示) */}
+                    {/* データ点 */}
                     {chartData.map((d,i)=>{
-                      const x = toX(i, chartData.length);
-                      return (
-                        <>
-                          {[
-                            {key:'selfEsteemScore', color:'#3b82f6'},
-                            {key:'worthlessnessScore', color:'#ef4444'}
-                          ].map(({key,color})=>(
-                            <circle
-                              key={`${key}-${i}`}
-                              cx={x} cy={toY(Number(d[key]||0))}
-                              r="2"
-                              fill={color}
-                              stroke="#fff" strokeWidth="0.4"
-                              vectorEffect="non-scaling-stroke"
-                            >
-                              <title>{`${d.date} ${key==='selfEsteemScore'?'自己肯定感':'無価値感'} ${d[key]}`}</title>
-                            </circle>
-                          ))}
-                        </>
-                      );
+                      const x = toX(i,chartData.length);
+                      return ['selfEsteemScore','worthlessnessScore'].map((k,idx)=>(
+                        <circle
+                          key={`${k}-${i}`}
+                          cx={x} cy={toY(+d[k]||0)} r="2"
+                          fill={idx? '#ef4444':'#3b82f6'}
+                          stroke="#fff" strokeWidth="0.3"
+                          vectorEffect="non-scaling-stroke"
+                        >
+                          <title>{`${d.date} ${idx?'無価値感':'自己肯定感'} ${d[k]}`}</title>
+                        </circle>
+                      ));
                     })}
                     
                     {/* X軸ラベル */}

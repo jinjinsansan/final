@@ -48,8 +48,14 @@
     vector-effect: non-scaling-stroke;
   }
   
-  /* グラフ用スタイル */
-  .graph-chart {
-    font-size: 10px;
+  /* SVGグラフ用スタイル */
+  .graph-svg [stroke] { 
+    vector-effect: non-scaling-stroke; 
+  }
+  .graph-svg circle { 
+    vector-effect: non-scaling-stroke; 
+  }
+  .graph-svg text { 
+    font-family: system-ui, sans-serif; 
   }
 }
