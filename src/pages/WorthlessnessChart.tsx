@@ -5,6 +5,9 @@ import isBetween from 'dayjs/plugin/isBetween';
 
 dayjs.extend(isBetween);
 
+// Type definition for range keys
+type RangeKey = 'week'|'month'|'all';
+
 // 日付を正規化する関数（時間部分を削除）
 const normalizeDate = (dateString: string): Date => {
   const date = new Date(dateString);
@@ -58,17 +61,25 @@ const WorthlessnessChart: React.FC = () => {
   }, [period]);
 
   // 期間に応じてデータをフィルタリングするヘルパー関数
-  const filterByRange = (data: ScoreEntry[], range: 'week' | 'month' | 'all') => {
-    if (range === 'all') return data;
+  /** latestDate を基準にフィルタリング */
+  const filterByRange = (data: ScoreEntry[], range: RangeKey): ScoreEntry[] => {
+    if (range === 'all' || data.length === 0) return data;
 
-    const now = dayjs().endOf('day');                      // 今日 23:59:59
+    // データが持つ最新日を基準にする
+    const latestDate = dayjs(
+      data.reduce((max, d) => (d.date > max ? d.date : max), data[0].date)
+    ).endOf('day');
+
     const from = range === 'week'
-      ? now.subtract(6, 'day').startOf('day')              // 今日を含む直近7日間
-      : now.subtract(29, 'day').startOf('day');            // 今日を含む直近30日間
+      ? latestDate.subtract(6, 'day').startOf('day')   // 直近7日間
+      : latestDate.subtract(29,'day').startOf('day');  // 直近30日間
 
-    return data.filter(d => 
-      dayjs(d.date).isBetween(from, now, 'day', '[]')      // 両端を含む
+    const filtered = data.filter(d =>
+      dayjs(d.date).isBetween(from, latestDate, 'day', '[]')  // 両端を含む
     );
+
+    // データが 0 件ならフォールバックで全件返す（表示が空にならない保険）
+    return filtered.length ? filtered : data;
   };
 
   const loadChartData = () => {
@@ -594,23 +605,16 @@ const WorthlessnessChart: React.FC = () => {
                   <div className="text-yellow-500 text-xl">⚠️</div>
                   <div>
                     <p className="text-yellow-800 font-jp-medium">
-type RangeKey = 'week'|'month'|'all';
+                      初期スコアが設定されていません。最初にやることページで自己肯定感計測を行ってください。
+                    </p>
                   </div>
-/** latestDate を基準にフィルタリング */
-const filterByRange = (data: ScoreEntry[], range: RangeKey): ScoreEntry[] => {
-  if (range === 'all' || data.length === 0) return data;
-
-  // データが持つ最新日を基準にする
-  const latestDate = dayjs(
-    data.reduce((max, d) => (d.date > max ? d.date : max), data[0].date)
-  ).endOf('day');
-
-  const from = range === 'week'
-    ? latestDate.subtract(6, 'day').startOf('day')   // 直近7日間
-    : latestDate.subtract(29,'day').startOf('day');  // 直近30日間
         )}
       </div>
-    dayjs(d.date).isBetween(from, latestDate, 'day', '[]')  // 両端を含む
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
-};
+
 export default WorthlessnessChart;
