@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, X, Calendar, User, AlertTriangle, Tag, ChevronDown, ChevronUp, RotateCcw, Download, Eye } from 'lucide-react';
+import { Search, Filter, X, Calendar, User, AlertTriangle, Tag, ChevronDown, ChevronUp, RotateCcw, Download, Eye, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface SearchFilters {
@@ -45,6 +45,12 @@ interface AdvancedSearchFilterProps {
   onDeleteEntry?: (entryId: string) => void;
 }
 
+// デフォルトの感情リスト
+const defaultEmotions = [
+  '恐怖', '悲しみ', '怒り', '悔しい', '無価値感', '罪悪感', '寂しさ', '恥ずかしさ',
+  '嬉しい', '感謝', '達成感', '幸せ'
+];
+
 const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   entries,
   onFilteredResults,
@@ -53,6 +59,7 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+  const [emotions, setEmotions] = useState<string[]>(defaultEmotions);
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',
     emotion: '',
@@ -78,18 +85,14 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   const [loading, setLoading] = useState(false);
   const [showSaveSearch, setShowSaveSearch] = useState(false);
 
-  const emotions = [
-    '恐怖', '悲しみ', '怒り', '悔しい', '無価値感', '罪悪感', '寂しさ', '恥ずかしさ'
-  ];
-
   const counselors = [
     '未割り当て',
-    '仁カウンセラー',
-    'AOIカウンセラー',
-    'あさみカウンセラー',
-    'SHUカウンセラー',
-    'ゆーちゃカウンセラー',
-    'sammyカウンセラー'
+    '心理カウンセラー仁',
+    '心理カウンセラーAOI',
+    '心理カウンセラーあさみ',
+    '心理カウンセラーSHU',
+    '心理カウンセラーゆーちゃ',
+    '心理カウンセラーSammy'
   ];
 
   const urgencyLevels = [
@@ -100,7 +103,16 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
 
   useEffect(() => {
     applyFilters();
-  }, [filters, entries]);
+  }, [filters]);
+  
+  // エントリーが変更されたときにフィルターを適用
+  useEffect(() => {
+    try {
+      applyFilters();
+    } catch (error) {
+      console.error('フィルター適用エラー:', error);
+    }
+  }, [entries]);
   
   useEffect(() => {
     // カウンセラーとしてログインしているかチェック
@@ -110,6 +122,24 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
       console.log('管理者モードで動作中:', counselorName);
     }
   }, []);
+
+  // 感情リストを取得
+  useEffect(() => {
+    try {
+      // エントリーから一意の感情リストを抽出
+      if (entries && entries.length > 0) {
+        const uniqueEmotions = [...new Set(entries.map(entry => entry.emotion))].filter(Boolean);
+        
+        // デフォルトの感情リストと結合して重複を排除
+        const combinedEmotions = [...new Set([...defaultEmotions, ...uniqueEmotions])];
+        setEmotions(combinedEmotions);
+      }
+    } catch (error) {
+      console.error('感情リスト取得エラー:', error);
+      // エラー時はデフォルトの感情リストを使用
+      setEmotions(defaultEmotions);
+    }
+  }, [entries]);
 
   useEffect(() => {
     // 保存された検索条件を読み込み
@@ -159,77 +189,89 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   };
 
   const applyFilters = () => {
-    let filtered = [...entries];
+    try {
+      if (!entries || entries.length === 0) {
+        setFilteredEntries([]);
+        return;
+      }
+      
+      let filtered = [...entries];
 
     // キーワード検索
     if (filters.keyword.trim()) {
       const keyword = filters.keyword.toLowerCase();
-      filtered = filtered.filter(entry =>
-        entry.event.toLowerCase().includes(keyword) ||
-        entry.realization.toLowerCase().includes(keyword) ||
-        (entry.counselor_memo || '').toLowerCase().includes(keyword)
-      );
-    }
-
+      if (filters.keyword.trim()) {
+        filtered = filtered.filter(entry => 
+          (entry.event || '').toLowerCase().includes(filters.keyword.toLowerCase()) ||
+          (entry.realization || '').toLowerCase().includes(filters.keyword.toLowerCase()) ||
+          (entry.counselor_memo || '').toLowerCase().includes(filters.keyword.toLowerCase())
+        );
+      }
     // 感情フィルター
-    if (filters.emotion) {
-      filtered = filtered.filter(entry => entry.emotion === filters.emotion);
-    }
+      if (filters.emotion) {
+        filtered = filtered.filter(entry => entry.emotion === filters.emotion);
+      }
 
     // 緊急度フィルター
-    if (filters.urgency) {
-      filtered = filtered.filter(entry => entry.urgency_level === filters.urgency);
-    }
+      if (filters.urgency) {
+        filtered = filtered.filter(entry => entry.urgency_level === filters.urgency);
+      }
 
     // カウンセラーフィルター
-    if (filters.counselor) {
-      filtered = filtered.filter(entry => 
-        (entry.assigned_counselor || '未割り当て') === filters.counselor
-      );
-    }
+      if (filters.counselor) {
+        filtered = filtered.filter(entry => 
+          (entry.assigned_counselor || '未割り当て') === filters.counselor
+        );
+      }
 
     // 日付範囲フィルター
-    if (filters.dateRange.start) {
-      filtered = filtered.filter(entry => entry.date >= filters.dateRange.start);
-    }
-    if (filters.dateRange.end) {
-      filtered = filtered.filter(entry => entry.date <= filters.dateRange.end);
-    }
+      if (filters.dateRange.start) {
+        filtered = filtered.filter(entry => entry.date >= filters.dateRange.start);
+      }
+      if (filters.dateRange.end) {
+        filtered = filtered.filter(entry => entry.date <= filters.dateRange.end);
+      }
 
     // ユーザー検索
-    if (filters.userSearch.trim()) {
-      const userKeyword = filters.userSearch.toLowerCase();
-      filtered = filtered.filter(entry =>
-        (entry.user?.line_username || '').toLowerCase().includes(userKeyword)
-      );
-    }
+      if (filters.userSearch.trim()) {
+        const userKeyword = filters.userSearch.toLowerCase();
+        filtered = filtered.filter(entry =>
+          ((entry.user?.line_username || '')).toLowerCase().includes(userKeyword)
+        );
+      }
 
     // メモの有無フィルター
-    if (filters.hasNotes !== null) {
-      filtered = filtered.filter(entry => {
-        const hasNotes = !!(entry.counselor_memo && entry.counselor_memo.trim());
-        return filters.hasNotes ? hasNotes : !hasNotes;
-      });
-    }
+      if (filters.hasNotes !== null) {
+        filtered = filtered.filter(entry => {
+          const hasNotes = !!(entry.counselor_memo && entry.counselor_memo.trim());
+          return filters.hasNotes ? hasNotes : !hasNotes;
+        });
+      }
 
     // スコア範囲フィルター（無価値感の場合のみ）
-    filtered = filtered.filter(entry => {
-      if (entry.emotion !== '無価値感') return true;
-      
-      const selfEsteem = entry.self_esteem_score || 0;
-      const worthlessness = entry.worthlessness_score || 0;
-      
-      return selfEsteem >= filters.scoreRange.selfEsteemMin &&
-             selfEsteem <= filters.scoreRange.selfEsteemMax &&
-             worthlessness >= filters.scoreRange.worthlessnessMin &&
-             worthlessness <= filters.scoreRange.worthlessnessMax;
-    });
+      filtered = filtered.filter(entry => {
+        if (entry.emotion !== '無価値感') return true;
+        
+        const selfEsteem = entry.self_esteem_score || 0;
+        const worthlessness = entry.worthlessness_score || 0;
+        
+        return selfEsteem >= filters.scoreRange.selfEsteemMin &&
+               selfEsteem <= filters.scoreRange.selfEsteemMax &&
+               worthlessness >= filters.scoreRange.worthlessnessMin &&
+               worthlessness <= filters.scoreRange.worthlessnessMax;
+      });
 
-    // 日付順でソート（新しい順）
-    filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      // 日付順でソート（新しい順）
+      filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    setFilteredEntries(filtered);
-    onFilteredResults(filtered);
+      setFilteredEntries(filtered);
+      onFilteredResults(filtered);
+    } catch (error) {
+      console.error('フィルター適用エラー:', error);
+      // エラー時は空の配列を設定
+      setFilteredEntries([]);
+      onFilteredResults([]);
+    }
   };
 
   const clearAllFilters = () => {
@@ -719,11 +761,11 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
                     <span className="text-gray-900 font-jp-medium">
                       {entry.user?.line_username || 'Unknown User'}
                     </span>
-                    <span className="text-gray-500 text-sm font-jp-normal">
+                    <span className="text-gray-500 text-sm font-jp-normal ml-2">
                       {formatDate(entry.date)}
                     </span>
                     {entry.urgency_level && (
-                      <span className={`text-sm font-jp-medium ${getUrgencyColor(entry.urgency_level)}`}>
+                      <span className={`text-sm font-jp-medium ml-2 ${getUrgencyColor(entry.urgency_level)}`}>
                         緊急度: {urgencyLevels.find(l => l.value === entry.urgency_level)?.label}
                       </span>
                     )}
@@ -735,10 +777,19 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
                     <button
                       onClick={() => onViewEntry(entry)}
                       className="text-blue-600 hover:text-blue-700 p-1"
-                      title="詳細を見る"
+                      title="詳細"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
+                    {onDeleteEntry && (
+                      <button
+                        onClick={() => onDeleteEntry(entry.id)}
+                        className="text-red-600 hover:text-red-700 p-1"
+                        title="削除"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                     {onDeleteEntry && (
                       <button
                         onClick={() => onDeleteEntry(entry.id)}
