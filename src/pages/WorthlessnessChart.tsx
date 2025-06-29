@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, LineChart, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
 
-// 数値→SVG 座標変換関数
-const toX = (i: number, total: number) => (i / (total - 1)) * 100;
-const toY = (score: number) => 5 + (90 - (score / 100) * 90); // 5% 上下余白
-
 // 日付を正規化する関数（時間部分を削除）
 const normalizeDate = (dateString: string): Date => {
   const date = new Date(dateString);
@@ -45,6 +41,13 @@ const WorthlessnessChart: React.FC = () => {
   const [filteredEmotionCounts, setFilteredEmotionCounts] = useState<{[key: string]: number}>({});
   const [emotionCounts, setEmotionCounts] = useState<EmotionCount[]>([]);
   const [initialScore, setInitialScore] = useState<InitialScore | null>(null);
+
+  // データの最小・最大値を保持する状態
+  const [dataRange, setDataRange] = useState({
+    minVal: 0,
+    maxVal: 100,
+    yRange: 100
+  });
 
   useEffect(() => {
     loadChartData();
@@ -126,6 +129,23 @@ const WorthlessnessChart: React.FC = () => {
           }
         }
         
+        // データの最小・最大値を計算
+        const allScores = formattedData.flatMap(d => [
+          Number(d.selfEsteemScore ?? 0),
+          Number(d.worthlessnessScore ?? 0)
+        ]);
+
+        let minVal = Math.min(...allScores);
+        let maxVal = Math.max(...allScores);
+
+        // 上下に 10pt の余白を持たせつつ 0‒100 にクリップ
+        minVal = Math.max(0, minVal - 10);
+        maxVal = Math.min(100, maxVal + 10);
+        const yRange = maxVal - minVal || 1;   // 0 除算防止
+
+        // データ範囲を更新
+        setDataRange({ minVal, maxVal, yRange });
+        
         setChartData(formattedData);
         
         console.log('最終的なチャートデータ:', formattedData);
@@ -205,6 +225,10 @@ const WorthlessnessChart: React.FC = () => {
     const date = new Date(dateString);
     return `${date.getMonth() + 1}/${date.getDate()}`;
   };
+
+  // 座標変換関数
+  const toX = (i: number, total: number) => (i / (total - 1)) * 100;
+  const toY = (val: number) => ((dataRange.maxVal - val) / dataRange.yRange) * 100;
 
   const handleShare = () => {
     if (chartData.length === 0) {
@@ -390,31 +414,45 @@ const WorthlessnessChart: React.FC = () => {
                 <div className="relative w-full h-60 overflow-hidden">
                   <svg
                     viewBox="0 0 100 100"
-                    preserveAspectRatio="none"
+                    preserveAspectRatio="none" 
                     className="absolute inset-0 w-full h-full overflow-visible"
                   >
-                    {/* グリッド線 & 目盛ラベル (0,25,50,75,100) */}
-                    <g className="graph-grid" stroke="#e5e7eb" strokeWidth="0.5" vectorEffect="non-scaling-stroke">
-                      {[0,25,50,75,100].map(val => (
-                        <g key={val}>
-                          <line x1="0" y1={toY(val)} x2="100" y2={toY(val)} />
-                          <text
-                            x="-2" y={toY(val)+0.8}
-                            fontSize="3" textAnchor="end" fill="#6b7280"
-                            style={{ userSelect:'none' }}
-                          >{val}</text>
+                    {/* グリッド線 & 目盛ラベル */}
+                    {(()=>{
+                      // 4 分割目盛 (0,25,50,75,100) をレンジ内に再計算
+                      const ticks = [0,0.25,0.5,0.75,1].map(t=>dataRange.minVal + t*dataRange.yRange);
+                      return (
+                        <g stroke="#e5e7eb" strokeWidth="0.4" vectorEffect="non-scaling-stroke">
+                          {ticks.map((v,idx)=>(
+                            <g key={idx}>
+                              <line x1="0" y1={toY(v)} x2="100" y2={toY(v)} />
+                              <text
+                                x="2" y={toY(v)-1.5}
+                                fontSize="3" fill="#6b7280"
+                                style={{userSelect:'none'}}
+                              >
+                                {Math.round(v)}
+                              </text>
+                            </g>
+                          ))}
                         </g>
-                      ))}
-                    </g>
+                      );
+                    })()}
 
                     {/* 折れ線 */}
-                    {['selfEsteemScore','worthlessnessScore'].map((key,idx)=>(
+                    {[
+                      {key:'selfEsteemScore', color:'#3b82f6'},
+                      {key:'worthlessnessScore', color:'#ef4444'}
+                    ].map(({key,color})=>(
                       <polyline
                         key={key}
                         points={chartData.map((d,i)=>`${toX(i,chartData.length)},${toY(Number(d[key]||0))}`).join(' ')}
                         fill="none"
-                        stroke={idx===0 ? '#3b82f6' : '#ef4444'}
-                        className="graph-line"
+                        stroke={color}
+                        strokeWidth="1.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        vectorEffect="non-scaling-stroke"
                       />
                     ))}
 
@@ -422,21 +460,23 @@ const WorthlessnessChart: React.FC = () => {
                     {chartData.map((d,i)=>{
                       const x = toX(i, chartData.length);
                       return (
-                        <React.Fragment key={`points-${i}`}>
-                          {['selfEsteemScore','worthlessnessScore'].map((key,idx)=>(
+                        <>
+                          {[
+                            {key:'selfEsteemScore', color:'#3b82f6'},
+                            {key:'worthlessnessScore', color:'#ef4444'}
+                          ].map(({key,color})=>(
                             <circle
                               key={`${key}-${i}`}
                               cx={x} cy={toY(Number(d[key]||0))}
-                              r="1.6"
-                              fill={idx===0 ? '#3b82f6' : '#ef4444'}
-                              stroke="#ffffff" strokeWidth="0.3"
+                              r="2"
+                              fill={color}
+                              stroke="#fff" strokeWidth="0.4"
                               vectorEffect="non-scaling-stroke"
-                              className={`${i === 0 && period === 'all' && initialScore ? 'ring-2 ring-opacity-50 ring-offset-1 ring-' + (idx === 0 ? 'blue' : 'red') + '-300' : ''}`}
                             >
-                              <title>{`${d.date} ${idx===0?'自己肯定感':'無価値感'} ${d[key]}`}</title>
+                              <title>{`${d.date} ${key==='selfEsteemScore'?'自己肯定感':'無価値感'} ${d[key]}`}</title>
                             </circle>
                           ))}
-                        </React.Fragment>
+                        </>
                       );
                     })}
                     
@@ -459,7 +499,7 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* 最新スコア */}
             {chartData.length > 0 ? (
               <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
@@ -529,7 +569,7 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             {/* 感情の出現頻度 */}
             {emotionCounts.length > 0 && (
               <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
@@ -551,7 +591,7 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             {/* 初期スコアが設定されていない場合の警告メッセージ */}
             {!initialScore && period === 'all' && (
               <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 mt-4">
@@ -571,15 +611,4 @@ const WorthlessnessChart: React.FC = () => {
     </div>
   );
 };
-
 export default WorthlessnessChart;
-
-// グラフ用スタイル
-const styles = `
-.graph-line {
-  stroke-width: 1;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-`;
