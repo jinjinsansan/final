@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BarChart2, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
+import { Calendar, LineChart, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
 
 // 日付を正規化する関数（時間部分を削除）
 const normalizeDate = (dateString: string): Date => {
@@ -368,11 +368,11 @@ const WorthlessnessChart: React.FC = () => {
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-blue-500"></div>
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                       <span className="text-sm font-jp-medium text-gray-700">自己肯定感</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-red-500"></div>
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                       <span className="text-sm font-jp-medium text-gray-700">無価値感</span>
                     </div>
                   </div>
@@ -405,6 +405,7 @@ const WorthlessnessChart: React.FC = () => {
                     <div className="h-full relative">
                       {/* 自己肯定感の折れ線 */}
                       <svg className="absolute inset-0 w-full h-full overflow-visible">
+                        {/* 折れ線 */}
                         <polyline
                           points={
                             chartData.length > 0 
@@ -416,11 +417,12 @@ const WorthlessnessChart: React.FC = () => {
                               : ''
                           }
                           fill="none"
-                          stroke="#3b82f6"
-                          strokeWidth="2"
+                          stroke="#3b82f6" 
+                          strokeWidth="3"
                           strokeLinejoin="round"
                           strokeLinecap="round"
                         />
+                        {/* データポイント */}
                         {chartData.map((data, index) => {
                           const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
                           const yPos = 100 - Number(data.selfEsteemScore);
@@ -430,10 +432,10 @@ const WorthlessnessChart: React.FC = () => {
                               <circle
                                 cx={`${xPos}%`}
                                 cy={`${100 - Number(data.selfEsteemScore || 0)}%`}
-                                r="4"
+                                r="5"
                                 fill="#3b82f6"
                                 stroke="white"
-                                strokeWidth="1"
+                                strokeWidth="2"
                                 className={`${isInitial ? 'ring-2 ring-blue-300' : ''}`}
                               />
                               <text
@@ -453,6 +455,7 @@ const WorthlessnessChart: React.FC = () => {
                       
                       {/* 無価値感の折れ線 */}
                       <svg className="absolute inset-0 w-full h-full overflow-visible">
+                        {/* 折れ線 */}
                         <polyline
                           points={
                             chartData.length > 0 
@@ -465,10 +468,11 @@ const WorthlessnessChart: React.FC = () => {
                           }
                           fill="none"
                           stroke="#ef4444"
-                          strokeWidth="2"
+                          strokeWidth="3"
                           strokeLinejoin="round"
                           strokeLinecap="round"
                         />
+                        {/* データポイント */}
                         {chartData.map((data, index) => {
                           const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
                           const yPos = 100 - Number(data.worthlessnessScore);
@@ -478,10 +482,10 @@ const WorthlessnessChart: React.FC = () => {
                               <circle
                                 cx={`${xPos}%`}
                                 cy={`${100 - Number(data.worthlessnessScore || 0)}%`}
-                                r="4"
+                                r="5"
                                 fill="#ef4444"
                                 stroke="white"
-                                strokeWidth="1"
+                                strokeWidth="2"
                                 className={`${isInitial ? 'ring-2 ring-red-300' : ''}`}
                               />
                               <text
