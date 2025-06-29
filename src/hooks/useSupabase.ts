@@ -81,6 +81,31 @@ export const useSupabase = () => {
         console.log('Supabase接続成功');
         setIsConnected(true);
         setError(null);
+        
+        // 既存ユーザーの確認
+        const session = !isAdminMode ? getAuthSession() : null;
+        if (session) {
+          console.log('既存セッションを検出:', session.lineUsername);
+          await initializeUser(session.lineUsername);
+        } else if (isAdminMode) {
+          console.log('管理者モードで初期化');
+          setCurrentUser({ id: 'admin', line_username: 'admin' });
+          setIsInitializing(false);
+        } else {
+          setIsInitializing(false);
+        }
+      }
+    } catch (error) {
+      console.error('接続チェックエラー:', error);
+      setError(error instanceof Error ? error.message : '不明なエラー');
+      setIsConnected(false);
+    } finally {
+      setIsInitializing(false);
+      setLoading(false);
+    }
+  };
+  
+  // 接続を再試行する関数
         setIsInitializing(false);
   const retryConnection = () => {
     if (retryCount < 5) {

@@ -60,11 +60,13 @@ const AdminPanel: React.FC = () => {
   const fetchEntriesFromSupabase = async () => {
     console.log('Supabaseからデータを取得中...');
     setIsSyncInProgress(true);
-    setStatus({message: 'データを取得中...', type: 'info'});
+    setStatus({message: '管理者データを取得中...', type: 'info'});
     
     try {
       if (!supabase) {
-        throw new Error('Supabase接続が利用できません');
+        console.log('Supabase接続が利用できません。Netlify Functionsを使用します。');
+        await fetchEntriesFromNetlifyFunction();
+        return;
       }
       
       // 日記エントリーを取得
@@ -121,7 +123,39 @@ const AdminPanel: React.FC = () => {
       setStatus({message: 'データの取得中にエラーが発生しました: ' + (error instanceof Error ? error.message : '不明なエラー'), type: 'error'});
     } finally {
       setIsSyncInProgress(false);
-      setLoading(false);
+      setLoading(false); 
+    }
+  };
+  
+  // Netlify Functionsを使用してデータを取得する関数
+  const fetchEntriesFromNetlifyFunction = async () => {
+    console.log('Netlify Functionsからデータを取得中...');
+    setStatus({message: 'サーバーからデータを取得中...', type: 'info'});
+    
+    try {
+      const response = await fetch('/.netlify/functions/adminProxy');
+      
+      if (!response.ok) {
+        throw new Error(`サーバーエラー: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data || data.length === 0) {
+        console.log('日記データが見つかりません');
+        setEntries([]);
+        setFilteredEntries([]);
+        setStatus({message: '日記データが見つかりません', type: 'info'});
+        return;
+      }
+      
+      console.log('Netlify Functionsから日記データを取得しました:', data.length, '件');
+      setEntries(data);
+      setFilteredEntries(data);
+      setStatus({message: `${data.length}件のデータを取得しました`, type: 'success'});
+    } catch (error) {
+      console.error('Netlify Functions取得エラー:', error);
+      setStatus({message: 'サーバーからのデータ取得に失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'), type: 'error'});
     }
   };
   
