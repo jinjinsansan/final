@@ -8,6 +8,7 @@ interface PrivacyConsentProps {
 
 const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
   const [isChecked, setIsChecked] = useState(false);
+  const [lineUsername, setLineUsername] = useState('');
   const [showDetails, setShowDetails] = useState(false);
   const [showBackupRestore, setShowBackupRestore] = useState(false);
   const [backupData, setBackupData] = useState<File | null>(null);
@@ -16,8 +17,12 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isChecked) {
+    if (isChecked && lineUsername.trim()) {
+      // ユーザー名をローカルストレージに保存
+      localStorage.setItem('line-username', lineUsername);
       onConsent(true);
+    } else if (!lineUsername.trim()) {
+      alert('LINEユーザー名を入力してください。');
     }
   };
 
@@ -98,6 +103,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
           
           if (backupObject.lineUsername) {
             localStorage.setItem('line-username', backupObject.lineUsername);
+            setLineUsername(backupObject.lineUsername);
           }
           
           if (backupObject.privacyConsentGiven) {
@@ -148,6 +154,28 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
             本サービス「かんじょうにっき」では、次の情報を取得し、下記の目的で利用します。
           </p>
 
+          {/* LINEユーザー名入力フォーム */}
+          <div className="mt-6 bg-white rounded-lg p-6 border border-blue-200 shadow-sm">
+            <div className="flex items-center space-x-3 mb-4">
+              <User className="w-6 h-6 text-blue-600" />
+              <h3 className="font-jp-semibold text-gray-900">LINEユーザー名を入力</h3>
+            </div>
+            <div className="space-y-2">
+              <p className="text-gray-600 font-jp-normal text-sm">
+                あなたのLINEユーザー名を入力してください。このユーザー名はデータの識別に使用されます。
+              </p>
+              <div className="mt-3">
+                <input
+                  type="text"
+                  value={lineUsername}
+                  onChange={(e) => setLineUsername(e.target.value)}
+                  placeholder="LINEユーザー名"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-jp-normal"
+                />
+              </div>
+            </div>
+          </div>
+          
           {/* バックアップ復元ボタン */}
           <div className="mt-4">
             <button
@@ -330,9 +358,9 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
             <div className="flex space-x-4">
               <button
                 type="submit"
-                disabled={!isChecked || restoreLoading}
+                disabled={!isChecked || !lineUsername.trim() || restoreLoading}
                 className={`flex-1 py-3 px-6 rounded-lg font-jp-medium transition-all cursor-pointer ${
-                  isChecked
+                  isChecked && lineUsername.trim()
                     ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
