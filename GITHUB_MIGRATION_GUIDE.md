@@ -1,64 +1,49 @@
-# GitHub移行ガイド
+# GitHubリポジトリ作成手順
 
-## 🚀 GitHub リポジトリ作成手順
+## 1. GitHubでリポジトリを作成
 
-### 1. GitHub でリポジトリを作成
-1. GitHub にログイン
-2. 「New repository」をクリック
-3. リポジトリ名: `kanjou-nikki` または `emotion-diary`
-4. 説明: `感情日記アプリ - 自己肯定感を育てるテープ式心理学アプリ`
-5. Public または Private を選択
-6. 「Create repository」をクリック
+1. GitHubにログインします
+2. 右上の「+」ボタンをクリックし、「New repository」を選択します
+3. 以下の情報を入力します：
+   - Repository name: `kanjou-nikki`（または希望の名前）
+   - Description: `感情日記アプリ - 自己肯定感を育てるテープ式心理学アプリ`
+   - Visibility: Private（推奨）またはPublic
+4. 「Create repository」ボタンをクリックします
 
-### 2. ローカルでの Git 初期化
+## 2. ローカルリポジトリをGitHubにプッシュ
+
+以下のコマンドを実行してリポジトリをGitHubにプッシュします：
 
 ```bash
-# プロジェクトディレクトリに移動
-cd /path/to/your/project
-
-# Git 初期化
-git init
-
-# .gitignore ファイルを作成
-echo "node_modules/
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-dist/
-.DS_Store
-*.log
-.vscode/
-.idea/" > .gitignore
-
-# すべてのファイルを追加
+# すべてのファイルをステージング
 git add .
 
 # 初回コミット
-git commit -m "Initial commit: 感情日記アプリ - 完全版"
+git commit -m "初回コミット: 感情日記アプリ - 完全版"
 
-# リモートリポジトリを追加（YOUR_USERNAMEとREPO_NAMEを置き換え）
-git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git
+# リモートリポジトリを追加（URLを自分のリポジトリに置き換え）
+git remote add origin https://github.com/YOUR_USERNAME/kanjou-nikki.git
 
 # メインブランチにプッシュ
 git branch -M main
 git push -u origin main
 ```
 
-### 3. 環境変数の設定
+## 3. 環境変数の設定
 
-GitHub リポジトリには `.env` ファイルは含まれていません。
-以下の手順で環境変数を設定してください：
+GitHubリポジトリには`.env`ファイルは含まれていません。以下の手順で環境変数を設定してください：
 
-1. `.env.example` をコピーして `.env` を作成
-2. Supabase の設定値を入力
-3. 必要に応じてメンテナンスモードの設定を追加
+1. `.env.example`をコピーして`.env`を作成
+2. Supabaseの設定値を入力
+3. 必要に応じてローカルモードやメンテナンスモードの設定を追加
 
 ```env
-# Supabase設定（必須）
+# Supabase設定
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# ローカルモード設定（オプション）
+VITE_LOCAL_MODE=false
 
 # メンテナンスモード設定（オプション）
 VITE_MAINTENANCE_MODE=false
@@ -66,9 +51,9 @@ VITE_MAINTENANCE_MESSAGE=システムメンテナンス中です
 VITE_MAINTENANCE_END_TIME=2025-01-22T10:00:00Z
 ```
 
-### 4. README.md の更新
+## 4. README.mdの更新
 
-リポジトリの README.md を以下の内容で更新することをお勧めします：
+リポジトリのREADME.mdを以下の内容で更新することをお勧めします：
 
 ```markdown
 # かんじょうにっき - 感情日記アプリ
@@ -77,7 +62,7 @@ VITE_MAINTENANCE_END_TIME=2025-01-22T10:00:00Z
 
 ## 🌟 主な機能
 
-- 8種類のネガティブ感情の記録・分析
+- 8種類のネガティブ感情と4種類のポジティブ感情の記録・分析
 - 無価値感推移のグラフ表示
 - 高度な検索機能
 - カウンセラー管理画面
@@ -109,9 +94,9 @@ npm run dev
 一般社団法人NAMIDAサポート協会
 ```
 
-### 5. GitHub Actions の設定（オプション）
+## 5. GitHub Actionsの設定（オプション）
 
-自動デプロイを設定する場合は、`.github/workflows/deploy.yml` を作成：
+自動デプロイを設定する場合は、`.github/workflows/deploy.yml`を作成：
 
 ```yaml
 name: Deploy to Netlify
@@ -146,21 +131,21 @@ jobs:
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 ```
 
-### 6. 協力者の招待
+## 6. 協力者の招待
 
 チーム開発の場合：
 1. GitHub リポジトリの「Settings」→「Manage access」
 2. 「Invite a collaborator」で協力者を招待
 3. 適切な権限を設定
 
-### 7. ブランチ戦略
+## 7. ブランチ戦略
 
 推奨ブランチ戦略：
 - `main`: 本番環境用
 - `develop`: 開発環境用
 - `feature/*`: 機能開発用
 
-### 8. Issue テンプレートの作成
+## 8. Issue テンプレートの作成
 
 `.github/ISSUE_TEMPLATE/bug_report.md`:
 
@@ -194,7 +179,7 @@ assignees: ''
 - バージョン: [例: 22]
 ```
 
-### 9. プルリクエストテンプレート
+## 9. プルリクエストテンプレート
 
 `.github/pull_request_template.md`:
 
@@ -218,26 +203,17 @@ assignees: ''
 - [ ] 関連するドキュメントを更新済み
 ```
 
-## 🎯 移行後の推奨アクション
+## 10. 移行後の確認事項
 
-1. **初回セットアップの確認**
-   - `npm install` が正常に完了することを確認
-   - 環境変数が正しく設定されていることを確認
-   - `npm run dev` でアプリが起動することを確認
+1. **環境確認**: `npm run dev`でローカル環境が正常に動作することを確認
+2. **Supabase接続**: 環境変数を設定してSupabase接続を確認
+3. **自動同期テスト**: 新しいユーザーでアプリを開いて自動同期をテスト
+4. **機能テスト**: 日記作成、検索、管理画面の動作確認
+5. **カウンセラーログイン**: 管理画面へのアクセス確認
+6. **デバイス認証**: 管理画面の「デバイス認証」「セキュリティ」タブの確認
+7. **カウンセラーコメント**: コメント表示機能の確認
+8. **データバックアップ**: バックアップ作成と復元機能の確認
+9. **シェア機能**: プレビュー表示とX/Twitterシェア機能の確認
+10. **日記削除機能**: 管理画面からの日記削除機能の確認
 
-2. **Supabase の設定**
-   - データベースマイグレーションの実行
-   - RLS ポリシーの確認
-   - 環境変数の設定
-
-3. **デプロイの設定**
-   - Netlify または他のホスティングサービスの設定
-   - 環境変数の設定
-   - ビルドコマンドの確認
-
-4. **チーム開発の準備**
-   - 協力者の招待
-   - ブランチ保護ルールの設定
-   - Issue・PR テンプレートの設定
-
-これで GitHub への移行が完了します！
+これでGitHubへの移行が完了します！
