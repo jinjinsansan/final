@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, X, Calendar, User, AlertTriangle, Tag, ChevronDown, ChevronUp, RotateCcw, Download, Eye, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+// デフォルトの感情リスト
+const defaultEmotions = [
+  '恐怖', '悲しみ', '怒り', '悔しい', '無価値感', '罪悪感', '寂しさ', '恥ずかしさ',
+  '嬉しい', '感謝', '達成感', '幸せ'
+];
+
 interface SearchFilters {
   keyword: string;
   emotion: string;
@@ -44,12 +50,6 @@ interface AdvancedSearchFilterProps {
   onViewEntry: (entry: JournalEntry) => void; 
   onDeleteEntry?: (entryId: string) => void;
 }
-
-// デフォルトの感情リスト
-const defaultEmotions = [
-  '恐怖', '悲しみ', '怒り', '悔しい', '無価値感', '罪悪感', '寂しさ', '恥ずかしさ',
-  '嬉しい', '感謝', '達成感', '幸せ'
-];
 
 const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   entries,
