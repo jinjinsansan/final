@@ -383,36 +383,29 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
                 
                 {/* グラフ本体 */}
-                <div className="relative w-full h-64 border-l border-b border-gray-300">
+                <div className="relative w-full h-64 overflow-hidden">
                   {/* Y軸目盛り */}
-                  <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between">
-                    <div className="absolute top-0 left-0 transform -translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">100</div>
-                    <div className="absolute top-1/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">75</div>
-                    <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">50</div>
-                    <div className="absolute top-3/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">25</div>
-                    <div className="absolute bottom-0 left-0 transform translate-y-1/2 -translate-x-2 text-xs font-bold text-gray-700">0</div>
+                  <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between">
+                    <div className="absolute top-0 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">100</div>
+                    <div className="absolute top-1/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">75</div>
+                    <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">50</div>
+                    <div className="absolute top-3/4 left-0 transform -translate-y-1/2 -translate-x-2 text-xs text-gray-500">25</div>
+                    <div className="absolute bottom-0 left-0 transform translate-y-1/2 -translate-x-2 text-xs text-gray-500">0</div>
                   </div>
                   
                   {/* 水平グリッド線 */}
-                  <div className="absolute left-0 right-0 top-0 h-px bg-gray-200"></div>
-                  <div className="absolute left-0 right-0 top-1/4 h-px bg-gray-200"></div>
-                  <div className="absolute left-0 right-0 top-1/2 h-px bg-gray-200"></div>
-                  <div className="absolute left-0 right-0 top-3/4 h-px bg-gray-200"></div>
-                  <div className="absolute left-0 right-0 bottom-0 h-px bg-gray-200"></div>
+                  <div className="absolute left-10 right-0 top-0 h-px bg-gray-100"></div>
+                  <div className="absolute left-10 right-0 top-1/4 h-px bg-gray-100"></div>
+                  <div className="absolute left-10 right-0 top-1/2 h-px bg-gray-100"></div>
+                  <div className="absolute left-10 right-0 top-3/4 h-px bg-gray-100"></div>
+                  <div className="absolute left-10 right-0 bottom-0 h-px bg-gray-100"></div>
                   
                   {/* 折れ線グラフ */}
                   <svg 
                     viewBox="0 0 100 100" 
                     preserveAspectRatio="none"
-                    className="absolute top-0 left-12 right-0 bottom-0 w-[calc(100%-48px)] h-full overflow-visible"
+                    className="absolute top-0 left-10 right-0 bottom-0 w-[calc(100%-40px)] h-full overflow-visible"
                   >
-                    {/* 水平グリッド線 - グラフの背景 */}
-                    <line x1="0" y1="0" x2="100" y2="0" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
-                    <line x1="0" y1="25" x2="100" y2="25" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
-                    <line x1="0" y1="50" x2="100" y2="50" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
-                    <line x1="0" y1="75" x2="100" y2="75" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
-                    <line x1="0" y1="100" x2="100" y2="100" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
-                    
                     {/* 自己肯定感と無価値感の折れ線 */}
                     {chartData.length > 1 && (
                       <>
@@ -425,10 +418,9 @@ const WorthlessnessChart: React.FC = () => {
                           }).join(' ')}
                           fill="none"
                           stroke="#3b82f6"
-                          strokeWidth="3"
+                          strokeWidth="1.5"
                           strokeLinejoin="round"
                           strokeLinecap="round"
-                          strokeDasharray="0"
                         />
                         
                         {/* 無価値感の折れ線 */}
@@ -440,10 +432,9 @@ const WorthlessnessChart: React.FC = () => {
                           }).join(' ')}
                           fill="none"
                           stroke="#ef4444"
-                          strokeWidth="3"
+                          strokeWidth="1.5"
                           strokeLinejoin="round"
                           strokeLinecap="round"
-                          strokeDasharray="0"
                         />
                       </>
                     )}
@@ -460,54 +451,36 @@ const WorthlessnessChart: React.FC = () => {
                           <circle
                             cx={xPos}
                             cy={selfEsteemYPos}
-                            r="4"
+                            r="2.5"
                             fill="#3b82f6"
                             stroke="white"
-                            strokeWidth="2"
-                          />
-                          <text
-                            x={xPos}
-                            y={selfEsteemYPos - 8}
-                            textAnchor="middle"
-                            fill="#3b82f6"
-                            fontSize="14"
-                            fontWeight="bold"
-                            className="chart-label"
+                            strokeWidth="0.5"
                           >
-                            {data.selfEsteemScore}
-                          </text>
+                            <title>{`${data.date} 自己肯定感: ${data.selfEsteemScore}`}</title>
+                          </circle>
                           
                           {/* 無価値感のデータポイント */}
                           <circle
                             cx={xPos}
                             cy={worthlessnessYPos}
-                            r="4"
+                            r="2.5"
                             fill="#ef4444"
                             stroke="white"
-                            strokeWidth="2"
-                          />
-                          <text
-                            x={xPos}
-                            y={worthlessnessYPos - 8}
-                            textAnchor="middle"
-                            fill="#ef4444"
-                            fontSize="14"
-                            fontWeight="bold"
-                            className="chart-label"
+                            strokeWidth="0.5"
                           >
-                            {data.worthlessnessScore}
-                          </text>
+                            <title>{`${data.date} 無価値感: ${data.worthlessnessScore}`}</title>
+                          </circle>
                         </g>
                       );
                     })}
                   </svg>
                   
                   {/* X軸ラベル */}
-                  <div className="absolute left-12 right-0 bottom-0 transform translate-y-6 flex justify-between">
+                  <div className="absolute left-10 right-0 bottom-0 transform translate-y-6 flex justify-between">
                     {chartData.map((data, index) => (
                       <div 
                         key={`x-label-${index}`} 
-                        className="text-xs font-bold text-gray-700 transform -translate-x-1/2"
+                        className="text-xs text-gray-500 transform -translate-x-1/2"
                         style={{ 
                           left: `${(index / (chartData.length - 1)) * 100}%`,
                           position: 'absolute'

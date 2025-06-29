@@ -41,11 +41,7 @@
   }
   
   /* グラフ用スタイル */
-  .chart-label {
-    pointer-events: none;
-  }
-  
-  .graph-grid {
-    stroke-dasharray: 2 2;
+  .graph-chart {
+    font-size: 10px;
   }
 }
