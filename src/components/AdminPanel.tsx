@@ -804,10 +804,19 @@ const AdminPanel: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="backup">
-            <BackupRestoreManager />
+            <div className="grid grid-cols-1 gap-6">
+              <BackupRestoreManager />
+            </div>
           </TabsContent>
 
           <TabsContent value="maintenance">
+            <div className="grid grid-cols-1 gap-6">
+              <MaintenanceController />
+              <DataCleanup />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="device-auth">
             <DeviceAuthManagement />
           </TabsContent>
 
