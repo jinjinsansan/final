@@ -16,7 +16,6 @@ const DataMigration: React.FC = () => {
   const [syncDirection, setSyncDirection] = useState<'local-to-supabase' | 'supabase-to-local'>('local-to-supabase');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
-          loadDataInfo();
   const [backupInProgress, setBackupInProgress] = useState(false);
 
   // 全体のデータ数を保持する状態
@@ -26,7 +25,6 @@ const DataMigration: React.FC = () => {
   const { isConnected, currentUser, initializeUser } = useSupabase();
 
   useEffect(() => {
-          loadDataInfo();
     loadDataInfo();
     // 自動同期設定を読み込み
     const autoSyncSetting = localStorage.getItem('auto_sync_enabled');
@@ -36,7 +34,6 @@ const DataMigration: React.FC = () => {
     const counselorName = localStorage.getItem('current_counselor');
     if (counselorName) {
       setIsAdminMode(true);
-          loadDataInfo();
     }
   }, []);
 
@@ -46,7 +43,6 @@ const DataMigration: React.FC = () => {
         // 管理者モードの場合は全体のデータ数を取得
         await loadTotalData();
       } else {
-          loadDataInfo();
         // 通常モードの場合は現在のユーザーのデータ数を取得
         const localEntries = localStorage.getItem('journalEntries');
         if (localEntries) {
@@ -63,70 +59,31 @@ const DataMigration: React.FC = () => {
               console.log('Supabase日記データ数:', count || 0);
               setSupabaseDataCount(count || 0);
             })
-            
             .catch((error) => {
-            {/* バックアップボタン */}
               console.error('Supabase日記データ数取得エラー:', error);
-            <div className="mt-6 pt-4 border-t border-blue-200">
               setSupabaseDataCount(0);
-                  
-                  <button
-                    onClick={handleCreateBackup}
-                    disabled={backupInProgress}
-                    className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full mb-3"
-                  >
-                    {backupInProgress ? (
-                      <RefreshCw className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Download className="w-5 h-5" />
-                    )}
-                    <span>バックアップを作成</span>
-                  </button>
-              <div className="flex items-start space-x-3 mb-4">
             });
-                <Save className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
         }
-                <div>
       }
-                  <h4 className="font-jp-bold text-gray-900 mb-2">データのバックアップ</h4>
     } catch (error) {
-                  <p className="text-sm text-gray-700 font-jp-normal">
       console.error('データ読み込みエラー:', error);
-                    現在のデータをファイルとして保存できます。端末変更時や万が一の時に復元できます。
     }
-                  </p>
   };
-                </div>
-  // ... (rest of the component code)
-              </div>
+
   // バックアップデータの作成
-              
   const handleCreateBackup = () => {
-              <button
     setBackupInProgress(true);
-                onClick={handleCreateBackup}
     setMigrationStatus(null);
-                disabled={backupInProgress}
     
-                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full"
     try {
-              >
       // ローカルストレージからデータを収集
-                {backupInProgress ? (
       const backupObject = {
-                  <RefreshCw className="w-5 h-5 animate-spin" />
         journalEntries: localStorage.getItem('journalEntries') ? JSON.parse(localStorage.getItem('journalEntries')!) : [],
-                ) : (
         initialScores: localStorage.getItem('initialScores') ? JSON.parse(localStorage.getItem('initialScores')!) : null,
-                  <Download className="w-5 h-5" />
         consentHistories: localStorage.getItem('consent_histories') ? JSON.parse(localStorage.getItem('consent_histories')!) : [],
-                )}
         lineUsername: localStorage.getItem('line-username'),
-                <span>バックアップを作成</span>
         privacyConsentGiven: localStorage.getItem('privacyConsentGiven'),
-              </button>
         privacyConsentDate: localStorage.getItem('privacyConsentDate'),
-            </div>
         backupDate: new Date().toISOString(),
         version: '1.0'
       };
@@ -160,10 +117,31 @@ const DataMigration: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* ... (rest of the JSX) */}
+      <div className="mt-6 pt-4 border-t border-blue-200">
+        <div className="flex items-start space-x-3 mb-4">
+          <Save className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="font-jp-bold text-gray-900 mb-2">データのバックアップ</h4>
+            <p className="text-sm text-gray-700 font-jp-normal">
+              現在のデータをファイルとして保存できます。端末変更時や万が一の時に復元できます。
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleCreateBackup}
+          disabled={backupInProgress}
+          className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full mb-3"
+        >
+          {backupInProgress ? (
+            <RefreshCw className="w-5 h-5 animate-spin" />
+          ) : (
+            <Download className="w-5 h-5" />
+          )}
+          <span>バックアップを作成</span>
+        </button>
+      </div>
     </div>
   );
 };
 
 export default DataMigration;
-            onClick={loadDataInfo}
