@@ -340,6 +340,13 @@ const DiaryPage: React.FC = () => {
         todaySelfEsteem: 50,
         todayWorthlessness: 50
       });
+    } catch (error) {
+      console.error('保存エラー:', error);
+      alert('保存に失敗しました。もう一度お試しください。');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleShare = () => {
     const username = currentUser?.lineUsername || 'ユーザー';
@@ -935,18 +942,17 @@ const DiaryPage: React.FC = () => {
             <div className="bg-white rounded-lg p-3 border border-gray-200 text-sm">
               <p className="font-jp-medium mb-2">{currentUser?.lineUsername || 'ユーザー'}の今日の感情日記 📝</p>
               <p className="mb-1">{getEmotionEmoji(formData.emotion)} 感情: {formData.emotion}</p>
-          </div>
-          
-          <div className="mt-4 bg-blue-50 rounded-lg p-3 border border-blue-200">
-            <div className="text-xs text-blue-800 font-jp-normal space-y-1">
-              <p className="font-jp-medium">💡 自動計算機能</p>
-              <p>• 自己肯定感スコアを入力すると、無価値感スコアが自動で計算されます</p>
-              <p>• 計算式：無価値感スコア = 100 - 自己肯定感スコア</p>
-              <p>• どちらの項目からでも入力可能です</p>
+              {formData.event.trim() && (
+                <p className="mb-1">💭 出来事: {formData.event.length > 20 ? formData.event.substring(0, 20) + '...' : formData.event}</p>
+              )}
+              {formData.realization.trim() && (
+                <p className="mb-1">✨ 気づき: {formData.realization.length > 20 ? formData.realization.substring(0, 20) + '...' : formData.realization}</p>
+              )}
+              <p className="text-gray-500 text-xs mt-2">#かんじょうにっき #感情日記 #自己肯定感</p>
             </div>
           </div>
-        </div>
-        
+        )}
+
         <button
           onClick={handleSubmit}
           disabled={saving}
