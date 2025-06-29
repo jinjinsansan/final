@@ -597,7 +597,6 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
               </div>
             )}
-
             {/* 初期スコアが設定されていない場合の警告メッセージ */}
             {!initialScore && period === 'all' && (
               <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 mt-4">
@@ -608,8 +607,8 @@ const WorthlessnessChart: React.FC = () => {
                       初期スコアが設定されていません。最初にやることページで自己肯定感計測を行ってください。
                     </p>
                   </div>
-        )}
-      </div>
+                </div>
+              </div>
             )}
           </div>
         )}
