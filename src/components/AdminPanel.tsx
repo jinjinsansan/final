@@ -10,7 +10,7 @@ import BackupRestoreManager from './BackupRestoreManager';
 import DeviceAuthManagement from './DeviceAuthManagement';
 import SecurityDashboard from './SecurityDashboard';
 import DataCleanup from './DataCleanup';
-import { supabase } from '../lib/supabase';
+import { supabase, diaryService, syncService } from '../lib/supabase';
 
 interface JournalEntry {
   id: string;
@@ -46,11 +46,13 @@ const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState('search');
   const [deleting, setDeleting] = useState(false);
   const [backupInProgress, setBackupInProgress] = useState(false);
+  const [syncInProgress, setIsSyncInProgress] = useState(false);
 
   useEffect(() => {
     // カウンセラー名を取得
     const counselorName = localStorage.getItem('current_counselor');
     if (counselorName) {
+      console.log('カウンセラー名を取得:', counselorName);
       setCurrentCounselor(counselorName);
     }
     
@@ -58,86 +60,53 @@ const AdminPanel: React.FC = () => {
   }, []);
 
   const loadEntries = async () => {
+    console.log('日記データを読み込み中...');
     setLoading(true);
     try {
-      // ローカルストレージからデータを取得
-      const savedEntries = localStorage.getItem('journalEntries');
-      let localEntries = [];
-      
-      if (savedEntries) {
-        localEntries = JSON.parse(savedEntries);
+      // 管理者モードでは、まず管理者用のデータを同期
+      await handleSyncAdminData();
+
+      // 管理者用のデータを読み込み
+      const adminEntries = localStorage.getItem('admin_journalEntries');
+      if (adminEntries) {
+        const parsedEntries = JSON.parse(adminEntries);
+        console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+        
+        // 日付順でソート（新しい順）
+        parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        setEntries(parsedEntries);
+        setFilteredEntries(parsedEntries);
+      } else {
+        console.log('管理者用データが見つかりません');
+        setEntries([]);
+        setFilteredEntries([]);
       }
-      
-      // Supabaseからデータを取得（接続されている場合）
-      let supabaseEntries = [];
-      if (supabase) {
-        try {
-          const { data, error } = await supabase
-            .from('diary_entries')
-            .select(`
-              *,
-              users(line_username)
-            `)
-            .order('created_at', { ascending: false });
-          
-          if (error) {
-            console.error('Supabaseデータ取得エラー:', error);
-          } else if (data) {
-            supabaseEntries = data;
-            console.log('Supabaseから取得したエントリー:', data.length);
-          }
-        } catch (supabaseError) {
-          console.error('Supabase接続エラー:', supabaseError);
-        }
-      }
-      
-      // データを結合（重複を避けるため、IDをキーとして使用）
-      const entriesMap = new Map();
-      
-      // ローカルデータを追加
-      localEntries.forEach((entry: any) => {
-        entriesMap.set(entry.id, {
-          ...entry,
-          source: 'local'
-        });
-      });
-      
-      // Supabaseデータを追加（同じIDの場合は上書き）
-      supabaseEntries.forEach((entry: any) => {
-        const formattedEntry = {
-          id: entry.id,
-          date: entry.date,
-          emotion: entry.emotion,
-          event: entry.event,
-          realization: entry.realization,
-          self_esteem_score: entry.self_esteem_score,
-          worthlessness_score: entry.worthlessness_score,
-          created_at: entry.created_at,
-          user: entry.users,
-          assigned_counselor: entry.assigned_counselor,
-          urgency_level: entry.urgency_level,
-          counselor_memo: entry.counselor_memo,
-          is_visible_to_user: entry.is_visible_to_user,
-          counselor_name: entry.counselor_name,
-          source: 'supabase'
-        };
-        entriesMap.set(entry.id, formattedEntry);
-      });
-      
-      // Mapから配列に変換
-      const combinedEntries = Array.from(entriesMap.values());
-      
-      // 日付順でソート（新しい順）
-      combinedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      
-      setEntries(combinedEntries);
-      setFilteredEntries(combinedEntries);
-      
-      console.log('データ読み込み完了:', combinedEntries.length, '件');
     } catch (error) {
       console.error('データ読み込みエラー:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 管理者用データを同期する関数
+  const handleSyncAdminData = async () => {
+    console.log('管理者用データを同期中...');
+    setIsSyncInProgress(true);
+    
+    try {
+      // 管理者モードでの同期を実行
+      const success = await syncService.adminSync();
+      
+      if (success) {
+        console.log('管理者用データの同期が完了しました');
+      } else {
+        console.log('管理者用データの同期に失敗しました');
+      }
+    } catch (error) {
+      console.error('管理者用データ同期エラー:', error);
+    } finally {
+      setIsSyncInProgress(false);
     }
   };
 
@@ -605,6 +574,14 @@ const AdminPanel: React.FC = () => {
         <div className="flex items-center space-x-3 mb-6">
           <Shield className="w-8 h-8 text-green-600" />
           <h1 className="text-2xl font-jp-bold text-gray-900">管理画面</h1>
+          <button
+            onClick={handleSyncAdminData}
+            disabled={syncInProgress}
+            className="ml-auto flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors text-sm"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncInProgress ? 'animate-spin' : ''}`} />
+            <span>データ同期</span>
+          </button>
         </div>
 
         <Tabs defaultValue="search" value={activeTab} onValueChange={setActiveTab}>

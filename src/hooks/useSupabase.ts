@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, userService, diaryService, syncService, testSupabaseConnection } from '../lib/supabase';
 import { getAuthSession, logSecurityEvent } from '../lib/deviceAuth';
+import { useAutoSync } from './useAutoSync';
 
 export const useSupabase = () => {
   // 管理者モードフラグ - カウンセラーとしてログインしている場合はtrue
@@ -11,6 +12,7 @@ export const useSupabase = () => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(0);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     // ローカルモードが有効な場合は接続チェックをスキップ
@@ -18,6 +20,7 @@ export const useSupabase = () => {
       console.log('ローカルモードが有効です - Supabase接続チェックをスキップします');
       setIsConnected(false);
       setLoading(false);
+      setIsInitializing(false);
       return;
     }
     
@@ -28,6 +31,10 @@ export const useSupabase = () => {
     if (counselorName) {
       setIsAdminMode(true);
       console.log('管理者モードで動作中:', counselorName);
+      
+      // 管理者モードの場合は、特別なユーザーIDを設定
+      setCurrentUser({ id: 'admin', line_username: 'admin' });
+      setIsInitializing(false);
     }
     
   }, []);
@@ -37,6 +44,7 @@ export const useSupabase = () => {
     if (import.meta.env.VITE_LOCAL_MODE === 'true') {
       console.log('ローカルモードが有効です - 接続チェックをスキップします');
       setIsConnected(false);
+      setIsInitializing(false);
       setLoading(false);
       return;
     }
@@ -58,6 +66,7 @@ export const useSupabase = () => {
     if (!supabase) {
       console.log('Supabase未設定 - ローカルモードで動作');
       setIsConnected(false);
+      setIsInitializing(false);
       setError('Supabase接続エラー: 設定が見つかりません');
       setLoading(false);
       return;
@@ -71,6 +80,7 @@ export const useSupabase = () => {
       if (!result.success) {
         console.error('Supabase接続エラー:', result.error, result.details);
         setIsConnected(false);
+        setIsInitializing(false);
 
         if (result.error === 'APIキーが無効です') {
           setError('接続エラー: APIキーが無効です');
@@ -85,7 +95,14 @@ export const useSupabase = () => {
         // 既存ユーザーの確認
         const session = !isAdminMode ? getAuthSession() : null;
         if (session) {
+          console.log('既存セッションを検出:', session.lineUsername);
           await initializeUser(session.lineUsername);
+        } else if (isAdminMode) {
+          console.log('管理者モードで初期化');
+          setCurrentUser({ id: 'admin', line_username: 'admin' });
+          setIsInitializing(false);
+        } else {
+          setIsInitializing(false);
         }
       }
     } catch (error) {
@@ -93,6 +110,7 @@ export const useSupabase = () => {
       setError(error instanceof Error ? error.message : '不明なエラー');
       setIsConnected(false);
     } finally {
+      setIsInitializing(false);
       setLoading(false);
     }
   };
@@ -113,9 +131,9 @@ export const useSupabase = () => {
     // 管理者モードの場合は初期化をスキップ
     if (isAdminMode) {
       console.log('管理者モードのため、ユーザー初期化をスキップします - 管理者IDを返します', new Date().toISOString());
-      const trimmedUsername = lineUsername.trim();
-      setCurrentUser({ id: 'admin', line_username: trimmedUsername });
-      return { id: 'admin', line_username: trimmedUsername };
+      setCurrentUser({ id: 'admin', line_username: 'admin' });
+      setIsInitializing(false);
+      return { id: 'admin', line_username: 'admin' };
     }
     
     if (!isConnected) {
@@ -123,6 +141,7 @@ export const useSupabase = () => {
       const trimmedUsername = lineUsername.trim();
       return { id: null, line_username: trimmedUsername };
     }
+    setIsInitializing(true);
 
     const startTime = new Date().toISOString();
     const trimmedUsername = lineUsername.trim();
@@ -131,6 +150,7 @@ export const useSupabase = () => {
     // 既に初期化中の場合は処理をスキップ
     if (loading) {
       console.log(`別の初期化処理が進行中のため、現在のユーザーを返します: ${trimmedUsername}`, new Date().toISOString());
+      setIsInitializing(false);
       return currentUser || { id: null, line_username: trimmedUsername };
     }
 
@@ -138,6 +158,7 @@ export const useSupabase = () => {
     setError(null);
     
     try {
+      console.log('ユーザー初期化開始:', trimmedUsername);
       // 既存ユーザーを検索
       let user = await userService.getUserByUsername(trimmedUsername);
       console.log('ユーザー検索結果:', user ? `ユーザーが見つかりました: ${user.id}` : 'ユーザーが見つかりませんでした - 新規作成を試みます', new Date().toISOString());
@@ -145,6 +166,7 @@ export const useSupabase = () => {
       // セキュリティイベントをログ
       if (user) {
         console.log(`Supabaseユーザーが見つかりました: "${trimmedUsername}" - ID: ${user.id}`);
+        console.log('ユーザーデータ:', user);
         try {
           logSecurityEvent('supabase_user_found', trimmedUsername, 'Supabaseユーザーが見つかりました');
         } catch (logError) {
@@ -152,6 +174,7 @@ export const useSupabase = () => {
         }
         
         // ユーザーが見つかった場合は現在のユーザーとして設定
+        console.log('ユーザーを設定:', user);
         setCurrentUser(user);
       } else {
         console.log(`Supabaseユーザーが見つかりません: "${trimmedUsername}" - 新規作成を試みます`);
@@ -159,6 +182,7 @@ export const useSupabase = () => {
           logSecurityEvent('supabase_user_not_found', trimmedUsername, 'Supabaseユーザーが見つかりません');
         } catch (logError) {
           console.error('セキュリティログ記録エラー:', logError);
+          console.log('ログエラー:', logError);
         }
       }
       
@@ -171,6 +195,7 @@ export const useSupabase = () => {
            if (user) {
              setCurrentUser(user);
              console.log(`ユーザー作成成功: "${trimmedUsername}" - ID: ${user.id}`);
+            console.log('作成されたユーザー:', user);
              
              try {
                logSecurityEvent('supabase_user_created', trimmedUsername, 'Supabaseユーザーを作成しました');
@@ -222,6 +247,7 @@ export const useSupabase = () => {
       // 明示的にユーザー情報を更新
       if (user) {
         setCurrentUser(user);
+        setIsInitializing(false);
         console.log('currentUserを更新しました:', user.id || 'ID不明', '- ユーザー名:', user.line_username || lineUsername.trim(), new Date().toISOString());
         setError(null);
         
@@ -233,6 +259,7 @@ export const useSupabase = () => {
         return user;
       } else {
         console.error('ユーザー情報が取得できませんでした');
+        setIsInitializing(false);
         setError('ユーザー情報の取得に失敗しました');
         return { id: null, line_username: lineUsername.trim() };
       }
@@ -240,6 +267,7 @@ export const useSupabase = () => {
       console.error(`ユーザー初期化エラー: ${trimmedUsername}`, error);
       const errorMessage = error instanceof Error ? error.message : '不明なエラー';
       setError(errorMessage);
+      setIsInitializing(false);
       console.log(`ユーザー初期化エラー: ${errorMessage}`);
       return { id: null, line_username: trimmedUsername };
     } finally {
@@ -247,6 +275,7 @@ export const useSupabase = () => {
       console.log(`ユーザー初期化完了: "${trimmedUsername}" - ${endTime}`);
       setTimeout(() => {
         setLoading(false);
+        setIsInitializing(false);
       }, 100);
       console.log('ローディング状態を解除しました', new Date().toISOString());
     }
@@ -331,6 +360,7 @@ export const useSupabase = () => {
     isConnected,
     isAdminMode,
     currentUser,
+    isInitializing,
     loading,
     error,
     retryConnection,

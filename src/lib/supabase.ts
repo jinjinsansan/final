@@ -4,6 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase Key:', supabaseAnonKey ? 'Key is set' : 'Key is not set');
+
 // Supabaseクライアントの作成（環境変数が設定されている場合のみ）
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
@@ -11,8 +14,10 @@ export const supabase = supabaseUrl && supabaseAnonKey
 
 // Supabase接続テスト関数
 export const testSupabaseConnection = async () => {
+  console.log('Supabase接続をテスト中...');
   try {
     if (!supabase) {
+      console.log('Supabase設定が見つかりません');
       return {
         success: false,
         error: 'Supabase設定が見つかりません',
@@ -22,6 +27,7 @@ export const testSupabaseConnection = async () => {
 
     // オフラインモードの場合は早期リターン
     if (!navigator.onLine) {
+      console.log('オフラインモードです');
       return {
         success: false,
         error: 'オフラインモードです',
@@ -32,6 +38,7 @@ export const testSupabaseConnection = async () => {
     // 接続エラーを防ぐためのフォールバック
     try {
       // 軽量な接続テスト
+      console.log('Supabase API接続テスト中...');
       const response = await fetch(`${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`, {
         method: 'HEAD',
         headers: {
@@ -41,6 +48,7 @@ export const testSupabaseConnection = async () => {
       });
       
       if (!response.ok) {
+        console.log('Supabase API接続エラー:', response.status);
         return {
           success: false,
           error: `Supabase API接続エラー: ${response.status}`,
@@ -69,6 +77,7 @@ export const testSupabaseConnection = async () => {
     // 接続テスト（軽量なクエリを実行）
     try {
       const { error } = await supabase.from('users').select('id', { count: 'exact', head: true });
+      console.log('Supabaseクエリテスト結果:', error ? `エラー: ${error.message}` : '成功');
 
       if (error) {
         if (error.message.includes('JWT')) {
@@ -94,6 +103,7 @@ export const testSupabaseConnection = async () => {
       };
     }
 
+    console.log('Supabase接続成功');
     return {
       success: true,
       error: null,
@@ -111,6 +121,28 @@ export const testSupabaseConnection = async () => {
 
 // ユーザーサービス
 export const userService = {
+  // 全ユーザーを取得
+  getAllUsers: async () => {
+    try {
+      if (!supabase) return [];
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('全ユーザー取得エラー:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('全ユーザー取得エラー:', error);
+      return [];
+    }
+  },
+  
   // ユーザー名からユーザーを取得
   getUserByUsername: async (lineUsername: string) => {
     try {
@@ -160,6 +192,31 @@ export const userService = {
 
 // 日記サービス
 export const diaryService = {
+  // 全ユーザーの日記エントリーを取得
+  getAllEntries: async () => {
+    try {
+      if (!supabase) return [];
+      
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select(`
+          *,
+          users(line_username)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('全日記エントリー取得エラー:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('全日記エントリー取得エラー:', error);
+      return [];
+    }
+  },
+  
   // 日記エントリーを作成
   createEntry: async (entryData: any) => { 
     try {
@@ -337,6 +394,71 @@ export const chatService = {
 
 // 同期サービス
 export const syncService = {
+  // 管理者モードでの同期
+  adminSync: async () => {
+    try {
+      if (!supabase) return false;
+      
+      // 全ユーザーを取得
+      const users = await userService.getAllUsers();
+      if (!users || users.length === 0) return false;
+      
+      console.log(`管理者同期: ${users.length}人のユーザーを同期します`);
+      
+      // 各ユーザーのデータを同期
+      for (const user of users) {
+        try {
+          // ユーザーの日記データを取得
+          const { data: entries, error } = await supabase
+            .from('diary_entries')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          
+          if (error) {
+            console.error(`ユーザー ${user.id} の日記データ取得エラー:`, error);
+            continue;
+          }
+          
+          console.log(`ユーザー ${user.id} の日記データを取得: ${entries?.length || 0}件`);
+          
+          // ローカルストレージに保存
+          if (entries && entries.length > 0) {
+            // 日記データをフォーマット
+            const formattedEntries = entries.map(entry => ({
+              id: entry.id,
+              date: entry.date,
+              emotion: entry.emotion,
+              event: entry.event,
+              realization: entry.realization,
+              selfEsteemScore: entry.self_esteem_score,
+              worthlessnessScore: entry.worthlessness_score,
+              counselor_memo: entry.counselor_memo,
+              is_visible_to_user: entry.is_visible_to_user,
+              counselor_name: entry.counselor_name,
+              assigned_counselor: entry.assigned_counselor,
+              urgency_level: entry.urgency_level,
+              created_at: entry.created_at,
+              user: {
+                line_username: user.line_username
+              }
+            }));
+            
+            // 管理者用のキーに保存
+            localStorage.setItem('admin_journalEntries', JSON.stringify(formattedEntries));
+          }
+        } catch (userError) {
+          console.error(`ユーザー ${user.id} の同期エラー:`, userError);
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('管理者同期エラー:', error);
+      return false;
+    }
+  },
+  
   // ローカルデータをSupabaseに移行
   migrateLocalData: async (userId: string) => {
     try {
@@ -568,7 +690,7 @@ export const syncService = {
 
 // 同意履歴サービス
 export const consentService = {
-  // 同意履歴を取得
+  // 全同意履歴を取得
   getAllConsentHistories: async () => {
     try {
       if (!supabase) return [];
@@ -578,16 +700,19 @@ export const consentService = {
         .select('*')
         .order('consent_date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('全同意履歴取得エラー:', error);
+        throw error;
+      }
       
       return data || [];
     } catch (error) {
-      console.error('同意履歴取得エラー:', error);
+      console.error('全同意履歴取得エラー:', error);
       return [];
     }
   },
   
-  // 特定のユーザーの同意履歴を取得
+  // 同意履歴を取得
   getUserConsentHistories: async (lineUsername: string) => {
     try {
       if (!supabase) return [];
@@ -598,11 +723,39 @@ export const consentService = {
         .eq('line_username', lineUsername)
         .order('consent_date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('ユーザー同意履歴取得エラー:', error);
+        throw error;
+      }
       
       return data || [];
     } catch (error) {
       console.error('ユーザー同意履歴取得エラー:', error);
+      return [];
+    }
+  }
+};
+
+// カウンセラーサービス
+export const counselorService = {
+  // カウンセラー情報を取得
+  getCounselors: async () => {
+    try {
+      if (!supabase) return [];
+      
+      const { data, error } = await supabase
+        .from('counselors')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) {
+        console.error('カウンセラー情報取得エラー:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('カウンセラー情報取得エラー:', error);
       return [];
     }
   }
