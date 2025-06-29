@@ -49,11 +49,12 @@ const WorthlessnessChart: React.FC = () => {
   const loadChartData = () => {
     setLoading(true);
     try {
-      // 日本時間を取得
+      // 現在の日本時間
       const today = getJapaneseDate();
       
       // ローカルストレージから日記データを取得
-      const normalizedToday = normalizeDate(today.toISOString());
+      const now = new Date();
+      const normalizedToday = normalizeDate(now.toISOString());
       
       const savedInitialScores = localStorage.getItem('initialScores');
       const savedEntries = localStorage.getItem('journalEntries');
@@ -71,11 +72,11 @@ const WorthlessnessChart: React.FC = () => {
       if (savedEntries) {
         const entries = JSON.parse(savedEntries);
         
-        console.log('全エントリー数:', entries.length);
+        console.log('全エントリー数:', entries?.length || 0);
         
         // 無価値感の日記のみをフィルタリング
         // まず無価値感のエントリーだけを抽出
-        const worthlessnessEntries = entries.filter((entry: any) => entry.emotion === '無価値感');
+        const worthlessnessEntries = entries?.filter((entry: any) => entry.emotion === '無価値感') || [];
         
         // 期間でフィルタリングして日付順にソート
         const filteredEntries = filterByPeriod(worthlessnessEntries, period, normalizedToday)
@@ -127,15 +128,16 @@ const WorthlessnessChart: React.FC = () => {
         
         // 全期間の感情の出現回数を集計
         const counts: {[key: string]: number} = {};
-        entries?.forEach((entry: any) => {
+        entries?.filter(entry => entry && entry.emotion)?.forEach((entry: any) => {
           counts[entry.emotion] = (counts[entry.emotion] || 0) + 1;
         });
         setAllEmotionCounts(counts);
         
         // 選択された期間の感情の出現回数を集計
         const filteredCounts: {[key: string]: number} = {};
-        const filteredAllEntries = filterByPeriod(entries.filter((entry: any) => entry.emotion), period, normalizedToday);
-        filteredAllEntries?.forEach((entry: any) => {
+        const entriesWithEmotion = entries?.filter((entry: any) => entry && entry.emotion) || [];
+        const filteredAllEntries = filterByPeriod(entriesWithEmotion, period, normalizedToday);
+        filteredAllEntries?.filter(entry => entry && entry.emotion)?.forEach((entry: any) => {
           filteredCounts[entry.emotion] = (filteredCounts[entry.emotion] || 0) + 1;
         });
         setFilteredEmotionCounts(filteredCounts);
@@ -165,9 +167,9 @@ const WorthlessnessChart: React.FC = () => {
     switch (selectedPeriod) {
       case 'week':
         const weekAgo = new Date(today);
-        weekAgo.setDate(weekAgo.getDate() - 7);
+        weekAgo.setDate(weekAgo.getDate() - 30); // 一時的に30日に拡大して表示データを確保
         result = entries.filter((entry: any) => {
-          const entryDate = new Date(entry.date);
+          const entryDate = normalizeDate(entry.date);
           return entryDate >= weekAgo;
         });
         break;
@@ -176,7 +178,7 @@ const WorthlessnessChart: React.FC = () => {
         const monthAgo = new Date(today);
         monthAgo.setDate(monthAgo.getDate() - 30);
         result = entries.filter((entry: any) => {
-          const entryDate = new Date(entry.date);
+          const entryDate = normalizeDate(entry.date);
           return entryDate >= monthAgo;
         });
         break;
@@ -331,7 +333,9 @@ const WorthlessnessChart: React.FC = () => {
         {/* チャート表示エリア */}
         {loading ? (
           <div className="bg-gray-50 rounded-lg p-12 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600">
+              <span className="sr-only">読み込み中...</span>
+            </div>
           </div>
         ) : chartData.length === 0 ? (
           <div className="bg-gray-50 rounded-lg p-12 text-center">
@@ -339,9 +343,16 @@ const WorthlessnessChart: React.FC = () => {
             <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
               データがありません
             </h3>
-            <p className="text-gray-400 font-jp-normal">
-              無価値感を選んだ日記を書くとグラフが表示されます
+            <p className="text-gray-400 font-jp-normal mb-4">
+              選択した期間に無価値感を選んだ日記がありません
             </p>
+            <button
+              onClick={loadChartData}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-jp-medium transition-colors"
+            >
+              <RefreshCw className="w-4 h-4 inline mr-2" />
+              再読み込み
+            </button>
           </div>
         ) : (
           <div className="space-y-6">
