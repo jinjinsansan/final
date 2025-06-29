@@ -10,7 +10,7 @@ import BackupRestoreManager from './BackupRestoreManager';
 import DeviceAuthManagement from './DeviceAuthManagement';
 import SecurityDashboard from './SecurityDashboard';
 import DataCleanup from './DataCleanup';
-import { supabase, diaryService, syncService } from '../lib/supabase';
+import { supabase, adminSupabase, diaryService, syncService } from '../lib/supabase';
 
 interface JournalEntry {
   id: string;
@@ -93,6 +93,7 @@ const AdminPanel: React.FC = () => {
   const handleSyncAdminData = async () => {
     console.log('管理者用データを同期中...');
     setIsSyncInProgress(true);
+    setStatus({message: '管理者データを同期中...', type: 'info'});
     
     try {
       // 管理者モードでの同期を実行
@@ -100,15 +101,34 @@ const AdminPanel: React.FC = () => {
       
       if (success) {
         console.log('管理者用データの同期が完了しました');
+        setStatus({message: '管理者データの同期が完了しました', type: 'success'});
+        
+        // 管理者用のデータを読み込み
+        const adminEntries = localStorage.getItem('admin_journalEntries');
+        if (adminEntries) {
+          const parsedEntries = JSON.parse(adminEntries);
+          console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+          
+          // 日付順でソート（新しい順）
+          parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          setEntries(parsedEntries);
+          setFilteredEntries(parsedEntries);
+        }
       } else {
         console.log('管理者用データの同期に失敗しました');
+        setStatus({message: '管理者データの同期に失敗しました', type: 'error'});
       }
     } catch (error) {
       console.error('管理者用データ同期エラー:', error);
+      setStatus({message: '管理者データの同期中にエラーが発生しました', type: 'error'});
     } finally {
       setIsSyncInProgress(false);
     }
   };
+  
+  // ステータス表示用の状態
+  const [status, setStatus] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
 
   const handleViewEntry = (entry: JournalEntry) => {
     setSelectedEntry(entry);
@@ -148,8 +168,9 @@ const AdminPanel: React.FC = () => {
       
       // Supabaseの更新（接続されている場合）
       if (supabase && selectedEntry.id) {
+        console.log('Supabaseでメモを更新:', selectedEntry.id);
         try {
-          const { error } = await supabase
+          const { error } = await adminSupabase
             .from('diary_entries')
             .update({
               counselor_memo: memoText,
@@ -229,8 +250,9 @@ const AdminPanel: React.FC = () => {
       
       // Supabaseの更新（接続されている場合）
       if (supabase) {
+        console.log('Supabaseから日記を削除:', entryId);
         try {
-          const { error } = await supabase
+          const { error } = await adminSupabase
             .from('diary_entries')
             .delete()
             .eq('id', entryId);
@@ -576,13 +598,33 @@ const AdminPanel: React.FC = () => {
           <h1 className="text-2xl font-jp-bold text-gray-900">管理画面</h1>
           <button
             onClick={handleSyncAdminData}
-            disabled={syncInProgress}
+            disabled={syncInProgress || loading}
             className="ml-auto flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors text-sm"
           >
             <RefreshCw className={`w-4 h-4 ${syncInProgress ? 'animate-spin' : ''}`} />
             <span>データ同期</span>
           </button>
         </div>
+        
+        {/* ステータス表示 */}
+        {status && (
+          <div className={`mb-4 rounded-lg p-3 border ${
+            status.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 
+            status.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
+            'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            <div className="flex items-center space-x-2">
+              {status.type === 'success' ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : status.type === 'error' ? (
+                <AlertTriangle className="w-4 h-4" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              <span className="text-sm">{status.message}</span>
+            </div>
+          </div>
+        )}
 
         <Tabs defaultValue="search" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-7 gap-1 mb-6 overflow-x-auto">

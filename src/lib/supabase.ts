@@ -1,15 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 
 // 環境変数からSupabase接続情報を取得
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 console.log('Supabase URL:', supabaseUrl);
 console.log('Supabase Key:', supabaseAnonKey ? 'Key is set' : 'Key is not set');
+console.log('Supabase Service Role Key:', supabaseServiceRoleKey ? 'Service Role Key is set' : 'Service Role Key is not set');
 
 // Supabaseクライアントの作成（環境変数が設定されている場合のみ）
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+  
+// 管理者用Supabaseクライアント（サービスロールキーを使用）
+export const adminSupabase = supabaseUrl && supabaseServiceRoleKey
+  ? createClient(supabaseUrl, supabaseServiceRoleKey)
   : null;
 
 // Supabase接続テスト関数
@@ -220,10 +228,10 @@ export const diaryService = {
   // 日記エントリーを作成
   createEntry: async (entryData: any) => { 
     try {
-      if (!supabase) return null;
+      if (!adminSupabase) return null;
       
       // 既存のエントリーをチェック
-      const { data: existingEntry, error: checkError } = await supabase
+      const { data: existingEntry, error: checkError } = await adminSupabase
         .from('diary_entries')
         .select('id')
         .eq('id', entryData.id)
@@ -239,8 +247,8 @@ export const diaryService = {
       
       if (existingEntry) {
         // 既存のエントリーを更新
-        console.log('既存の日記エントリーを更新:', entryData.id);
-        const result = await supabase
+        console.log('既存の日記エントリーを更新:', entryData.id, entryData);
+        const result = await adminSupabase
           .from('diary_entries')
           .update({
             user_id: entryData.user_id,
@@ -259,8 +267,8 @@ export const diaryService = {
         error = result.error;
       } else {
         // 新規エントリーを作成
-        console.log('新規日記エントリーを作成:', entryData.id);
-        const result = await supabase
+        console.log('新規日記エントリーを作成:', entryData.id, entryData);
+        const result = await adminSupabase
           .from('diary_entries')
           .insert([entryData])
           .select()
@@ -282,9 +290,9 @@ export const diaryService = {
   // 日記エントリーを更新
   updateEntry: async (id: string, updates: any) => {
     try {
-      if (!supabase) return null;
+      if (!adminSupabase) return null;
       
-      const { data, error } = await supabase
+      const { data, error } = await adminSupabase
         .from('diary_entries')
         .update(updates)
         .eq('id', id)
@@ -303,9 +311,9 @@ export const diaryService = {
   // 日記エントリーを削除
   deleteEntry: async (id: string) => {
     try {
-      if (!supabase) return null;
+      if (!adminSupabase) return null;
       
-      const { error } = await supabase
+      const { error } = await adminSupabase
         .from('diary_entries')
         .delete()
         .eq('id', id);
@@ -322,9 +330,9 @@ export const diaryService = {
   // ユーザーの日記エントリーを取得
   getUserEntries: async (userId: string) => {
     try {
-      if (!supabase) return [];
+      if (!adminSupabase) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await adminSupabase
         .from('diary_entries')
         .select('*')
         .eq('user_id', userId)
@@ -397,19 +405,34 @@ export const syncService = {
   // 管理者モードでの同期
   adminSync: async () => {
     try {
-      if (!supabase) return false;
+      if (!adminSupabase) {
+        console.log('管理者用Supabaseクライアントが利用できないため、同期をスキップします');
+        return false;
+      }
       
       // 全ユーザーを取得
-      const users = await userService.getAllUsers();
-      if (!users || users.length === 0) return false;
+      const { data: users, error: usersError } = await adminSupabase
+        .from('users')
+        .select('*');
+      
+      if (usersError) {
+        console.error('ユーザー取得エラー:', usersError);
+        return false;
+      }
+      
+      if (!users || users.length === 0) {
+        console.log('ユーザーが見つかりませんでした');
+        return false;
+      }
       
       console.log(`管理者同期: ${users.length}人のユーザーを同期します`);
       
       // 各ユーザーのデータを同期
+      const allEntries = [];
       for (const user of users) {
         try {
           // ユーザーの日記データを取得
-          const { data: entries, error } = await supabase
+          const { data: entries, error } = await adminSupabase
             .from('diary_entries')
             .select('*')
             .eq('user_id', user.id)
@@ -422,34 +445,40 @@ export const syncService = {
           
           console.log(`ユーザー ${user.id} の日記データを取得: ${entries?.length || 0}件`);
           
-          // ローカルストレージに保存
+          // 全エントリーに追加
           if (entries && entries.length > 0) {
-            // 日記データをフォーマット
-            const formattedEntries = entries.map(entry => ({
-              id: entry.id,
-              date: entry.date,
-              emotion: entry.emotion,
-              event: entry.event,
-              realization: entry.realization,
-              selfEsteemScore: entry.self_esteem_score,
-              worthlessnessScore: entry.worthlessness_score,
-              counselor_memo: entry.counselor_memo,
-              is_visible_to_user: entry.is_visible_to_user,
-              counselor_name: entry.counselor_name,
-              assigned_counselor: entry.assigned_counselor,
-              urgency_level: entry.urgency_level,
-              created_at: entry.created_at,
-              user: {
-                line_username: user.line_username
-              }
-            }));
-            
-            // 管理者用のキーに保存
-            localStorage.setItem('admin_journalEntries', JSON.stringify(formattedEntries));
+            entries.forEach(entry => {
+              allEntries.push({
+                id: entry.id,
+                date: entry.date,
+                emotion: entry.emotion,
+                event: entry.event,
+                realization: entry.realization,
+                selfEsteemScore: entry.self_esteem_score,
+                worthlessnessScore: entry.worthlessness_score,
+                counselor_memo: entry.counselor_memo,
+                is_visible_to_user: entry.is_visible_to_user,
+                counselor_name: entry.counselor_name,
+                assigned_counselor: entry.assigned_counselor,
+                urgency_level: entry.urgency_level,
+                created_at: entry.created_at,
+                user: {
+                  line_username: user.line_username
+                }
+              });
+            });
           }
         } catch (userError) {
           console.error(`ユーザー ${user.id} の同期エラー:`, userError);
         }
+      }
+      
+      // 全エントリーを管理者用のキーに保存
+      if (allEntries.length > 0) {
+        console.log(`合計 ${allEntries.length} 件の日記エントリーを管理者用ストレージに保存します`);
+        localStorage.setItem('admin_journalEntries', JSON.stringify(allEntries));
+      } else {
+        console.log('保存するエントリーがありませんでした');
       }
       
       return true;
@@ -462,7 +491,7 @@ export const syncService = {
   // ローカルデータをSupabaseに移行
   migrateLocalData: async (userId: string) => {
     try {
-      if (!supabase) {
+      if (!adminSupabase) {
         console.log('Supabase接続がないため、データ移行をスキップします');
         return false;
       }
@@ -488,7 +517,7 @@ export const syncService = {
       for (const entry of entries) {
         // 既存のエントリーをチェック
         try {
-          const { data: existingEntry, error: checkError } = await supabase
+          const { data: existingEntry, error: checkError } = await adminSupabase
             .from('diary_entries')
             .select('id')
             .eq('id', entry.id)
@@ -502,7 +531,7 @@ export const syncService = {
           
           if (existingEntry) {
             // 既存のエントリーを更新
-            const { error: updateError } = await supabase
+            const { error: updateError } = await adminSupabase
               .from('diary_entries')
               .update({
                 date: entry.date,
@@ -525,7 +554,7 @@ export const syncService = {
             }
           } else {
             // 新しいエントリーを作成
-            const { error: insertError } = await supabase
+            const { error: insertError } = await adminSupabase
               .from('diary_entries')
               .insert([{
                 id: entry.id,
@@ -622,7 +651,7 @@ export const syncService = {
   // 同意履歴をSupabaseに同期
   syncConsentHistories: async () => {
     try {
-      if (!supabase) return false;
+      if (!adminSupabase) return false;
       console.log('同意履歴をSupabaseに同期開始');
       
       // ローカルストレージから同意履歴を取得
@@ -644,7 +673,7 @@ export const syncService = {
         // 既存の履歴をチェック
         let existingHistory = null;
         try {
-          const { data, error } = await supabase
+          const { data, error } = await adminSupabase
             .from('consent_histories')
             .select('id')
             .eq('id', historyId)
@@ -662,7 +691,7 @@ export const syncService = {
         if (!existingHistory) {
           // 新しい履歴を作成
           try {
-            const { error } = await supabase
+            const { error } = await adminSupabase
               .from('consent_histories')
               .insert([{
                 id: historyId,
@@ -722,10 +751,10 @@ export const consentService = {
   // 全同意履歴を取得
   getAllConsentHistories: async () => {
     try {
-      console.log('全同意履歴を取得中...');
-      if (!supabase) return [];
+      console.log('全同意履歴を取得中...', adminSupabase ? 'adminSupabase利用可能' : 'adminSupabase利用不可');
+      if (!adminSupabase) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await adminSupabase
         .from('consent_histories')
         .select('*')
         .order('consent_date', { ascending: false });
@@ -746,10 +775,10 @@ export const consentService = {
   // 同意履歴を取得
   getUserConsentHistories: async (lineUsername: string) => {
     try {
-      console.log(`ユーザー ${lineUsername} の同意履歴を取得中...`);
-      if (!supabase) return [];
+      console.log(`ユーザー ${lineUsername} の同意履歴を取得中...`, adminSupabase ? 'adminSupabase利用可能' : 'adminSupabase利用不可');
+      if (!adminSupabase) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await adminSupabase
         .from('consent_histories')
         .select('*')
         .eq('line_username', lineUsername)

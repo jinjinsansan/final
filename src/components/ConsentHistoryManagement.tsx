@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Download, Search, Calendar, User, CheckCircle, XCircle, Filter, RotateCcw, FileText } from 'lucide-react';
-import { consentService, syncService } from '../lib/supabase';
+import { consentService, syncService, adminSupabase } from '../lib/supabase';
 import { useSupabase } from '../hooks/useSupabase';
 
 interface ConsentHistory {
@@ -40,14 +40,28 @@ const ConsentHistoryManagement: React.FC = () => {
       console.log('同意履歴を読み込み中...');
       if (isConnected) {
         // Supabaseから読み込み
-        const supabaseHistories = await consentService.getAllConsentHistories();
-        if (supabaseHistories.length > 0) {
-          setConsentHistories(supabaseHistories);
-          // ローカルストレージにも保存
-          localStorage.setItem('consent_histories', JSON.stringify(supabaseHistories));
-        } else {
-          // Supabaseにデータがない場合はローカルから読み込み
-          loadLocalHistories();
+        if (adminSupabase) {
+          try {
+            const { data, error } = await adminSupabase
+              .from('consent_histories')
+              .select('*')
+              .order('consent_date', { ascending: false });
+            
+            if (error) {
+              console.error('同意履歴取得エラー:', error);
+              loadLocalHistories();
+            } else if (data && data.length > 0) {
+              setConsentHistories(data);
+              // ローカルストレージにも保存
+              localStorage.setItem('consent_histories', JSON.stringify(data));
+            } else {
+              // Supabaseにデータがない場合はローカルから読み込み
+              loadLocalHistories();
+            }
+          } catch (error) {
+            console.error('Supabase同意履歴取得エラー:', error);
+            loadLocalHistories();
+          }
         }
       } else {
         // ローカルストレージから読み込み
