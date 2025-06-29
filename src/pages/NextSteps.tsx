@@ -29,35 +29,51 @@ const NextSteps: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                      <span className="text-gray-700 font-jp-normal">恐怖</span>
+                      <span className="text-gray-700 font-jp-normal">恐怖（ネガティブ）</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                      <span className="text-gray-700 font-jp-normal">悲しみ</span>
+                      <span className="text-gray-700 font-jp-normal">悲しみ（ネガティブ）</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                      <span className="text-gray-700 font-jp-normal">怒り</span>
+                      <span className="text-gray-700 font-jp-normal">怒り（ネガティブ）</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                      <span className="text-gray-700 font-jp-normal">寂しさ</span>
+                      <span className="text-gray-700 font-jp-normal">寂しさ（ネガティブ）</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      <span className="text-gray-700 font-jp-normal">無価値感</span>
+                      <span className="text-gray-700 font-jp-normal">無価値感（ネガティブ）</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                      <span className="text-gray-700 font-jp-normal">罪悪感</span>
+                      <span className="text-gray-700 font-jp-normal">罪悪感（ネガティブ）</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      <span className="text-gray-700 font-jp-normal">悔しさ</span>
+                      <span className="text-gray-700 font-jp-normal">悔しさ（ネガティブ）</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
-                      <span className="text-gray-700 font-jp-normal">恥ずかしさ</span>
+                      <span className="text-gray-700 font-jp-normal">恥ずかしさ（ネガティブ）</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                      <span className="text-gray-700 font-jp-normal">嬉しい（ポジティブ）</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                      <span className="text-gray-700 font-jp-normal">感謝（ポジティブ）</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-lime-500 rounded-full"></div>
+                      <span className="text-gray-700 font-jp-normal">達成感（ポジティブ）</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                      <span className="text-gray-700 font-jp-normal">幸せ（ポジティブ）</span>
                     </div>
                   </div>
                 </div>

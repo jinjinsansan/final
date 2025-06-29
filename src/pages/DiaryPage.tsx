@@ -18,7 +18,7 @@ const DiaryPage: React.FC = () => {
   const [formData, setFormData] = useState({
     date: getJapaneseDate().toISOString().split('T')[0],
     event: '',
-    emotion: '',
+    emotion: '', 
     selfEsteemScore: 50,
     worthlessnessScore: 50,
     realization: ''
@@ -40,7 +40,7 @@ const DiaryPage: React.FC = () => {
   const today = getJapaneseDate();
   const todayString = today.toISOString().split('T')[0];
 
-  const emotions = [
+  const negativeEmotions = [
     { 
       name: '恐怖', 
       bgColor: 'bg-purple-100', 
@@ -106,6 +106,48 @@ const DiaryPage: React.FC = () => {
       selectedBg: 'bg-pink-200',
       selectedBorder: 'border-pink-500'
     }
+  ];
+
+  const positiveEmotions = [
+    { 
+      name: '嬉しい', 
+      bgColor: 'bg-yellow-100', 
+      borderColor: 'border-yellow-300',
+      textColor: 'text-yellow-800',
+      selectedBg: 'bg-yellow-200',
+      selectedBorder: 'border-yellow-500'
+    },
+    { 
+      name: '感謝', 
+      bgColor: 'bg-teal-100', 
+      borderColor: 'border-teal-300',
+      textColor: 'text-teal-800',
+      selectedBg: 'bg-teal-200',
+      selectedBorder: 'border-teal-500'
+    },
+    { 
+      name: '達成感', 
+      bgColor: 'bg-lime-100', 
+      borderColor: 'border-lime-300',
+      textColor: 'text-lime-800',
+      selectedBg: 'bg-lime-200',
+      selectedBorder: 'border-lime-500'
+    },
+    { 
+      name: '幸せ', 
+      bgColor: 'bg-amber-100', 
+      borderColor: 'border-amber-300',
+      textColor: 'text-amber-800',
+      selectedBg: 'bg-amber-200',
+      selectedBorder: 'border-amber-500',
+      highlighted: true
+    }
+  ];
+
+  // すべての感情を結合
+  const emotions = [
+    ...negativeEmotions,
+    ...positiveEmotions
   ];
 
   // 前回の無価値感日記のスコアを取得
@@ -370,6 +412,7 @@ const DiaryPage: React.FC = () => {
   // 感情に対応する絵文字を取得
   const getEmotionEmoji = (emotion: string): string => {
     const emojiMap: { [key: string]: string } = {
+      // ネガティブな感情
       '恐怖': '😨',
       '悲しみ': '😢',
       '怒り': '😠',
@@ -377,7 +420,12 @@ const DiaryPage: React.FC = () => {
       '無価値感': '😔',
       '罪悪感': '😓',
       '寂しさ': '🥺',
-      '恥ずかしさ': '😳'
+      '恥ずかしさ': '😳',
+      // ポジティブな感情
+      '嬉しい': '😄',
+      '感謝': '🙏',
+      '達成感': '🏆',
+      '幸せ': '😊'
     };
     return emojiMap[emotion] || '📝';
   };
@@ -682,37 +730,75 @@ const DiaryPage: React.FC = () => {
           <p className="text-gray-700 font-jp-normal mb-4 text-sm">
             どの気持ちに近いですか？
           </p>
+          
+          <div className="mb-4">
+            <h3 className="text-base font-jp-semibold text-gray-800 mb-2">ネガティブな感情</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {negativeEmotions.map((emotion) => (
+                <label
+                  key={emotion.name}
+                  className={`flex items-center space-x-2 p-2 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 border-2 text-sm sm:text-base ${
+                    formData.emotion === emotion.name
+                      ? `${emotion.selectedBg} ${emotion.selectedBorder} shadow-md transform scale-105`
+                      : `${emotion.bgColor} ${emotion.borderColor} hover:shadow-sm hover:scale-102`
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="emotion"
+                    value={emotion.name}
+                    checked={formData.emotion === emotion.name}
+                    onChange={(e) => setFormData({...formData, emotion: e.target.value})}
+                    className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className={`w-3 h-3 rounded-full ${
+                    formData.emotion === emotion.name 
+                      ? emotion.selectedBorder.replace('border-', 'bg-')
+                      : emotion.borderColor.replace('border-', 'bg-')
+                  }`}></div>
+                  <span className={`font-jp-semibold text-sm sm:text-base ${emotion.textColor} ${
+                    formData.emotion === emotion.name ? 'font-jp-bold' : ''
+                  }`}>
+                    {emotion.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {emotions.map((emotion) => (
-              <label
-                key={emotion.name}
-                className={`flex items-center space-x-2 p-2 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 border-2 text-sm sm:text-base ${
-                  formData.emotion === emotion.name
-                    ? `${emotion.selectedBg} ${emotion.selectedBorder} shadow-md transform scale-105`
-                    : `${emotion.bgColor} ${emotion.borderColor} hover:shadow-sm hover:scale-102`
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="emotion"
-                  value={emotion.name}
-                  checked={formData.emotion === emotion.name}
-                  onChange={(e) => setFormData({...formData, emotion: e.target.value})}
-                  className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                />
-                <div className={`w-3 h-3 rounded-full ${
-                  formData.emotion === emotion.name 
-                    ? emotion.selectedBorder.replace('border-', 'bg-')
-                    : emotion.borderColor.replace('border-', 'bg-')
-                }`}></div>
-                <span className={`font-jp-semibold text-sm sm:text-base ${emotion.textColor} ${
-                  formData.emotion === emotion.name ? 'font-jp-bold' : ''
-                }`}>
-                  {emotion.name}
-                </span>
-              </label>
-            ))}
+          <div className="mt-6">
+            <h3 className="text-base font-jp-semibold text-gray-800 mb-2">ポジティブな感情</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {positiveEmotions.map((emotion) => (
+                <label
+                  key={emotion.name}
+                  className={`flex items-center space-x-2 p-2 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 border-2 text-sm sm:text-base ${
+                    formData.emotion === emotion.name
+                      ? `${emotion.selectedBg} ${emotion.selectedBorder} shadow-md transform scale-105`
+                      : `${emotion.bgColor} ${emotion.borderColor} hover:shadow-sm hover:scale-102`
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="emotion"
+                    value={emotion.name}
+                    checked={formData.emotion === emotion.name}
+                    onChange={(e) => setFormData({...formData, emotion: e.target.value})}
+                    className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className={`w-3 h-3 rounded-full ${
+                    formData.emotion === emotion.name 
+                      ? emotion.selectedBorder.replace('border-', 'bg-')
+                      : emotion.borderColor.replace('border-', 'bg-')
+                  }`}></div>
+                  <span className={`font-jp-semibold text-sm sm:text-base ${emotion.textColor} ${
+                    formData.emotion === emotion.name ? 'font-jp-bold' : ''
+                  }`}>
+                    {emotion.name}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
