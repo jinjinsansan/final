@@ -29,7 +29,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
   const handleReject = () => {
     // 拒否履歴を記録
     const consentRecord = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       line_username: 'declined_user_' + Date.now(),
       consent_given: false,
       consent_date: new Date().toISOString(),
@@ -39,7 +39,13 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
     
     // ローカルストレージに保存
     const existingHistories = localStorage.getItem('consent_histories');
-    const histories = existingHistories ? JSON.parse(existingHistories) : [];
+    let histories = [];
+    try {
+      histories = existingHistories ? JSON.parse(existingHistories) : [];
+    } catch (error) {
+      console.error('同意履歴の解析エラー:', error);
+      histories = [];
+    }
     histories.push(consentRecord);
     localStorage.setItem('consent_histories', JSON.stringify(histories));
 

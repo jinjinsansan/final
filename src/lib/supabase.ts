@@ -623,6 +623,7 @@ export const syncService = {
   syncConsentHistories: async () => {
     try {
       if (!supabase) return false;
+      console.log('同意履歴をSupabaseに同期開始');
       
       // ローカルストレージから同意履歴を取得
       const savedHistories = localStorage.getItem('consent_histories');
@@ -633,25 +634,53 @@ export const syncService = {
       
       // 各履歴をSupabaseに保存
       for (const history of histories) {
+        // IDがUUID形式かチェック
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(history.id);
+        
+        // UUIDでない場合は新しいUUIDを生成
+        const historyId = isUuid ? history.id : crypto.randomUUID();
+        console.log(`同意履歴ID: ${history.id} -> ${historyId} (UUID形式: ${isUuid})`);
+        
         // 既存の履歴をチェック
-        const { data: existingHistory } = await supabase
-          .from('consent_histories')
-          .select('id')
-          .eq('id', history.id)
-          .maybeSingle();
+        let existingHistory = null;
+        try {
+          const { data, error } = await supabase
+            .from('consent_histories')
+            .select('id')
+            .eq('id', historyId)
+            .maybeSingle();
+          
+          if (error) {
+            console.error('同意履歴確認エラー:', error);
+          } else {
+            existingHistory = data;
+          }
+        } catch (checkError) {
+          console.error('同意履歴確認中にエラーが発生:', checkError);
+        }
         
         if (!existingHistory) {
           // 新しい履歴を作成
-          await supabase
-            .from('consent_histories')
-            .insert([{
-              id: history.id,
-              line_username: history.line_username,
-              consent_given: history.consent_given,
-              consent_date: history.consent_date,
-              ip_address: history.ip_address,
-              user_agent: history.user_agent
-            }]);
+          try {
+            const { error } = await supabase
+              .from('consent_histories')
+              .insert([{
+                id: historyId,
+                line_username: history.line_username,
+                consent_given: history.consent_given,
+                consent_date: history.consent_date,
+                ip_address: history.ip_address || 'unknown',
+                user_agent: history.user_agent || navigator.userAgent
+              }]);
+            
+            if (error) {
+              console.error('同意履歴作成エラー:', error);
+            } else {
+              console.log(`同意履歴を作成しました: ${historyId}`);
+            }
+          } catch (insertError) {
+            console.error('同意履歴作成中にエラーが発生:', insertError);
+          }
         }
       }
       
@@ -693,6 +722,7 @@ export const consentService = {
   // 全同意履歴を取得
   getAllConsentHistories: async () => {
     try {
+      console.log('全同意履歴を取得中...');
       if (!supabase) return [];
       
       const { data, error } = await supabase
@@ -702,6 +732,7 @@ export const consentService = {
       
       if (error) {
         console.error('全同意履歴取得エラー:', error);
+        console.log('同意履歴取得エラー詳細:', error.message, error.details);
         throw error;
       }
       
@@ -715,6 +746,7 @@ export const consentService = {
   // 同意履歴を取得
   getUserConsentHistories: async (lineUsername: string) => {
     try {
+      console.log(`ユーザー ${lineUsername} の同意履歴を取得中...`);
       if (!supabase) return [];
       
       const { data, error } = await supabase
