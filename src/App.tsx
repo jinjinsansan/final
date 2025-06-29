@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, BookOpen, Search, BarChart2, HelpCircle, MessageCircle, Settings, Home, User, Menu, X, FileText, ArrowRight, Shield, BarChart, Database, LogOut, ExternalLink } from 'lucide-react';
 import { useMaintenanceStatus } from './hooks/useMaintenanceStatus';
 import { useSupabase } from './hooks/useSupabase';
-import { useAutoSync } from './hooks/useAutoSync';
-import { getCurrentUser, getAuthSession } from './lib/deviceAuth';
+import { getCurrentUser } from './lib/deviceAuth';
 
 // コンポーネントのインポート
 import MaintenanceMode from './components/MaintenanceMode';
@@ -45,13 +44,10 @@ function App() {
 
   // カスタムフックの初期化
   const { isMaintenanceMode, config, isAdminBypass } = useMaintenanceStatus();
-  const { isConnected, error: supabaseError, retryConnection } = useSupabase();
-  
+  const { isConnected, error: supabaseError, retryConnection, currentUser } = useSupabase();
+
   // ローカルモードの確認
   const isLocalMode = import.meta.env.VITE_LOCAL_MODE === 'true';
-  
-  // 自動同期フックを初期化
-  const autoSync = useAutoSync();
 
   // 初期化
   useEffect(() => {
@@ -78,14 +74,6 @@ function App() {
     setShowSyncStatus(true);
   }, []);
 
-  // 自動同期の状態を確認
-  useEffect(() => {
-    if (isConnected && autoSync.currentUser && autoSync.isAutoSyncEnabled) {
-      console.log('自動同期が有効です。5分ごとにデータが同期されます。', new Date().toISOString());
-      setShowSyncStatus(true);
-    }
-  }, [isConnected, autoSync.currentUser, autoSync.isAutoSyncEnabled]);
-
   // プライバシーポリシー同意処理
   const handlePrivacyConsent = (accepted: boolean) => {
     if (accepted) {
@@ -94,17 +82,7 @@ function App() {
       localStorage.setItem('privacyConsentGiven', 'true');
       localStorage.setItem('privacyConsentDate', new Date().toISOString());
       setLineUsername(username);
-      
-      // 同意後に自動的にSupabaseユーザーを作成して同期を開始
-      if (isConnected) {
-        setTimeout(() => {
-          autoSync.triggerManualSync().catch(error => {
-            console.error('初期同期エラー:', error);
-          });
-         }, 1000);
-       }
-       
-       setShowPrivacyConsent(false);
+      setShowPrivacyConsent(false);
     } else {
       alert('プライバシーポリシーに同意いただけない場合、サービスをご利用いただけません。');
     }

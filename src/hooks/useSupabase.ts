@@ -106,7 +106,6 @@ export const useSupabase = () => {
   };
   
   // 接続を再試行する関数
-        setIsInitializing(false);
   const retryConnection = () => {
     if (retryCount < 5) {
       console.log(`接続を再試行します... (${retryCount + 1}/5)`);

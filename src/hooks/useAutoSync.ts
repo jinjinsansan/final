@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSupabase } from './useSupabase';
 import { syncService } from '../lib/supabase';
-import { getCurrentUser } from '../lib/deviceAuth';
+import { getCurrentUser, getAuthSession } from '../lib/deviceAuth';
 
 interface AutoSyncStatus {
   isAutoSyncEnabled: boolean;
@@ -184,11 +184,6 @@ export const useAutoSync = () => {
   const toggleAutoSync = async (enabled: boolean) => {
     localStorage.setItem('auto_sync_enabled', enabled.toString());
     console.log('自動同期設定を変更:', enabled ? '有効' : '無効');
-    try {
-      getCurrentUser();
-    } catch (error) {
-      console.error('セキュリティログ記録エラー:', error);
-    }
 
     setStatus(prev => ({ ...prev, isAutoSyncEnabled: enabled }));
 
@@ -210,7 +205,8 @@ export const useAutoSync = () => {
     try {
       if (!isConnected || !currentUser) {
         throw new Error('Supabaseに接続されていないか、ユーザーが設定されていません');
-      }      
+      }
+      
       await performAutoSync(currentUser.id);
       console.log('手動同期が完了しました - ユーザーID: ' + currentUser.id);
     } finally {
@@ -223,7 +219,7 @@ export const useAutoSync = () => {
     if (status.isAutoSyncEnabled && isConnected && currentUser) {
       // 前回のタイマーをクリア
       if (syncTimeoutRef.current) {
-        clearInterval(syncTimeoutRef.current);
+        clearInterval(syncTimeoutRef.current as NodeJS.Timeout);
       }
       
       syncTimeoutRef.current = setInterval(() => {
@@ -233,17 +229,23 @@ export const useAutoSync = () => {
       }, 5 * 60 * 1000); // 5分
       
       return () => {
-        clearInterval(syncTimeoutRef.current || 0);
+        if (syncTimeoutRef.current) {
+          clearInterval(syncTimeoutRef.current as NodeJS.Timeout);
+        }
       };
     } else {
-      clearInterval(syncTimeoutRef.current || 0);
+      if (syncTimeoutRef.current) {
+        clearInterval(syncTimeoutRef.current as NodeJS.Timeout);
+      }
     }
   }, [status.isAutoSyncEnabled, isConnected, currentUser]);
 
   // コンポーネントがアンマウントされる際にタイマーをクリア
   useEffect(() => { 
     return () => {
-      clearInterval(syncTimeoutRef.current || 0);
+      if (syncTimeoutRef.current) {
+        clearInterval(syncTimeoutRef.current as NodeJS.Timeout);
+      }
     };
   }, []);
 
@@ -251,6 +253,8 @@ export const useAutoSync = () => {
     ...status,
     toggleAutoSync,
     triggerManualSync,
-    isConnected
+    isConnected,
+    currentUser,
+    performAutoSync
   };
 };
