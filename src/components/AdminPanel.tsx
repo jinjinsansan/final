@@ -7,7 +7,6 @@ import CounselorChat from './CounselorChat';
 import MaintenanceController from './MaintenanceController';
 import ConsentHistoryManagement from './ConsentHistoryManagement';
 import BackupRestoreManager from './BackupRestoreManager';
-import BackupRestoreManager from './BackupRestoreManager';
 import DeviceAuthManagement from './DeviceAuthManagement';
 import SecurityDashboard from './SecurityDashboard';
 import DataCleanup from './DataCleanup';
@@ -46,7 +45,6 @@ const AdminPanel: React.FC = () => {
   const [savingMemo, setSavingMemo] = useState(false);
   const [activeTab, setActiveTab] = useState('search');
   const [deleting, setDeleting] = useState(false);
-  const [backupInProgress, setBackupInProgress] = useState(false);
   const [backupInProgress, setBackupInProgress] = useState(false);
 
   useEffect(() => {
@@ -405,120 +403,6 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  // アプリ全体のバックアップを作成する関数
-  const handleCreateFullBackup = async () => {
-    if (!window.confirm('アプリ全体のバックアップを作成しますか？このプロセスには時間がかかる場合があります。')) {
-      return;
-    }
-    
-    setBackupInProgress(true);
-    
-    try {
-      // ローカルストレージからすべてのデータを収集
-      const backupObject: Record<string, any> = {
-        metadata: {
-          version: '1.0',
-          createdAt: new Date().toISOString(),
-          createdBy: localStorage.getItem('current_counselor') || 'unknown',
-          appName: 'かんじょうにっき',
-          type: 'full_backup'
-        },
-        data: {}
-      };
-      
-      // ローカルストレージのすべてのキーを取得
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-          try {
-            const value = localStorage.getItem(key);
-            if (value) {
-              // JSONデータの場合はパースして保存
-              try {
-                backupObject.data[key] = JSON.parse(value);
-              } catch {
-                // JSONでない場合は文字列として保存
-                backupObject.data[key] = value;
-              }
-            }
-          } catch (error) {
-            console.error(`キー "${key}" の読み込みエラー:`, error);
-          }
-        }
-      }
-      
-      // Supabaseからのデータ取得（接続されている場合）
-      if (supabase) {
-        try {
-          backupObject.supabaseData = {};
-          
-          // ユーザーデータの取得
-          const { data: users, error: usersError } = await supabase
-            .from('users')
-            .select('*');
-          
-          if (!usersError && users) {
-            backupObject.supabaseData.users = users;
-          }
-          
-          // 日記データの取得
-          const { data: diaries, error: diariesError } = await supabase
-            .from('diary_entries')
-            .select('*');
-          
-          if (!diariesError && diaries) {
-            backupObject.supabaseData.diary_entries = diaries;
-          }
-          
-          // 同意履歴の取得
-          const { data: consents, error: consentsError } = await supabase
-            .from('consent_histories')
-            .select('*');
-          
-          if (!consentsError && consents) {
-            backupObject.supabaseData.consent_histories = consents;
-          }
-          
-          // カウンセラーデータの取得
-          const { data: counselors, error: counselorsError } = await supabase
-            .from('counselors')
-            .select('*');
-          
-          if (!counselorsError && counselors) {
-            backupObject.supabaseData.counselors = counselors;
-          }
-        } catch (supabaseError) {
-          console.error('Supabaseデータ取得エラー:', supabaseError);
-          backupObject.supabaseError = String(supabaseError);
-        }
-      }
-      
-      // JSONに変換してダウンロード
-      const dataStr = JSON.stringify(backupObject, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      
-      // 現在の日時を含むファイル名を生成
-      const date = new Date().toISOString().split('T')[0];
-      const time = new Date().toTimeString().split(' ')[0].replace(/:/g, '.');
-      const fileName = `kanjou-nikki-full-backup-${date}-${time}.json`;
-      
-      // ダウンロードリンクを作成して自動クリック
-      const downloadLink = document.createElement('a');
-      downloadLink.href = URL.createObjectURL(dataBlob);
-      downloadLink.download = fileName;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      alert('アプリ全体のバックアップが正常に作成されました！');
-    } catch (error) {
-      console.error('バックアップ作成エラー:', error);
-      alert('バックアップの作成中にエラーが発生しました。もう一度お試しください。');
-    } finally {
-      setBackupInProgress(false);
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ja-JP', {
@@ -724,7 +608,7 @@ const AdminPanel: React.FC = () => {
         </div>
 
         <Tabs defaultValue="search" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-8 gap-1 mb-6 overflow-x-auto">
+          <TabsList className="grid grid-cols-7 gap-1 mb-6 overflow-x-auto">
             <TabsTrigger value="search" className="flex items-center justify-center px-2 py-1.5">
               <Search className="w-4 h-4" />
               <span className="hidden md:inline">日記</span>
@@ -744,10 +628,6 @@ const AdminPanel: React.FC = () => {
             <TabsTrigger value="maintenance" className="flex items-center justify-center px-2 py-1.5">
               <Settings className="w-4 h-4" />
               <span className="hidden md:inline">設定</span>
-            </TabsTrigger>
-            <TabsTrigger value="backup" className="flex items-center justify-center px-2 py-1.5">
-              <HardDrive className="w-4 h-4" />
-              <span className="hidden md:inline">バックアップ</span>
             </TabsTrigger>
             <TabsTrigger value="backup" className="flex items-center justify-center px-2 py-1.5">
               <HardDrive className="w-4 h-4" />
@@ -928,17 +808,6 @@ const AdminPanel: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="maintenance">
-            <div className="grid grid-cols-1 gap-6">
-              <MaintenanceController />
-              <DataCleanup />
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="backup">
-            <BackupRestoreManager />
-          </TabsContent>
-
-          <TabsContent value="device-auth">
             <DeviceAuthManagement />
           </TabsContent>
 
