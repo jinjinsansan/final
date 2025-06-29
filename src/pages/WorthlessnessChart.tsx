@@ -401,62 +401,114 @@ const WorthlessnessChart: React.FC = () => {
                     <div className="absolute left-0 right-0 top-3/4 h-px bg-gray-200"></div>
                     <div className="absolute left-0 right-0 bottom-0 h-px bg-gray-200"></div>
                     
-                    {/* 棒グラフ */}
-                    <div className="flex justify-between w-full h-full relative">
-                      {chartData.map((data, index) => {
-                        const selfEsteemValue = Number(data.selfEsteemScore || 0);
-                        const worthlessnessValue = Number(data.worthlessnessScore || 0);
-                        // 棒の幅を調整（データ数に応じて）
-                        const barWidth = `${Math.min(30, 80 / (chartData.length * 2))}px`;
-                        const isInitial = index === 0 && period === 'all' && initialScore;
-                        
-                        return (
-                          <div key={index} className="flex flex-col justify-end items-center" style={{ width: `${100 / chartData.length}%` }}>
-                            <div className="flex items-end space-x-1 justify-center w-full">
-                              {/* 自己肯定感の棒 */}
-                              <div className="flex flex-col items-center">
-                                <div 
-                                  className={`bg-blue-500 rounded-t-sm ${isInitial ? 'ring-2 ring-blue-300' : ''} shadow-md`} 
-                                  style={{ 
-                                    height: `${selfEsteemValue}%`, 
-                                    width: barWidth,
-                                    minHeight: '2px',
-                                    transition: 'height 0.3s ease-in-out'
-                                  }}
-                                  title={`自己肯定感: ${data.selfEsteemScore}`}
-                                ></div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {data.selfEsteemScore}
-                                </div>
-                              </div>
-                              
-                              {/* 無価値感の棒 */}
-                              <div className="flex flex-col items-center">
-                                <div 
-                                  className={`bg-red-500 rounded-t-sm ${isInitial ? 'ring-2 ring-red-300' : ''} shadow-md`} 
-                                  style={{ 
-                                    height: `${worthlessnessValue}%`, 
-                                    width: barWidth,
-                                    minHeight: '2px',
-                                    transition: 'height 0.3s ease-in-out'
-                                  }}
-                                  title={`無価値感: ${data.worthlessnessScore}`}
-                                ></div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {data.worthlessnessScore}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* 日付ラベル */}
-                            <div className="text-xs text-gray-500 mt-2">
-                              {index === 0 && period === 'all' && initialScore 
-                                ? '初期' 
-                                : formatDate(data.date)}
-                            </div>
+                    {/* 折れ線グラフ */}
+                    <div className="h-full relative">
+                      {/* 自己肯定感の折れ線 */}
+                      <svg className="absolute inset-0 w-full h-full overflow-visible">
+                        <polyline
+                          points={
+                            chartData.length > 0 
+                              ? chartData.map((data, index) => {
+                                  const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                                  const yPos = 100 - Number(data.selfEsteemScore || 0);
+                                  return `${xPos}% ${yPos}%`;
+                                }).join(' ')
+                              : ''
+                          }
+                          fill="none"
+                          stroke="#3b82f6"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {chartData.map((data, index) => {
+                          const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                          const yPos = 100 - Number(data.selfEsteemScore);
+                          const isInitial = index === 0 && period === 'all' && initialScore;
+                          return (
+                            <g key={`self-esteem-${index}`}>
+                              <circle
+                                cx={`${xPos}%`}
+                                cy={`${100 - Number(data.selfEsteemScore || 0)}%`}
+                                r="4"
+                                fill="#3b82f6"
+                                stroke="white"
+                                strokeWidth="1"
+                                className={`${isInitial ? 'ring-2 ring-blue-300' : ''}`}
+                              />
+                              <text
+                                x={`${xPos}%`}
+                                y={`${100 - Number(data.selfEsteemScore || 0) - 10}%`}
+                                textAnchor="middle"
+                                fill="#3b82f6"
+                                fontSize="10"
+                                fontWeight="bold"
+                              >
+                                {data.selfEsteemScore}
+                              </text>
+                            </g>
+                          );
+                        })}
+                      </svg>
+                      
+                      {/* 無価値感の折れ線 */}
+                      <svg className="absolute inset-0 w-full h-full overflow-visible">
+                        <polyline
+                          points={
+                            chartData.length > 0 
+                              ? chartData.map((data, index) => {
+                                  const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                                  const yPos = 100 - Number(data.worthlessnessScore || 0);
+                                  return `${xPos}% ${yPos}%`;
+                                }).join(' ')
+                              : ''
+                          }
+                          fill="none"
+                          stroke="#ef4444"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {chartData.map((data, index) => {
+                          const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                          const yPos = 100 - Number(data.worthlessnessScore);
+                          const isInitial = index === 0 && period === 'all' && initialScore;
+                          return (
+                            <g key={`worthlessness-${index}`}>
+                              <circle
+                                cx={`${xPos}%`}
+                                cy={`${100 - Number(data.worthlessnessScore || 0)}%`}
+                                r="4"
+                                fill="#ef4444"
+                                stroke="white"
+                                strokeWidth="1"
+                                className={`${isInitial ? 'ring-2 ring-red-300' : ''}`}
+                              />
+                              <text
+                                x={`${xPos}%`}
+                                y={`${100 - Number(data.worthlessnessScore || 0) - 10}%`}
+                                textAnchor="middle"
+                                fill="#ef4444"
+                                fontSize="10"
+                                fontWeight="bold"
+                              >
+                                {data.worthlessnessScore}
+                              </text>
+                            </g>
+                          );
+                        })}
+                      </svg>
+                      
+                      {/* X軸ラベル */}
+                      <div className="absolute left-0 right-0 bottom-[-24px] flex justify-between">
+                        {chartData.map((data, index) => (
+                          <div key={index} className="text-xs text-gray-500 transform -translate-x-1/2" style={{ left: `${chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50}%` }}>
+                            {index === 0 && period === 'all' && initialScore 
+                              ? '初期' 
+                              : formatDate(data.date)}
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
