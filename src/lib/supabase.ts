@@ -4,9 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// 環境変数からSupabase接続情報を取得
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
 // 接続情報のデバッグ出力（本番環境では詳細を隠す）
 console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 8)}...` : 'not set');
 console.log('Supabase Key:', supabaseAnonKey ? 'Key is set' : 'Key is not set');
