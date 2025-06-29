@@ -1,7 +1,7 @@
 import { supabase, adminSupabase } from './supabase';
 
 // 同期サービス
-export const syncService = {
+const syncService = {
   // 同期ログを記録する関数
   logSyncOperation: async (userId: string, syncType: 'auto' | 'manual' | 'force', entriesCount: number, success: boolean, errorMessage?: string) => {
     try {

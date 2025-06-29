@@ -1,18 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-// 環境変数からSupabase接続情報を取得（デバッグ用にコンソール出力）
+// 環境変数からSupabase接続情報を取得
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 
 // 接続情報のデバッグ出力（本番環境では詳細を隠す）
-console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 8)}...` : 'not set');
+console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl}` : 'not set');
 console.log('Supabase Key:', supabaseAnonKey ? 'Key is set' : 'Key is not set');
 console.log('Supabase Service Role Key:', supabaseServiceRoleKey ? 'Service Role Key is set' : 'Service Role Key is not set');
 
 // Supabaseクライアントの作成（環境変数が設定されている場合のみ）
-export const supabase = supabaseUrl && supabaseAnonKey
+export let supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
@@ -23,7 +23,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
   : null;
   
 // 管理者用Supabaseクライアント（サービスロールキーを使用）
-export const adminSupabase = supabaseUrl && supabaseServiceRoleKey
+export let adminSupabase = supabaseUrl && supabaseServiceRoleKey
   ? createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         persistSession: false,

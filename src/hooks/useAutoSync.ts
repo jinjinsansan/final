@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSupabase } from './useSupabase';
-import { userService, syncService } from '../lib/supabase';
+import { userService, syncService, supabase } from '../lib/supabase';
 import { getCurrentUser, logSecurityEvent, getAuthSession } from '../lib/deviceAuth';
 
 interface AutoSyncStatus {
