@@ -40,9 +40,9 @@
     font-weight: 700;
   }
   
-  /* グラフ用スタイル */
-  .graph-line {
-    stroke-width: 1;
+  /* SVGグラフ用スタイル */
+  .graph-svg [stroke] { 
+    vector-effect: non-scaling-stroke; 
     stroke-linecap: round;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
@@ -51,6 +51,12 @@
   /* SVGグラフ用スタイル */
   .graph-svg [stroke] { 
     vector-effect: non-scaling-stroke; 
+  }
+  .graph-svg circle { 
+    vector-effect: non-scaling-stroke; 
+  }
+  .graph-svg text { 
+    font-family: system-ui, sans-serif; 
   }
   .graph-svg circle { 
     vector-effect: non-scaling-stroke; 

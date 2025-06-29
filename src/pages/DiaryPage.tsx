@@ -316,7 +316,6 @@ const DiaryPage: React.FC = () => {
       // 数値型として保存（NaNを防ぐため0をデフォルト値に）
       newEntry.selfEsteemScore = Number(finalWorthlessnessScores.todaySelfEsteem) || 0;
       newEntry.worthlessnessScore = Number(finalWorthlessnessScores.todayWorthlessness) || 0;
-      
       console.log('保存する日記データ:', newEntry);
       entries.unshift(newEntry);
       localStorage.setItem('journalEntries', JSON.stringify(entries));
@@ -341,14 +340,6 @@ const DiaryPage: React.FC = () => {
         todaySelfEsteem: 50,
         todayWorthlessness: 50
       });
-      
-    } catch (error) {
-      console.error('保存エラー:', error);
-      alert('保存に失敗しました。もう一度お試しください。');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleShare = () => {
     const username = currentUser?.lineUsername || 'ユーザー';
@@ -613,80 +604,85 @@ const DiaryPage: React.FC = () => {
                     const isSelected = dayString === formData.date;
                     const isToday = dayString === todayString;
                     const isFuture = day > today;
-                    
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => handleDateSelect(day)}
-                        disabled={isFuture}
-                        className={`
-                          w-8 h-8 text-xs font-jp-normal rounded transition-colors
-                          ${isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}
-                          ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}
-                          ${isToday && !isSelected ? 'bg-blue-100 text-blue-600' : ''}
-                          ${isFuture ? 'opacity-30 cursor-not-allowed' : ''}
-                        `}
-                      >
-                        {day.getDate()}
-                      </button>
-                    );
-                  })}
+        <div className={`rounded-lg p-4 sm:p-6 border mb-6 ${
+          formData.emotion === '無価値感' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
+        }`}>
+          <h3 className={`font-jp-bold mb-4 ${
+            formData.emotion === '無価値感' ? 'text-red-800' : 'text-blue-800'
+          }`}>
+            {formData.emotion === '無価値感' 
+              ? '「無価値感」を選んだ場合の入力' 
+              : formData.emotion 
+                ? `「${formData.emotion}」を選んだ場合も入力できます` 
+                : '感情を選択すると入力できます'}
+          </h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* 前日のスコア */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <h4 className="text-sm font-jp-bold text-gray-700 mb-3 flex items-center">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                前日のスコア
+              </h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-jp-medium text-gray-600 mb-1">
+                    自己肯定感
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={worthlessnessScores.yesterdaySelfEsteem || ''}
+                    onChange={(e) => handleSelfEsteemChange('yesterdaySelfEsteem', e.target.value === '' ? NaN : parseInt(e.target.value))}
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="50"
+                  />
                 </div>
-
-                {/* 閉じるボタン */}
-                <div className="mt-4 text-center">
-                  <button
-                    onClick={() => setShowCalendar(false)}
-                    className="text-sm text-gray-500 hover:text-gray-700 font-jp-normal mt-2"
-                  >
-                    閉じる
-                  </button>
+                <div>
+                  <label className="block text-xs font-jp-medium text-gray-600 mb-1">
+                    無価値感
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+            {/* 今日のスコア */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <h4 className="text-sm font-jp-bold text-gray-700 mb-3 flex items-center">
+                <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
+                今日のスコア
+              </h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-jp-medium text-gray-600 mb-1">
+                    自己肯定感
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={worthlessnessScores.todaySelfEsteem || ''}
+                    onChange={(e) => handleSelfEsteemChange('todaySelfEsteem', e.target.value === '' ? NaN : parseInt(e.target.value))}
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="50"
+                  />
                 </div>
-                
-                {/* 凡例 */}
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <div className="flex items-center justify-center space-x-4 text-xs text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-2 h-2 bg-blue-100 rounded-full"></div>
-                      <span>今日</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-2 h-2 opacity-30 bg-gray-400 rounded-full"></div>
-                      <span>選択不可</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-gray-50 rounded-lg p-6 mb-4">
-          <p className="text-gray-600 font-jp-normal text-sm mb-4">
-            嫌な気持ちになった出来事を書いてみましょう
-          </p>
-          <div className="relative overflow-hidden">
-            {/* 罫線背景 */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="w-full h-full bg-white rounded-lg border border-gray-200 overflow-hidden" style={{
-                backgroundImage: `
-                  linear-gradient(to bottom, transparent 0px, transparent 31px, #e5e7eb 31px, #e5e7eb 32px),
-                  linear-gradient(to right, #ef4444 0px, #ef4444 2px, transparent 2px)
-                `,
-                backgroundSize: '100% 32px, 100% 100%',
-                backgroundPosition: '0 16px, 24px 0'
-              }}>
-                {/* 左マージン線 */}
-                <div className="absolute left-6 top-0 bottom-0 w-px bg-red-300"></div>
-                {/* 穴あけ部分（3つ穴） */}
-                <div className="absolute left-3 top-8">
-                  <div className="w-2 h-2 bg-gray-300 rounded-full mb-16"></div>
-                  <div className="w-2 h-2 bg-gray-300 rounded-full mb-16"></div>
-                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                <div>
+                  <label className="block text-xs font-jp-medium text-gray-600 mb-1">
+                    無価値感
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={worthlessnessScores.todayWorthlessness || ''}
+                    onChange={(e) => handleWorthlessnessChange('todayWorthlessness', e.target.value === '' ? NaN : parseInt(e.target.value))}
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent font-jp-normal [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="50"
+                  />
                 </div>
               </div>
             </div>
-            
             {/* テキストエリア */}
             <textarea
               value={formData.event}
@@ -939,16 +935,17 @@ const DiaryPage: React.FC = () => {
             <div className="bg-white rounded-lg p-3 border border-gray-200 text-sm">
               <p className="font-jp-medium mb-2">{currentUser?.lineUsername || 'ユーザー'}の今日の感情日記 📝</p>
               <p className="mb-1">{getEmotionEmoji(formData.emotion)} 感情: {formData.emotion}</p>
-              {formData.event.trim() && (
-                <p className="mb-1">💭 出来事: {formData.event.length > 20 ? formData.event.substring(0, 20) + '...' : formData.event}</p>
-              )}
-              {formData.realization.trim() && (
-                <p className="mb-1">✨ 気づき: {formData.realization.length > 20 ? formData.realization.substring(0, 20) + '...' : formData.realization}</p>
-              )}
-              <p className="text-gray-500 text-xs mt-2">#かんじょうにっき #感情日記 #自己肯定感</p>
+          </div>
+          
+          <div className="mt-4 bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <div className="text-xs text-blue-800 font-jp-normal space-y-1">
+              <p className="font-jp-medium">💡 自動計算機能</p>
+              <p>• 自己肯定感スコアを入力すると、無価値感スコアが自動で計算されます</p>
+              <p>• 計算式：無価値感スコア = 100 - 自己肯定感スコア</p>
+              <p>• どちらの項目からでも入力可能です</p>
             </div>
           </div>
-        )}
+        </div>
         
         <button
           onClick={handleSubmit}
