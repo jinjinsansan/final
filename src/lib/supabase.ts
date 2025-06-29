@@ -1,12 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-// 環境変数からSupabase接続情報を取得
+// 環境変数からSupabase接続情報を取得（デバッグ用にコンソール出力）
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
-console.log('Supabase URL:', supabaseUrl);
+// 接続情報のデバッグ出力（本番環境では詳細を隠す）
+console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl.substring(0, 8)}...` : 'not set');
 console.log('Supabase Key:', supabaseAnonKey ? 'Key is set' : 'Key is not set');
 console.log('Supabase Service Role Key:', supabaseServiceRoleKey ? 'Service Role Key is set' : 'Service Role Key is not set');
 
@@ -405,13 +406,14 @@ export const syncService = {
   // 管理者モードでの同期
   adminSync: async () => {
     try {
-      if (!adminSupabase) {
-        console.log('管理者用Supabaseクライアントが利用できないため、同期をスキップします');
+      // 管理者用Supabaseクライアントの確認
+      if (!supabase) {
+        console.log('Supabaseクライアントが利用できないため、同期をスキップします');
         return false;
       }
       
       // 全ユーザーを取得
-      const { data: users, error: usersError } = await adminSupabase
+      const { data: users, error: usersError } = await supabase
         .from('users')
         .select('*');
       
@@ -432,7 +434,7 @@ export const syncService = {
       for (const user of users) {
         try {
           // ユーザーの日記データを取得
-          const { data: entries, error } = await adminSupabase
+          const { data: entries, error } = await supabase
             .from('diary_entries')
             .select('*')
             .eq('user_id', user.id)
@@ -491,8 +493,8 @@ export const syncService = {
   // ローカルデータをSupabaseに移行
   migrateLocalData: async (userId: string) => {
     try {
-      if (!adminSupabase) {
-        console.log('Supabase接続がないため、データ移行をスキップします');
+      if (!supabase) {
+        console.log('Supabase接続がないため、データ移行をスキップします', new Date().toISOString());
         return false;
       }
       
@@ -514,10 +516,12 @@ export const syncService = {
       // 各エントリーをSupabaseに保存
       let successCount = 0;
       let errorCount = 0;
+      console.log(`${entries.length}件のエントリーを同期開始 - ユーザーID: ${userId}`, new Date().toISOString());
+      
       for (const entry of entries) {
         // 既存のエントリーをチェック
         try {
-          const { data: existingEntry, error: checkError } = await adminSupabase
+          const { data: existingEntry, error: checkError } = await supabase
             .from('diary_entries')
             .select('id')
             .eq('id', entry.id)
@@ -531,7 +535,7 @@ export const syncService = {
           
           if (existingEntry) {
             // 既存のエントリーを更新
-            const { error: updateError } = await adminSupabase
+            const { error: updateError } = await supabase
               .from('diary_entries')
               .update({
                 date: entry.date,
@@ -554,7 +558,7 @@ export const syncService = {
             }
           } else {
             // 新しいエントリーを作成
-            const { error: insertError } = await adminSupabase
+            const { error: insertError } = await supabase
               .from('diary_entries')
               .insert([{
                 id: entry.id,
@@ -584,6 +588,10 @@ export const syncService = {
       }
       
       console.log(`同期完了: 成功=${successCount}, 失敗=${errorCount}`);
+      
+      // 最終同期時間を更新
+      localStorage.setItem('last_sync_time', new Date().toISOString());
+      
       return true;
     } catch (error) {
       console.error('データ移行エラー:', error);
@@ -651,7 +659,7 @@ export const syncService = {
   // 同意履歴をSupabaseに同期
   syncConsentHistories: async () => {
     try {
-      if (!adminSupabase) return false;
+      if (!supabase) return false;
       console.log('同意履歴をSupabaseに同期開始');
       
       // ローカルストレージから同意履歴を取得
@@ -672,8 +680,8 @@ export const syncService = {
         
         // 既存の履歴をチェック
         let existingHistory = null;
-        try {
-          const { data, error } = await adminSupabase
+        try { 
+          const { data, error } = await supabase
             .from('consent_histories')
             .select('id')
             .eq('id', historyId)
@@ -691,7 +699,7 @@ export const syncService = {
         if (!existingHistory) {
           // 新しい履歴を作成
           try {
-            const { error } = await adminSupabase
+            const { error } = await supabase
               .from('consent_histories')
               .insert([{
                 id: historyId,
@@ -749,12 +757,12 @@ export const syncService = {
 // 同意履歴サービス
 export const consentService = {
   // 全同意履歴を取得
-  getAllConsentHistories: async () => {
+  getAllConsentHistories: async () => { 
     try {
-      console.log('全同意履歴を取得中...', adminSupabase ? 'adminSupabase利用可能' : 'adminSupabase利用不可');
-      if (!adminSupabase) return [];
+      console.log('全同意履歴を取得中...', supabase ? 'supabase利用可能' : 'supabase利用不可');
+      if (!supabase) return [];
       
-      const { data, error } = await adminSupabase
+      const { data, error } = await supabase
         .from('consent_histories')
         .select('*')
         .order('consent_date', { ascending: false });
@@ -775,10 +783,10 @@ export const consentService = {
   // 同意履歴を取得
   getUserConsentHistories: async (lineUsername: string) => {
     try {
-      console.log(`ユーザー ${lineUsername} の同意履歴を取得中...`, adminSupabase ? 'adminSupabase利用可能' : 'adminSupabase利用不可');
-      if (!adminSupabase) return [];
+      console.log(`ユーザー ${lineUsername} の同意履歴を取得中...`, supabase ? 'supabase利用可能' : 'supabase利用不可');
+      if (!supabase) return [];
       
-      const { data, error } = await adminSupabase
+      const { data, error } = await supabase
         .from('consent_histories')
         .select('*')
         .eq('line_username', lineUsername)

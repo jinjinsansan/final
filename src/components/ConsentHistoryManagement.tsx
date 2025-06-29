@@ -40,9 +40,9 @@ const ConsentHistoryManagement: React.FC = () => {
       console.log('同意履歴を読み込み中...');
       if (isConnected) {
         // Supabaseから読み込み
-        if (adminSupabase) {
+        if (supabase) {
           try {
-            const { data, error } = await adminSupabase
+            const { data, error } = await supabase
               .from('consent_histories')
               .select('*')
               .order('consent_date', { ascending: false });

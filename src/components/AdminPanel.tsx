@@ -169,8 +169,8 @@ const AdminPanel: React.FC = () => {
       // Supabaseの更新（接続されている場合）
       if (supabase && selectedEntry.id) {
         console.log('Supabaseでメモを更新:', selectedEntry.id);
-        try {
-          const { error } = await adminSupabase
+        try { 
+          const { error } = await supabase
             .from('diary_entries')
             .update({
               counselor_memo: memoText,
@@ -252,7 +252,7 @@ const AdminPanel: React.FC = () => {
       if (supabase) {
         console.log('Supabaseから日記を削除:', entryId);
         try {
-          const { error } = await adminSupabase
+          const { error } = await supabase
             .from('diary_entries')
             .delete()
             .eq('id', entryId);

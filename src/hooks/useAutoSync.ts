@@ -190,7 +190,7 @@ export const useAutoSync = () => {
       // 最新の日記エントリーを直接Supabaseに保存（バックアップとして）
       try {
         const localEntries = localStorage.getItem('journalEntries');
-        if (localEntries && adminSupabase) {
+        if (localEntries && supabase) {
           const entries = JSON.parse(localEntries);
           // 最新の5件のエントリーを取得
           const recentEntries = entries && entries.length > 0 ? entries.slice(0, 5) : [];
@@ -198,7 +198,7 @@ export const useAutoSync = () => {
           for (const entry of recentEntries) {
             try {
               // 既存のエントリーをチェック
-              const { data: existingEntry } = await adminSupabase
+              const { data: existingEntry } = await supabase
                 .from('diary_entries')
                 .select('id')
                 .eq('id', entry.id)
@@ -206,7 +206,7 @@ export const useAutoSync = () => {
               
               if (existingEntry) {
                 // 既存のエントリーを更新
-                await adminSupabase
+                await supabase
                   .from('diary_entries')
                   .update({
                     date: entry.date,
@@ -219,7 +219,7 @@ export const useAutoSync = () => {
                   .eq('id', entry.id);
               } else {
                 // 新規エントリーを作成
-                await adminSupabase
+                await supabase
                   .from('diary_entries')
                   .insert([{
                     id: entry.id,
