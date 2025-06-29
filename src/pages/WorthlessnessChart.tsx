@@ -49,12 +49,12 @@ const WorthlessnessChart: React.FC = () => {
   const loadChartData = () => {
     setLoading(true);
     try {
-      // 現在の日本時間
-      const today = getJapaneseDate();
+      // 現在の日本時間を取得
+      const japanToday = getJapaneseDate();
       
       // ローカルストレージから日記データを取得
       const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const normalizedToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
       const savedInitialScores = localStorage.getItem('initialScores');
       const savedEntries = localStorage.getItem('journalEntries');
@@ -75,7 +75,7 @@ const WorthlessnessChart: React.FC = () => {
         console.log('全エントリー数:', entries.length);
         
         // 無価値感の日記のみをフィルタリング
-        const worthlessnessEntries = filterByPeriod(entries, period, today)
+        const worthlessnessEntries = filterByPeriod(entries, period, normalizedToday)
           .sort((a: any, b: any) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime());
         
         console.log('無価値感エントリー数:', worthlessnessEntries.length, '期間:', period);
@@ -95,7 +95,7 @@ const WorthlessnessChart: React.FC = () => {
           // 初期スコアの日付を作成（最初の日記の前日）
           const firstEntryDate = formattedData.length > 0 
             ? new Date(formattedData[0].date)
-            : today; // データがない場合は今日の日付を使用
+            : normalizedToday; // データがない場合は今日の日付を使用
           firstEntryDate.setDate(firstEntryDate.getDate() - 1);
           const initialScoreDate = firstEntryDate.toISOString().split('T')[0];
           
@@ -130,7 +130,7 @@ const WorthlessnessChart: React.FC = () => {
         
         // 選択された期間の感情の出現回数を集計
         const filteredCounts: {[key: string]: number} = {};
-        const filteredAllEntries = filterByPeriod(entries, period, today);
+        const filteredAllEntries = filterByPeriod(entries, period, normalizedToday);
         filteredAllEntries?.forEach((entry: any) => {
           filteredCounts[entry.emotion] = (filteredCounts[entry.emotion] || 0) + 1;
         });
