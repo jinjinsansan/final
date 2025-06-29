@@ -231,10 +231,12 @@ export const useAutoSync = () => {
           console.error('自動同期エラー:', error);
         });
       }, 5 * 60 * 1000); // 5分
-          clearInterval(syncTimeoutRef.current || 0);
-      };
-      } else {
+      
+      return () => {
         clearInterval(syncTimeoutRef.current || 0);
+      };
+    } else {
+      clearInterval(syncTimeoutRef.current || 0);
     }
   }, [status.isAutoSyncEnabled, isConnected, currentUser]);
 
