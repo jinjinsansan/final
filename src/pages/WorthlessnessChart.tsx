@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, LineChart, Share2, Download, Filter, RefreshCw, TrendingUp, Info } from 'lucide-react';
+import { Calendar, LineChart, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
+
+// 日付を正規化する関数（時間部分を削除）
+const normalizeDate = (dateString: string): Date => {
+  const date = new Date(dateString);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+};
 
 // 日本時間を取得する関数
 const getJapaneseDate = (): Date => {
@@ -36,12 +42,6 @@ const WorthlessnessChart: React.FC = () => {
   const [emotionCounts, setEmotionCounts] = useState<EmotionCount[]>([]);
   const [initialScore, setInitialScore] = useState<InitialScore | null>(null);
 
-  // 日付を比較しやすい形式に変換する関数
-  const normalizeDate = (dateString: string): Date => {
-    const [year, month, day] = dateString.split('-').map(Number);
-    return new Date(year, month - 1, day);
-  };
-
   useEffect(() => {
     loadChartData();
   }, [period]);
@@ -53,6 +53,9 @@ const WorthlessnessChart: React.FC = () => {
       const today = getJapaneseDate();
       
       // ローカルストレージから日記データを取得
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
       const savedInitialScores = localStorage.getItem('initialScores');
       const savedEntries = localStorage.getItem('journalEntries');
       
@@ -72,56 +75,48 @@ const WorthlessnessChart: React.FC = () => {
         console.log('全エントリー数:', entries.length);
         
         // 無価値感の日記のみをフィルタリング
-        const worthlessnessEntries = entries.filter((entry: any) => entry.emotion === '無価値感');
+        const worthlessnessEntries = entries.filter((entry: any) => entry.worthlessnessScore !== undefined)
+          .sort((a: any, b: any) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime());
         
-        console.log('無価値感エントリー数:', worthlessnessEntries.length);
+        const filteredEntries = filterByPeriod(worthlessnessEntries, period, today)
+          .sort((a: any, b: any) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime());
         
-        // 日付でソート
-        worthlessnessEntries.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        
-        // 期間でフィルタリング
-        const filteredEntries = filterByPeriod(worthlessnessEntries, period, today);
-        
-        console.log('期間フィルター後のエントリー数:', filteredEntries.length);
-        
+        console.log('無価値感エントリー数:', worthlessnessEntries.length, '期間:', period);
         // 日記データをフォーマット
         let formattedData = filteredEntries.map((entry: any) => ({
           date: entry.date,
-          selfEsteemScore: Number(entry.selfEsteemScore) || 0,
-          worthlessnessScore: Number(entry.worthlessnessScore) || 0
+          selfEsteemScore: typeof entry.selfEsteemScore === 'number' ? entry.selfEsteemScore : 
+                          (typeof entry.selfEsteemScore === 'string' ? parseInt(entry.selfEsteemScore) : 0),
+          worthlessnessScore: typeof entry.worthlessnessScore === 'number' ? entry.worthlessnessScore : 
+                             (typeof entry.worthlessnessScore === 'string' ? parseInt(entry.worthlessnessScore) : 0)
         }));
         
         console.log('フォーマット後のデータ:', formattedData);
         
         // 初期スコアを追加（全期間表示の場合、または他の期間でデータがない場合）
         if (initialScore && period === 'all') {
-          try {
-            // 初期スコアの日付を作成（最初の日記の前日）
-            const firstEntryDate = formattedData.length > 0 
-              ? new Date(formattedData[0].date)
-              : today; // データがない場合は今日の日付を使用
-            firstEntryDate.setDate(firstEntryDate.getDate() - 1);
-            const initialScoreDate = firstEntryDate.toISOString().split('T')[0];
-            
-            // 初期スコアが既に含まれていないか確認
-            const hasInitialScore = formattedData.some(data => 
-              data.selfEsteemScore === Number(initialScore.selfEsteemScore) && 
-              data.worthlessnessScore === Number(initialScore.worthlessnessScore)
-            );
-            
-            console.log('初期スコア:', initialScore);
-            console.log('初期スコアが含まれているか:', hasInitialScore);
-            
-            if (!hasInitialScore) {
-              // 初期スコアをデータの先頭に追加
-              formattedData = [{
-                date: initialScoreDate,
-                selfEsteemScore: Number(initialScore.selfEsteemScore),
-                worthlessnessScore: Number(initialScore.worthlessnessScore)
-              }, ...formattedData];
-            }
-          } catch (error) {
-            console.error('初期スコア追加エラー:', error);
+          // 初期スコアの日付を作成（最初の日記の前日）
+          const firstEntryDate = formattedData.length > 0 
+            ? new Date(formattedData[0].date)
+            : today; // データがない場合は今日の日付を使用
+          firstEntryDate.setDate(firstEntryDate.getDate() - 1);
+          const initialScoreDate = firstEntryDate.toISOString().split('T')[0];
+          
+          // 初期スコアが既に含まれていないか確認
+          const hasInitialScore = false; // 常に初期スコアを追加
+          
+          console.log('初期スコア:', initialScore);
+          console.log('初期スコアが含まれているか:', hasInitialScore);
+          
+          if (!hasInitialScore) {
+            // 初期スコアをデータの先頭に追加
+            formattedData = [{
+              date: initialScoreDate || '2025-01-01',
+              selfEsteemScore: typeof initialScore.selfEsteemScore === 'number' ? initialScore.selfEsteemScore : 
+                              (typeof initialScore.selfEsteemScore === 'string' ? parseInt(initialScore.selfEsteemScore) : 50),
+              worthlessnessScore: typeof initialScore.worthlessnessScore === 'number' ? initialScore.worthlessnessScore : 
+                                 (typeof initialScore.worthlessnessScore === 'string' ? parseInt(initialScore.worthlessnessScore) : 50)
+            }, ...formattedData];
           }
         }
         
@@ -163,27 +158,25 @@ const WorthlessnessChart: React.FC = () => {
     if (!entries || entries.length === 0) {
       return [];
     }
-
-    // 日付を文字列からDateオブジェクトに変換
-    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
     let result = [];
     
     switch (selectedPeriod) {
       case 'week':
-        const weekAgo = new Date(todayDate);
+        const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
         result = entries.filter((entry: any) => {
           const entryDate = normalizeDate(entry.date);
-          return entryDate >= weekAgo && entryDate <= todayDate;
+          return entryDate >= weekAgo;
         });
         break;
       
       case 'month':
-        const monthAgo = new Date(todayDate);
+        const monthAgo = new Date(today);
         monthAgo.setDate(monthAgo.getDate() - 30);
         result = entries.filter((entry: any) => {
           const entryDate = normalizeDate(entry.date);
-          return entryDate >= monthAgo && entryDate <= todayDate;
+          return entryDate >= monthAgo;
         });
         break;
       
@@ -193,10 +186,10 @@ const WorthlessnessChart: React.FC = () => {
         break;
     }
     
-    console.log(`${selectedPeriod}期間のフィルター結果:`, result.length);
-    
     // 日付でソート
-    result.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    result.sort((a: any, b: any) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime());
+    
+    console.log(`${selectedPeriod}期間のフィルター結果:`, result.length, '件');
     return result;
   };
 
@@ -338,7 +331,6 @@ const WorthlessnessChart: React.FC = () => {
         {loading ? (
           <div className="bg-gray-50 rounded-lg p-12 flex items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600 font-jp-normal">データを読み込み中...</span>
           </div>
         ) : chartData.length === 0 ? (
           <div className="bg-gray-50 rounded-lg p-12 text-center">
@@ -354,7 +346,7 @@ const WorthlessnessChart: React.FC = () => {
           <div className="space-y-6">
             {/* グラフ */}
             <div className="bg-white rounded-lg p-4 border border-gray-200 overflow-x-auto relative">
-              {initialScore && period === 'all' && chartData.length > 0 && (
+              {initialScore && period === 'all' && (
                 <div className="absolute top-2 left-2 bg-blue-50 rounded-lg p-2 border border-blue-200 text-xs">
                   <span className="font-jp-medium text-blue-800">初期スコア表示中</span>
                 </div>
@@ -398,77 +390,81 @@ const WorthlessnessChart: React.FC = () => {
                     
                     {/* 折れ線グラフ */}
                     <div className="h-full relative">
-                      {chartData.length > 0 && (
-                        <>
-                          {/* 自己肯定感の折れ線 */}
-                          <svg className="absolute inset-0 w-full h-full overflow-visible">
-                            <polyline
-                              points={chartData.map((data, index) => {
-                                const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
-                                const yPos = 100 - Number(data.selfEsteemScore);
-                                return `${xPos}% ${yPos}%`;
-                              }).join(' ')}
-                              fill="none"
-                              stroke="#3b82f6"
-                              strokeWidth="2"
-                              strokeLinejoin="round"
-                              strokeLinecap="round"
-                            />
-                            {chartData.map((data, index) => {
-                              const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
-                              const yPos = 100 - Number(data.selfEsteemScore);
-                              return (
-                                <circle
-                                  key={`self-esteem-${index}`}
-                                  cx={`${xPos}%`}
-                                  cy={`${yPos}%`}
-                                  r="4"
-                                  fill="#3b82f6"
-                                  stroke="white"
-                                  strokeWidth="1"
-                                  className={`${index === 0 && period === 'all' && initialScore ? 'ring-2 ring-blue-300' : ''}`}
-                                >
-                                  <title>自己肯定感: {data.selfEsteemScore}</title>
-                                </circle>
-                              );
-                            })}
-                          </svg>
-                          
-                          {/* 無価値感の折れ線 */}
-                          <svg className="absolute inset-0 w-full h-full overflow-visible">
-                            <polyline
-                              points={chartData.map((data, index) => {
-                                const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
-                                const yPos = 100 - Number(data.worthlessnessScore);
-                                return `${xPos}% ${yPos}%`;
-                              }).join(' ')}
-                              fill="none"
-                              stroke="#ef4444"
-                              strokeWidth="2"
-                              strokeLinejoin="round"
-                              strokeLinecap="round"
-                            />
-                            {chartData.map((data, index) => {
-                              const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
-                              const yPos = 100 - Number(data.worthlessnessScore);
-                              return (
-                                <circle
-                                  key={`worthlessness-${index}`}
-                                  cx={`${xPos}%`}
-                                  cy={`${yPos}%`}
-                                  r="4"
-                                  fill="#ef4444"
-                                  stroke="white"
-                                  strokeWidth="1"
-                                  className={`${index === 0 && period === 'all' && initialScore ? 'ring-2 ring-red-300' : ''}`}
-                                >
-                                  <title>無価値感: {data.worthlessnessScore}</title>
-                                </circle>
-                              );
-                            })}
-                          </svg>
-                        </>
-                      )}
+                      {/* 自己肯定感の折れ線 */}
+                      <svg className="absolute inset-0 w-full h-full overflow-visible">
+                        <polyline
+                          points={
+                            chartData.length > 0 
+                              ? chartData.map((data, index) => {
+                                  const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                                  const yPos = 100 - Number(data.selfEsteemScore || 0);
+                                  return `${xPos}% ${yPos}%`;
+                                }).join(' ')
+                              : ''
+                          }
+                          fill="none"
+                          stroke="#3b82f6"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {chartData.map((data, index) => {
+                          const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                          const yPos = 100 - Number(data.selfEsteemScore);
+                          return (
+                            <circle
+                              key={`self-esteem-${index}`}
+                              cx={`${chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50}%`}
+                              cy={`${100 - Number(data.selfEsteemScore || 0)}%`}
+                              r="4"
+                              fill="#3b82f6"
+                              stroke="white"
+                              strokeWidth="1"
+                              className={`${index === 0 && period === 'all' && initialScore ? 'ring-2 ring-blue-300' : ''}`}
+                            >
+                              <title>自己肯定感: {data.selfEsteemScore}</title>
+                            </circle>
+                          );
+                        })}
+                      </svg>
+                      
+                      {/* 無価値感の折れ線 */}
+                      <svg className="absolute inset-0 w-full h-full overflow-visible">
+                        <polyline
+                          points={
+                            chartData.length > 0 
+                              ? chartData.map((data, index) => {
+                                  const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                                  const yPos = 100 - Number(data.worthlessnessScore || 0);
+                                  return `${xPos}% ${yPos}%`;
+                                }).join(' ')
+                              : ''
+                          }
+                          fill="none"
+                          stroke="#ef4444"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {chartData.map((data, index) => {
+                          const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                          const yPos = 100 - Number(data.worthlessnessScore);
+                          return (
+                            <circle
+                              key={`worthlessness-${index}`}
+                              cx={`${chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50}%`}
+                              cy={`${100 - Number(data.worthlessnessScore || 0)}%`}
+                              r="4"
+                              fill="#ef4444"
+                              stroke="white"
+                              strokeWidth="1"
+                              className={`${index === 0 && period === 'all' && initialScore ? 'ring-2 ring-red-300' : ''}`}
+                            >
+                              <title>無価値感: {data.worthlessnessScore}</title>
+                            </circle>
+                          );
+                        })}
+                      </svg>
                     </div>
                     
                     {/* X軸ラベル */}
@@ -485,22 +481,6 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
               </div>
             </div>
-            
-            {/* 期間に該当するデータがない場合のメッセージ */}
-            {chartData.length === 0 && (
-              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                <div className="flex items-start space-x-3">
-                  <Info className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-jp-medium text-yellow-800 mb-1">選択した期間のデータがありません</h3>
-                    <p className="text-sm text-yellow-700">
-                      {period === 'week' ? '過去7日間' : '過去30日間'}に記録された無価値感の日記がありません。
-                      <br />「全期間」タブを選択すると、すべての記録を確認できます。
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
             
             {/* 最新スコア */}
             {chartData.length > 0 && (
