@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BarChart, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
+import { Calendar, BarChart2, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
 
 // 日付を正規化する関数（時間部分を削除）
 const normalizeDate = (dateString: string): Date => {
@@ -370,7 +370,7 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
                 
                 {/* グラフ本体 */}
-                <div className="h-64 relative mb-8">
+                <div className="h-64 relative mb-12">
                   {/* Y軸 */}
                   <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-xs text-gray-500">
                     <div className="transform -translate-y-2">100</div>
@@ -381,7 +381,7 @@ const WorthlessnessChart: React.FC = () => {
                   </div>
                   
                   {/* グラフエリア */}
-                  <div className="absolute left-10 right-0 top-0 bottom-0 px-2 flex items-end">
+                  <div className="absolute left-10 right-0 top-0 bottom-0 px-2">
                     {/* 水平線 */}
                     <div className="absolute left-0 right-0 top-0 h-px bg-gray-200"></div>
                     <div className="absolute left-0 right-0 top-1/4 h-px bg-gray-200"></div>
@@ -390,60 +390,58 @@ const WorthlessnessChart: React.FC = () => {
                     <div className="absolute left-0 right-0 bottom-0 h-px bg-gray-200"></div>
                     
                     {/* 棒グラフ */}
-                    <div className="flex items-end justify-between w-full h-full relative">
+                    <div className="flex justify-between w-full h-full relative">
                       {chartData.map((data, index) => {
-                        const selfEsteemHeight = `${Number(data.selfEsteemScore || 0)}%`;
-                        const worthlessnessHeight = `${Number(data.worthlessnessScore || 0)}%`;
-                        const barWidth = `${100 / (chartData.length * 2.5)}%`;
+                        const selfEsteemValue = Number(data.selfEsteemScore || 0);
+                        const worthlessnessValue = Number(data.worthlessnessScore || 0);
+                        const barWidth = `${80 / (chartData.length * 2.5)}%`;
                         const isInitial = index === 0 && period === 'all' && initialScore;
                         
                         return (
-                          <div key={index} className="flex items-end space-x-1" style={{ width: `${100 / chartData.length}%` }}>
-                            {/* 自己肯定感の棒 */}
-                            <div className="flex flex-col items-center">
-                              <div 
-                                className={`bg-blue-500 rounded-t-sm ${isInitial ? 'ring-2 ring-blue-300' : ''}`} 
-                                style={{ 
-                                  height: selfEsteemHeight, 
-                                  width: barWidth,
-                                  minHeight: '2px'
-                                }}
-                                title={`自己肯定感: ${data.selfEsteemScore}`}
-                              ></div>
-                              <div className="text-xs text-gray-500 mt-1 hidden sm:block">
-                                {data.selfEsteemScore}
+                          <div key={index} className="flex flex-col justify-end items-center" style={{ width: `${100 / chartData.length}%` }}>
+                            <div className="flex items-end space-x-1 justify-center w-full">
+                              {/* 自己肯定感の棒 */}
+                              <div className="flex flex-col items-center">
+                                <div 
+                                  className={`bg-blue-500 rounded-t-sm ${isInitial ? 'ring-2 ring-blue-300' : ''}`} 
+                                  style={{ 
+                                    height: `${selfEsteemValue}%`, 
+                                    width: barWidth,
+                                    minHeight: '2px'
+                                  }}
+                                  title={`自己肯定感: ${data.selfEsteemScore}`}
+                                ></div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {data.selfEsteemScore}
+                                </div>
+                              </div>
+                              
+                              {/* 無価値感の棒 */}
+                              <div className="flex flex-col items-center">
+                                <div 
+                                  className={`bg-red-500 rounded-t-sm ${isInitial ? 'ring-2 ring-red-300' : ''}`} 
+                                  style={{ 
+                                    height: `${worthlessnessValue}%`, 
+                                    width: barWidth,
+                                    minHeight: '2px'
+                                  }}
+                                  title={`無価値感: ${data.worthlessnessScore}`}
+                                ></div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {data.worthlessnessScore}
+                                </div>
                               </div>
                             </div>
                             
-                            {/* 無価値感の棒 */}
-                            <div className="flex flex-col items-center">
-                              <div 
-                                className={`bg-red-500 rounded-t-sm ${isInitial ? 'ring-2 ring-red-300' : ''}`} 
-                                style={{ 
-                                  height: worthlessnessHeight, 
-                                  width: barWidth,
-                                  minHeight: '2px'
-                                }}
-                                title={`無価値感: ${data.worthlessnessScore}`}
-                              ></div>
-                              <div className="text-xs text-gray-500 mt-1 hidden sm:block">
-                                {data.worthlessnessScore}
-                              </div>
+                            {/* 日付ラベル */}
+                            <div className="text-xs text-gray-500 mt-2">
+                              {index === 0 && period === 'all' && initialScore 
+                                ? '初期' 
+                                : formatDate(data.date)}
                             </div>
                           </div>
                         );
                       })}
-                    </div>
-                    
-                    {/* X軸ラベル */}
-                    <div className="absolute left-0 right-0 bottom-[-24px] flex justify-between">
-                      {chartData.map((data, index) => (
-                        <div key={index} className="text-xs text-gray-500 transform -translate-x-1/2" style={{ left: `${chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50}%` }}>
-                          {index === 0 && period === 'all' && initialScore 
-                            ? '初期' 
-                            : formatDate(data.date)}
-                        </div>
-                      ))}
                     </div>
                   </div>
                 </div>
