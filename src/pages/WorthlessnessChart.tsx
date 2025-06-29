@@ -390,14 +390,13 @@ const WorthlessnessChart: React.FC = () => {
                       {/* 自己肯定感の折れ線 */}
                       <svg className="absolute inset-0 w-full h-full overflow-visible">
                         <polyline
-                          points={
-                            chartData.length > 0 
-                              ? chartData.map((data, index) => {
-                                  const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
-                                  const yPos = 100 - Number(data.selfEsteemScore || 0);
-                                  return `${xPos}% ${yPos}%`;
-                                }).join(' ')
-                              : ''
+                          points={chartData.length > 0 
+                            ? chartData.map((data, index) => {
+                                const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                                const yPos = 100 - Number(data.selfEsteemScore || 0);
+                                return `${xPos},${yPos}`;
+                              }).join(' ')
+                            : ''
                           }
                           fill="none"
                           stroke="#3b82f6"
@@ -428,14 +427,13 @@ const WorthlessnessChart: React.FC = () => {
                       {/* 無価値感の折れ線 */}
                       <svg className="absolute inset-0 w-full h-full overflow-visible">
                         <polyline
-                          points={
-                            chartData.length > 0 
-                              ? chartData.map((data, index) => {
-                                  const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
-                                  const yPos = 100 - Number(data.worthlessnessScore || 0);
-                                  return `${xPos}% ${yPos}%`;
-                                }).join(' ')
-                              : ''
+                          points={chartData.length > 0 
+                            ? chartData.map((data, index) => {
+                                const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
+                                const yPos = 100 - Number(data.worthlessnessScore || 0);
+                                return `${xPos},${yPos}`;
+                              }).join(' ')
+                            : ''
                           }
                           fill="none"
                           stroke="#ef4444"
