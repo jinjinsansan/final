@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, LineChart, Share2, Download, Filter, RefreshCw, TrendingUp } from 'lucide-react';
 
 interface InitialScore {
-  selfEsteemScore: number;
-  worthlessnessScore: number;
+  selfEsteemScore: number | string;
+  worthlessnessScore: number | string;
   measurementMonth: string;
   measurementDay: string;
 }
@@ -52,8 +52,12 @@ const WorthlessnessChart: React.FC = () => {
       if (savedEntries) {
         const entries = JSON.parse(savedEntries);
         
+        console.log('全エントリー数:', entries.length);
+        
         // 無価値感の日記のみをフィルタリング
         const worthlessnessEntries = entries.filter((entry: any) => entry.emotion === '無価値感');
+        
+        console.log('無価値感エントリー数:', worthlessnessEntries.length);
         
         // 日付でソート
         worthlessnessEntries.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -61,12 +65,16 @@ const WorthlessnessChart: React.FC = () => {
         // 期間でフィルタリング
         const filteredEntries = filterByPeriod(worthlessnessEntries, period);
         
+        console.log('期間フィルター後のエントリー数:', filteredEntries.length);
+        
         // 初期スコアがあり、全期間表示の場合は初期スコアも追加
         let formattedData = filteredEntries.map((entry: any) => ({
           date: entry.date,
-          selfEsteemScore: entry.selfEsteemScore || 0,
-          worthlessnessScore: entry.worthlessnessScore || 0
+          selfEsteemScore: Number(entry.selfEsteemScore) || 0,
+          worthlessnessScore: Number(entry.worthlessnessScore) || 0
         }));
+        
+        console.log('フォーマット後のデータ:', formattedData);
         
         // 初期スコアを追加（全期間表示の場合のみ）
         if (initialScore && period === 'all' && formattedData.length > 0) {
@@ -81,6 +89,9 @@ const WorthlessnessChart: React.FC = () => {
             data.worthlessnessScore === Number(initialScore.worthlessnessScore)
           );
           
+          console.log('初期スコア:', initialScore);
+          console.log('初期スコアが含まれているか:', hasInitialScore);
+          
           if (!hasInitialScore) {
             // 初期スコアをデータの先頭に追加
             formattedData = [{
@@ -92,6 +103,8 @@ const WorthlessnessChart: React.FC = () => {
         }
         
         setChartData(formattedData);
+        
+        console.log('最終的なチャートデータ:', formattedData);
         
         // 全期間の感情の出現回数を集計
         const counts: {[key: string]: number} = {};
@@ -126,22 +139,29 @@ const WorthlessnessChart: React.FC = () => {
   const filterByPeriod = (entries: any[], selectedPeriod: string) => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let result = [];
     
     switch (selectedPeriod) {
       case 'week':
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
-        return entries.filter((entry: any) => new Date(entry.date) >= weekAgo);
+        result = entries.filter((entry: any) => new Date(entry.date) >= weekAgo);
+        break;
       
       case 'month':
         const monthAgo = new Date(today);
         monthAgo.setDate(monthAgo.getDate() - 30);
-        return entries.filter((entry: any) => new Date(entry.date) >= monthAgo);
+        result = entries.filter((entry: any) => new Date(entry.date) >= monthAgo);
+        break;
       
       case 'all':
       default:
-        return entries;
+        result = entries;
+        break;
     }
+    
+    console.log(`${selectedPeriod}期間のフィルター結果:`, result.length);
+    return result;
   };
 
   const formatDate = (dateString: string) => {
@@ -323,11 +343,11 @@ const WorthlessnessChart: React.FC = () => {
                 <div className="h-64 relative mb-8">
                   {/* Y軸 */}
                   <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-xs text-gray-500">
-                    <div>100</div>
-                    <div>75</div>
-                    <div>50</div>
-                    <div>25</div>
-                    <div>0</div>
+                    <div className="transform -translate-y-2">100</div>
+                    <div className="transform -translate-y-2">75</div>
+                    <div className="transform -translate-y-2">50</div>
+                    <div className="transform -translate-y-2">25</div>
+                    <div className="transform -translate-y-2">0</div>
                   </div>
                   
                   {/* グラフエリア */}
@@ -345,7 +365,7 @@ const WorthlessnessChart: React.FC = () => {
                       <svg className="absolute inset-0 w-full h-full overflow-visible">
                         <polyline
                           points={chartData.map((data, index) => {
-                            const xPos = (index / (chartData.length - 1)) * 100;
+                            const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
                             const yPos = 100 - data.selfEsteemScore;
                             return `${xPos}% ${yPos}%`;
                           }).join(' ')}
@@ -356,7 +376,7 @@ const WorthlessnessChart: React.FC = () => {
                           strokeLinecap="round"
                         />
                         {chartData.map((data, index) => {
-                          const xPos = (index / (chartData.length - 1)) * 100;
+                          const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
                           const yPos = 100 - data.selfEsteemScore;
                           return (
                             <circle
@@ -379,7 +399,7 @@ const WorthlessnessChart: React.FC = () => {
                       <svg className="absolute inset-0 w-full h-full overflow-visible">
                         <polyline
                           points={chartData.map((data, index) => {
-                            const xPos = (index / (chartData.length - 1)) * 100;
+                            const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
                             const yPos = 100 - data.worthlessnessScore;
                             return `${xPos}% ${yPos}%`;
                           }).join(' ')}
@@ -390,7 +410,7 @@ const WorthlessnessChart: React.FC = () => {
                           strokeLinecap="round"
                         />
                         {chartData.map((data, index) => {
-                          const xPos = (index / (chartData.length - 1)) * 100;
+                          const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
                           const yPos = 100 - data.worthlessnessScore;
                           return (
                             <circle
@@ -413,7 +433,7 @@ const WorthlessnessChart: React.FC = () => {
                     {/* X軸ラベル */}
                     <div className="absolute left-0 right-0 bottom-[-24px] flex justify-between">
                       {chartData.map((data, index) => (
-                        <div key={index} className="text-xs text-gray-500 transform -translate-x-1/2" style={{ left: `${(index / (chartData.length - 1)) * 100}%` }}>
+                        <div key={index} className="text-xs text-gray-500 transform -translate-x-1/2" style={{ left: `${chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50}%` }}>
                           {index === 0 && period === 'all' && initialScore 
                             ? '初期' 
                             : formatDate(data.date)}
