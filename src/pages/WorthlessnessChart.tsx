@@ -617,6 +617,22 @@ const WorthlessnessChart: React.FC = () => {
                 </div>
               </div>
             )}
+            
+            {/* 初期スコアが設定されていない場合の警告メッセージ */}
+            {!initialScore && period === 'all' && (
+              <div className="mt-4 pt-4 border-t border-yellow-200">
+                <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-yellow-500 text-xl">⚠️</div>
+                    <div>
+                      <p className="text-yellow-800 font-jp-medium">
+                        初期スコアが設定されていません。最初にやることページで自己肯定感計測を行ってください。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
