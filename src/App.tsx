@@ -510,7 +510,7 @@ function App() {
               </button>
             )}
             <a
-              href="https://line.me/R/ti/p/@namisapo"
+              href="https://ryksl1di.autosns.app/line"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-amber-50 text-base"
