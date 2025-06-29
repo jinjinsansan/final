@@ -166,8 +166,9 @@ const WorthlessnessChart: React.FC = () => {
     
     switch (selectedPeriod) {
       case 'week':
+        // 1週間のデータを表示するため、7日前の日付を設定
         const weekAgo = new Date(today);
-        weekAgo.setDate(weekAgo.getDate() - 30); // 一時的に30日に拡大して表示データを確保
+        weekAgo.setDate(weekAgo.getDate() - 7);
         result = entries.filter((entry: any) => {
           const entryDate = normalizeDate(entry.date);
           return entryDate >= weekAgo;
@@ -405,7 +406,8 @@ const WorthlessnessChart: React.FC = () => {
                       {chartData.map((data, index) => {
                         const selfEsteemValue = Number(data.selfEsteemScore || 0);
                         const worthlessnessValue = Number(data.worthlessnessScore || 0);
-                        const barWidth = `${80 / (chartData.length * 2.5)}%`;
+                        // 棒の幅を調整（データ数に応じて）
+                        const barWidth = `${Math.min(30, 80 / (chartData.length * 2))}px`;
                         const isInitial = index === 0 && period === 'all' && initialScore;
                         
                         return (
@@ -414,11 +416,12 @@ const WorthlessnessChart: React.FC = () => {
                               {/* 自己肯定感の棒 */}
                               <div className="flex flex-col items-center">
                                 <div 
-                                  className={`bg-blue-500 rounded-t-sm ${isInitial ? 'ring-2 ring-blue-300' : ''}`} 
+                                  className={`bg-blue-500 rounded-t-sm ${isInitial ? 'ring-2 ring-blue-300' : ''} shadow-md`} 
                                   style={{ 
                                     height: `${selfEsteemValue}%`, 
                                     width: barWidth,
-                                    minHeight: '2px'
+                                    minHeight: '2px',
+                                    transition: 'height 0.3s ease-in-out'
                                   }}
                                   title={`自己肯定感: ${data.selfEsteemScore}`}
                                 ></div>
@@ -430,11 +433,12 @@ const WorthlessnessChart: React.FC = () => {
                               {/* 無価値感の棒 */}
                               <div className="flex flex-col items-center">
                                 <div 
-                                  className={`bg-red-500 rounded-t-sm ${isInitial ? 'ring-2 ring-red-300' : ''}`} 
+                                  className={`bg-red-500 rounded-t-sm ${isInitial ? 'ring-2 ring-red-300' : ''} shadow-md`} 
                                   style={{ 
                                     height: `${worthlessnessValue}%`, 
                                     width: barWidth,
-                                    minHeight: '2px'
+                                    minHeight: '2px',
+                                    transition: 'height 0.3s ease-in-out'
                                   }}
                                   title={`無価値感: ${data.worthlessnessScore}`}
                                 ></div>
