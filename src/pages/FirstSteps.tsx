@@ -72,6 +72,7 @@ const FirstSteps: React.FC = () => {
     if (scores.selfEsteemScore && scores.worthlessnessScore && scores.measurementMonth && scores.measurementDay) {
       // スコアが0〜100の範囲内かチェック（文字列型の場合も考慮）
       const selfEsteemScore = typeof scores.selfEsteemScore === 'string'
+        ? parseInt(scores.selfEsteemScore) || 0
         : scores.selfEsteemScore || 0;
       const worthlessnessScore = typeof scores.worthlessnessScore === 'string'
         ? parseInt(scores.worthlessnessScore) || 0

@@ -54,8 +54,6 @@ const WorthlessnessChart: React.FC = () => {
         
         console.log('全エントリー数:', entries.length);
         
-        console.log('全エントリー数:', entries.length);
-        
         // 無価値感の日記のみをフィルタリング
         const worthlessnessEntries = entries.filter((entry: any) => entry.emotion === '無価値感');
         
@@ -101,7 +99,7 @@ const WorthlessnessChart: React.FC = () => {
           
           console.log('初期スコア:', initialScore);
           console.log('初期スコアが含まれているか:', hasInitialScore);
-
+          
           if (!hasInitialScore) {
             // 初期スコアをデータの先頭に追加
             formattedData = [{
@@ -115,7 +113,7 @@ const WorthlessnessChart: React.FC = () => {
         setChartData(formattedData);
         
         console.log('最終的なチャートデータ:', formattedData);
-
+        
         // 全期間の感情の出現回数を集計
         const counts: {[key: string]: number} = {};
         entries.forEach((entry: any) => {
@@ -178,6 +176,9 @@ const WorthlessnessChart: React.FC = () => {
     
     console.log(`${selectedPeriod}期間のフィルター結果:`, result.length);
     return result;
+  };
+
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getMonth() + 1}/${date.getDate()}`;
   };
@@ -220,9 +221,6 @@ const WorthlessnessChart: React.FC = () => {
         prompt('以下のテキストをコピーしてSNSでシェアしてください:', shareText);
       });
     }
-    
-    console.log(`${selectedPeriod}期間のフィルター結果:`, result.length);
-    return result;
   };
 
   const handleTwitterShare = () => {
