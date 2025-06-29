@@ -174,20 +174,28 @@ const WorthlessnessChart: React.FC = () => {
         // 選択された期間の感情の出現回数を集計
         const filteredCounts: {[key: string]: number} = {};
         
-        // 全エントリーから感情を持つものだけを抽出
+        // 全エントリーから感情を持つものだけを抽出 
         const entriesWithEmotion = entries?.filter((entry: any) => entry && entry.emotion) || [];
         
-        // 日付でフィルタリング
-        const now = dayjs().endOf('day');
-        const from = period === 'week'
-          ? now.subtract(6, 'day').startOf('day')
-          : period === 'month'
-            ? now.subtract(29, 'day').startOf('day')
-            : dayjs('2000-01-01'); // 全期間の場合は十分昔の日付
+        // 最新の日付を取得
+        let latestDate = dayjs();
+        if (entriesWithEmotion.length > 0) {
+          latestDate = dayjs(
+            entriesWithEmotion.reduce((max, entry) => 
+              entry.date > max ? entry.date : max, entriesWithEmotion[0].date)
+          ).endOf('day');
+        }
+        
+        // 期間に応じたフィルタリング
+        const from = period === 'week' 
+          ? latestDate.subtract(6, 'day').startOf('day')
+          : period === 'month' 
+            ? latestDate.subtract(29, 'day').startOf('day')
+            : dayjs('2000-01-01');  // 全期間の場合は十分昔の日付
         
         // 期間内のエントリーだけをカウント
         entriesWithEmotion
-          .filter(entry => dayjs(entry.date).isBetween(from, now, 'day', '[]'))
+          .filter(entry => dayjs(entry.date).isBetween(from, latestDate, 'day', '[]'))
           .forEach((entry: any) => {
           filteredCounts[entry.emotion] = (filteredCounts[entry.emotion] || 0) + 1;
         });
@@ -468,8 +476,8 @@ const WorthlessnessChart: React.FC = () => {
                     {/* X軸ラベル */}
                     {displayedData.map((data, index) => (
                       <text
-                        key={`x-label-${index}`}
-                        x={toX(index, chartData.length)}
+                        key={`x-label-${data.date}-${index}`}
+                        x={toX(index, displayedData.length)}
                         y="98"
                         fontSize="3"
                         textAnchor="middle"
@@ -586,16 +594,23 @@ const WorthlessnessChart: React.FC = () => {
                   <div className="text-yellow-500 text-xl">⚠️</div>
                   <div>
                     <p className="text-yellow-800 font-jp-medium">
-                      初期スコアが設定されていません。最初にやることページで自己肯定感計測を行ってください。
-                    </p>
+type RangeKey = 'week'|'month'|'all';
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
+/** latestDate を基準にフィルタリング */
+const filterByRange = (data: ScoreEntry[], range: RangeKey): ScoreEntry[] => {
+  if (range === 'all' || data.length === 0) return data;
+
+  // データが持つ最新日を基準にする
+  const latestDate = dayjs(
+    data.reduce((max, d) => (d.date > max ? d.date : max), data[0].date)
+  ).endOf('day');
+
+  const from = range === 'week'
+    ? latestDate.subtract(6, 'day').startOf('day')   // 直近7日間
+    : latestDate.subtract(29,'day').startOf('day');  // 直近30日間
         )}
       </div>
-    </div>
+    dayjs(d.date).isBetween(from, latestDate, 'day', '[]')  // 両端を含む
   );
 };
 export default WorthlessnessChart;
