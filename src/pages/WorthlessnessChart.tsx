@@ -50,7 +50,7 @@ const WorthlessnessChart: React.FC = () => {
     setLoading(true);
     try {
       // 現在の日本時間
-      const today = getJapaneseDate();
+      const japanToday = getJapaneseDate();
       
       // ローカルストレージから日記データを取得
       const now = new Date();
@@ -75,13 +75,20 @@ const WorthlessnessChart: React.FC = () => {
         console.log('全エントリー数:', entries.length);
         
         // 無価値感の日記のみをフィルタリング
-        const worthlessnessEntries = entries.filter((entry: any) => entry.worthlessnessScore !== undefined)
-          .sort((a: any, b: any) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime());
-        
-        const filteredEntries = filterByPeriod(worthlessnessEntries, period, today)
+        const worthlessnessEntries = entries.filter((entry: any) => entry.emotion === '無価値感')
           .sort((a: any, b: any) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime());
         
         console.log('無価値感エントリー数:', worthlessnessEntries.length, '期間:', period);
+        
+        // 期間でフィルタリング
+        const filteredEntries = filterByPeriod(worthlessnessEntries, period, today);
+        
+        // データがない場合は処理を終了
+        if (filteredEntries.length === 0 && period !== 'all') {
+          setChartData([]);
+          return;
+        }
+        
         // 日記データをフォーマット
         let formattedData = filteredEntries.map((entry: any) => ({
           date: entry.date,
