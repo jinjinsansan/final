@@ -167,7 +167,7 @@ const WorthlessnessChart: React.FC = () => {
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
         result = entries.filter((entry: any) => {
-          const entryDate = normalizeDate(entry.date);
+          const entryDate = new Date(entry.date);
           return entryDate >= weekAgo;
         });
         break;
@@ -176,7 +176,7 @@ const WorthlessnessChart: React.FC = () => {
         const monthAgo = new Date(today);
         monthAgo.setDate(monthAgo.getDate() - 30);
         result = entries.filter((entry: any) => {
-          const entryDate = normalizeDate(entry.date);
+          const entryDate = new Date(entry.date);
           return entryDate >= monthAgo;
         });
         break;
@@ -188,7 +188,7 @@ const WorthlessnessChart: React.FC = () => {
     }
     
     // 日付でソート
-    result.sort((a: any, b: any) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime());
+    result.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     console.log(`${selectedPeriod}期間のフィルター結果:`, result.length, '件');
     return result;
@@ -394,17 +394,13 @@ const WorthlessnessChart: React.FC = () => {
                       {/* 自己肯定感の折れ線 */}
                       <svg className="absolute inset-0 w-full h-full overflow-visible">
                         <polyline
-                          points={
-                            chartData.length > 1 
-                              ? chartData.map((data, index) => {
-                                  const xPos = (index / (chartData.length - 1)) * 100;
-                                  const yPos = 100 - Number(data.selfEsteemScore || 0);
-                                  return `${xPos}% ${yPos}%`;
-                                }).join(' ')
-                              : chartData.length === 1
-                                ? `50% ${100 - Number(chartData[0].selfEsteemScore || 0)}%`
-                                : ''
-                          }
+                          points={chartData.map((data, index) => {
+                            const xPos = chartData.length > 1 
+                              ? (index / (chartData.length - 1)) * 100 
+                              : 50;
+                            const yPos = 100 - Number(data.selfEsteemScore || 0);
+                            return `${xPos}% ${yPos}%`;
+                          }).join(' ')}
                           fill="none"
                           stroke="#3b82f6"
                           strokeWidth="2"
@@ -434,17 +430,13 @@ const WorthlessnessChart: React.FC = () => {
                       {/* 無価値感の折れ線 */}
                       <svg className="absolute inset-0 w-full h-full overflow-visible">
                         <polyline
-                          points={
-                            chartData.length > 1 
-                              ? chartData.map((data, index) => {
-                                  const xPos = (index / (chartData.length - 1)) * 100;
-                                  const yPos = 100 - Number(data.worthlessnessScore || 0);
-                                  return `${xPos}% ${yPos}%`;
-                                }).join(' ')
-                              : chartData.length === 1
-                                ? `50% ${100 - Number(chartData[0].worthlessnessScore || 0)}%`
-                                : ''
-                          }
+                          points={chartData.map((data, index) => {
+                            const xPos = chartData.length > 1 
+                              ? (index / (chartData.length - 1)) * 100 
+                              : 50;
+                            const yPos = 100 - Number(data.worthlessnessScore || 0);
+                            return `${xPos}% ${yPos}%`;
+                          }).join(' ')}
                           fill="none"
                           stroke="#ef4444"
                           strokeWidth="2"
