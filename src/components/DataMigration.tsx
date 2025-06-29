@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info } from 'lucide-react';
+import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Save } from 'lucide-react';
 import { supabase, userService, syncService } from '../lib/supabase';
 import { useSupabase } from '../hooks/useSupabase';
 import { getCurrentUser } from '../lib/deviceAuth';
@@ -17,6 +17,7 @@ const DataMigration: React.FC = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true);
+  const [backupInProgress, setBackupInProgress] = useState(false);
 
   // 全体のデータ数を保持する状態
   const [totalLocalDataCount, setTotalLocalDataCount] = useState(0);
@@ -406,6 +407,50 @@ const DataMigration: React.FC = () => {
     }
   };
 
+  // バックアップデータの作成
+  const handleCreateBackup = () => {
+    setBackupInProgress(true);
+    
+    try {
+      // ローカルストレージからデータを収集
+      const backupObject = {
+        journalEntries: localStorage.getItem('journalEntries') ? JSON.parse(localStorage.getItem('journalEntries')!) : [],
+        initialScores: localStorage.getItem('initialScores') ? JSON.parse(localStorage.getItem('initialScores')!) : null,
+        consentHistories: localStorage.getItem('consent_histories') ? JSON.parse(localStorage.getItem('consent_histories')!) : [],
+        lineUsername: localStorage.getItem('line-username'),
+        privacyConsentGiven: localStorage.getItem('privacyConsentGiven'),
+        privacyConsentDate: localStorage.getItem('privacyConsentDate'),
+        backupDate: new Date().toISOString(),
+        version: '1.0'
+      };
+      
+      // JSONに変換してダウンロード
+      const dataStr = JSON.stringify(backupObject, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      
+      // ファイル名にユーザー名と日付を含める
+      const user = getCurrentUser();
+      const username = user?.lineUsername || localStorage.getItem('line-username') || 'user';
+      const date = new Date().toISOString().split('T')[0];
+      const fileName = `kanjou-nikki-backup-${username}-${date}.json`;
+      
+      // ダウンロードリンクを作成して自動クリック
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(dataBlob);
+      downloadLink.download = fileName;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      setMigrationStatus('バックアップが正常に作成されました！');
+    } catch (error) {
+      console.error('バックアップ作成エラー:', error);
+      setMigrationStatus('バックアップの作成に失敗しました。');
+    } finally {
+      setBackupInProgress(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -622,15 +667,39 @@ const DataMigration: React.FC = () => {
                       <RefreshCw className="w-5 h-5 animate-spin" />
                     ) : (
                       <Database className="w-5 h-5" />
-                    )}
+                <Database className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
                     <span>大量データ移行（高度な処理）</span>
-                  </button>
+                  <h3 className="font-jp-bold text-gray-900 mb-2">データ管理</h3>
                   <p className="text-xs text-gray-500 mt-2">
                     大量のデータを効率的に処理します。通常の移行で問題がある場合のみ使用してください。
                   </p>
                 </div>
               </div>
             )}
+              {/* バックアップボタン */}
+              <div className="bg-green-50 rounded-lg p-4 border border-green-200 mb-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Save className="w-5 h-5 text-green-600" />
+                  <span className="font-jp-medium text-green-800">データのバックアップ</span>
+                </div>
+                <p className="text-sm text-green-700 mb-3">
+                  現在のデータをバックアップファイルとして保存します。このファイルは後でデータを復元する際に使用できます。
+                </p>
+                <button
+                  onClick={handleCreateBackup}
+                  disabled={backupInProgress}
+                  className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-jp-medium transition-colors w-full"
+                >
+                  {backupInProgress ? (
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                  <span>バックアップを作成</span>
+                </button>
+              </div>
+              
+              {/* 自動同期設定 */}
           </div>
         )}
 
