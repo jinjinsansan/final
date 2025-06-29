@@ -77,6 +77,10 @@ const FirstSteps: React.FC = () => {
       const worthlessnessScore = typeof scores.worthlessnessScore === 'string'
         ? parseInt(scores.worthlessnessScore) || 0
         : scores.worthlessnessScore || 0;
+        : scores.selfEsteemScore || 0;
+      const worthlessnessScore = typeof scores.worthlessnessScore === 'string'
+        ? parseInt(scores.worthlessnessScore) || 0
+        : scores.worthlessnessScore || 0;
       
       if (selfEsteemScore < 0 || selfEsteemScore > 100 || worthlessnessScore < 0 || worthlessnessScore > 100) {
         alert('スコアは0〜100の範囲内で入力してください。');
@@ -91,6 +95,7 @@ const FirstSteps: React.FC = () => {
         measurementDay: scores.measurementDay
       };
       
+      console.log('保存するスコア:', numericScores);
       console.log('保存するスコア:', numericScores);
       localStorage.setItem('initialScores', JSON.stringify(numericScores));
       setIsSaved(true);
