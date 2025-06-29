@@ -15,8 +15,8 @@ interface EmotionCount {
 
 interface ChartData {
   date: string;
-  selfEsteemScore: number;
-  worthlessnessScore: number;
+  selfEsteemScore: number | string;
+  worthlessnessScore: number | string;
 }
 
 const WorthlessnessChart: React.FC = () => {
@@ -54,8 +54,12 @@ const WorthlessnessChart: React.FC = () => {
         
         console.log('全エントリー数:', entries.length);
         
+        console.log('全エントリー数:', entries.length);
+        
         // 無価値感の日記のみをフィルタリング
         const worthlessnessEntries = entries.filter((entry: any) => entry.emotion === '無価値感');
+        
+        console.log('無価値感エントリー数:', worthlessnessEntries.length);
         
         console.log('無価値感エントリー数:', worthlessnessEntries.length);
         
@@ -74,6 +78,14 @@ const WorthlessnessChart: React.FC = () => {
         }
         
         // 日記データをフォーマット
+        
+        // データがない場合は処理を終了
+        if (filteredEntries.length === 0 && period !== 'all') {
+          setChartData([]);
+          return;
+        }
+        
+        // 日記データをフォーマット
         let formattedData = filteredEntries.map((entry: any) => ({
           date: entry.date,
           selfEsteemScore: Number(entry.selfEsteemScore) || 0,
@@ -84,8 +96,12 @@ const WorthlessnessChart: React.FC = () => {
         
         // 初期スコアを追加（全期間表示の場合、または他の期間でデータがない場合）
         if (initialScore && (period === 'all' || formattedData.length === 0)) {
+        // 初期スコアを追加（全期間表示の場合、または他の期間でデータがない場合）
+        if (initialScore && (period === 'all' || formattedData.length === 0)) {
           // 初期スコアの日付を作成（最初の日記の前日）
           const firstEntryDate = formattedData.length > 0 
+            ? new Date(formattedData[0].date)
+            : new Date(); // データがない場合は今日の日付を使用
             ? new Date(formattedData[0].date)
             : new Date(); // データがない場合は今日の日付を使用
           firstEntryDate.setDate(firstEntryDate.getDate() - 1);
@@ -96,6 +112,9 @@ const WorthlessnessChart: React.FC = () => {
             data.selfEsteemScore === Number(initialScore.selfEsteemScore) && 
             data.worthlessnessScore === Number(initialScore.worthlessnessScore)
           );
+          
+          console.log('初期スコア:', initialScore);
+          console.log('初期スコアが含まれているか:', hasInitialScore);
           
           console.log('初期スコア:', initialScore);
           console.log('初期スコアが含まれているか:', hasInitialScore);
@@ -111,6 +130,8 @@ const WorthlessnessChart: React.FC = () => {
         }
         
         setChartData(formattedData);
+        
+        console.log('最終的なチャートデータ:', formattedData);
         
         console.log('最終的なチャートデータ:', formattedData);
         
@@ -148,12 +169,17 @@ const WorthlessnessChart: React.FC = () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     let result = [];
+    let result = [];
     
     switch (selectedPeriod) {
       case 'week':
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
         result = entries.filter((entry: any) => {
+          const entryDate = new Date(entry.date);
+          return entryDate >= weekAgo && entryDate <= today;
+        });
+        break;
           const entryDate = new Date(entry.date);
           return entryDate >= weekAgo && entryDate <= today;
         });
@@ -167,10 +193,15 @@ const WorthlessnessChart: React.FC = () => {
           return entryDate >= monthAgo && entryDate <= today;
         });
         break;
+          const entryDate = new Date(entry.date);
+          return entryDate >= monthAgo && entryDate <= today;
+        });
+        break;
       
       case 'all':
       default:
         result = entries;
+        break;
         break;
     }
     
@@ -221,6 +252,9 @@ const WorthlessnessChart: React.FC = () => {
         prompt('以下のテキストをコピーしてSNSでシェアしてください:', shareText);
       });
     }
+    
+    console.log(`${selectedPeriod}期間のフィルター結果:`, result.length);
+    return result;
   };
 
   const handleTwitterShare = () => {
