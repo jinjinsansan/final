@@ -388,7 +388,7 @@ const WorthlessnessChart: React.FC = () => {
                           strokeWidth="2"
                           strokeLinejoin="round"
                           strokeLinecap="round"
-                        />
+                       />
                         {chartData.map((data, index) => {
                           const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
                           const yPos = 100 - data.selfEsteemScore;
@@ -422,7 +422,7 @@ const WorthlessnessChart: React.FC = () => {
                           strokeWidth="2"
                           strokeLinejoin="round"
                           strokeLinecap="round"
-                        />
+                       />
                         {chartData.map((data, index) => {
                           const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
                           const yPos = 100 - data.worthlessnessScore;
