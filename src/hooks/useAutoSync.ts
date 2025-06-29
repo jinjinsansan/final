@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSupabase } from './useSupabase';
-import { userService, syncService, diaryService, adminSupabase } from '../lib/supabase';
+import { supabase, userService, syncService, diaryService, adminSupabase } from '../lib/supabase';
 import { getCurrentUser, logSecurityEvent, getAuthSession } from '../lib/deviceAuth';
 
 interface AutoSyncStatus {
@@ -190,7 +190,7 @@ export const useAutoSync = () => {
       // 最新の日記エントリーを直接Supabaseに保存（バックアップとして）
       try {
         const localEntries = localStorage.getItem('journalEntries');
-        if (localEntries && supabase) {
+        if (localEntries && supabase) { 
           const entries = JSON.parse(localEntries);
           // 最新の5件のエントリーを取得
           const recentEntries = entries && entries.length > 0 ? entries.slice(0, 5) : [];
