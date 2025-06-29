@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import { useAutoSync } from '../hooks/useAutoSync';
 import { useSupabase } from '../hooks/useSupabase';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/ja';
+
+// 日本語ロケールと相対時間プラグインを設定
+dayjs.extend(relativeTime);
+dayjs.locale('ja');
 
 interface SyncStatusIndicatorProps {
   className?: string;
 }
 
 const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '' }) => {
+  const autoSync = useAutoSync();
   const { isConnected } = useSupabase();
   const [timeSinceSync, setTimeSinceSync] = useState<string>('');
-  const [syncInProgress, setSyncInProgress] = useState(false);
   
   // 最終同期時間からの経過時間を計算
   useEffect(() => {
@@ -20,23 +28,8 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
         return;
       }
       
-      // 相対時間を計算
-      const lastSync = new Date(lastSyncTime);
-      const now = new Date();
-      const diffMs = now.getTime() - lastSync.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMins / 60);
-      const diffDays = Math.floor(diffHours / 24);
-      
-      if (diffDays > 0) {
-        setTimeSinceSync(`${diffDays}日前`);
-      } else if (diffHours > 0) {
-        setTimeSinceSync(`${diffHours}時間前`);
-      } else if (diffMins > 0) {
-        setTimeSinceSync(`${diffMins}分前`);
-      } else {
-        setTimeSinceSync('たった今');
-      }
+      // dayjsを使用して相対時間を表示
+      setTimeSinceSync(dayjs(lastSyncTime).fromNow());
     };
     
     updateTimeSinceSync();
@@ -48,14 +41,13 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
   // 同期状態に基づいて表示を変更
   const getStatusColor = () => {
     if (!isConnected) return 'bg-gray-100 text-gray-600 border-gray-200';
-    if (syncInProgress) return 'bg-blue-100 text-blue-600 border-blue-200 animate-pulse';
+    if (autoSync.syncInProgress) return 'bg-blue-100 text-blue-600 border-blue-200 animate-pulse';
+    if (!autoSync.isAutoSyncEnabled) return 'bg-yellow-100 text-yellow-600 border-yellow-200';
     
     // 最終同期時間から6時間以上経過している場合は警告表示
     const lastSyncTime = localStorage.getItem('last_sync_time') || '';
     if (lastSyncTime) {
-      const lastSync = new Date(lastSyncTime);
-      const now = new Date();
-      const diffHours = Math.floor((now.getTime() - lastSync.getTime()) / (1000 * 60 * 60));
+      const diffHours = dayjs().diff(dayjs(lastSyncTime), 'hour');
       
       if (diffHours > 6) {
         return 'bg-yellow-100 text-yellow-600 border-yellow-200';
@@ -66,21 +58,29 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
   };
   
   const getStatusIcon = () => {
-    if (syncInProgress) return <RefreshCw className="w-4 h-4 animate-spin" />;
+    if (autoSync.syncInProgress) return <RefreshCw className="w-4 h-4 animate-spin" />;
     if (!isConnected) return <AlertTriangle className="w-4 h-4" />;
+    if (!autoSync.isAutoSyncEnabled) return <AlertTriangle className="w-4 h-4" />;
     return <CheckCircle className="w-4 h-4" />;
   };
   
   const getStatusText = () => {
-    if (syncInProgress) return '同期中...';
+    if (autoSync.syncInProgress) return '同期中...';
     if (!isConnected) return 'オフラインモード';
+    if (!autoSync.isAutoSyncEnabled) return '自動同期オフ';
     return '同期済み';
+  };
+  
+  const handleClick = () => {
+    if (!isConnected || autoSync.syncInProgress) return;
+    autoSync.triggerManualSync();
   };
   
   return (
     <button
-      disabled={true}
-      className={`flex items-center space-x-2 px-3 py-1 rounded-lg border ${getStatusColor()} transition-colors ${className} cursor-default`}
+      onClick={handleClick}
+      disabled={!isConnected || autoSync.syncInProgress || !autoSync.currentUser}
+      className={`flex items-center space-x-2 px-3 py-1 rounded-lg border ${getStatusColor()} transition-colors ${className} ${isConnected && !autoSync.syncInProgress && autoSync.currentUser ? 'hover:bg-opacity-80 cursor-pointer' : 'cursor-default'}`}
     >
       {getStatusIcon()}
       <div className="flex flex-col items-start">
