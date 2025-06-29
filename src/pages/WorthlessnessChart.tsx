@@ -426,88 +426,99 @@ const WorthlessnessChart: React.FC = () => {
                   <div className="absolute left-0 right-0 bottom-0 h-px bg-gray-200"></div>
                   
                   {/* 折れ線グラフ */}
-                  <svg className="absolute top-0 left-12 right-0 bottom-0 w-[calc(100%-48px)] h-full">
-                    {/* 自己肯定感の折れ線 */}
+                  <svg 
+                    viewBox="0 0 100 100" 
+                    preserveAspectRatio="none"
+                    className="absolute top-0 left-12 right-0 bottom-0 w-[calc(100%-48px)] h-full overflow-visible"
+                  >
+                    {/* 水平グリッド線 - グラフの背景 */}
+                    <line x1="0" y1="0" x2="100" y2="0" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
+                    <line x1="0" y1="25" x2="100" y2="25" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
+                    <line x1="0" y1="50" x2="100" y2="50" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
+                    <line x1="0" y1="75" x2="100" y2="75" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
+                    <line x1="0" y1="100" x2="100" y2="100" stroke="#f3f4f6" strokeWidth="0.5" className="graph-grid" />
+                    
+                    {/* 自己肯定感と無価値感の折れ線 */}
                     {chartData.length > 1 && (
-                      <polyline
-                        points={chartData.map((data, index) => {
-                          const xPos = (index / (chartData.length - 1)) * 100;
-                          const yPos = 100 - Number(data.selfEsteemScore || 0);
-                          return `${xPos}% ${yPos}%`;
-                        }).join(' ')}
-                        fill="none"
-                        stroke="#3b82f6"
-                        strokeWidth="2"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                      />
+                      <>
+                        {/* 自己肯定感の折れ線 */}
+                        <polyline
+                          points={chartData.map((data, index) => {
+                            const xPos = (index / (chartData.length - 1)) * 100;
+                            const yPos = 100 - Number(data.selfEsteemScore || 0);
+                            return `${xPos},${yPos}`;
+                          }).join(' ')}
+                          fill="none"
+                          stroke="#3b82f6"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                          strokeDasharray="0"
+                        />
+                        
+                        {/* 無価値感の折れ線 */}
+                        <polyline
+                          points={chartData.map((data, index) => {
+                            const xPos = (index / (chartData.length - 1)) * 100;
+                            const yPos = 100 - Number(data.worthlessnessScore || 0);
+                            return `${xPos},${yPos}`;
+                          }).join(' ')}
+                          fill="none"
+                          stroke="#ef4444"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                          strokeDasharray="0"
+                        />
+                      </>
                     )}
                     
-                    {/* 無価値感の折れ線 */}
-                    {chartData.length > 1 && (
-                      <polyline
-                        points={chartData.map((data, index) => {
-                          const xPos = (index / (chartData.length - 1)) * 100;
-                          const yPos = 100 - Number(data.worthlessnessScore || 0);
-                          return `${xPos}% ${yPos}%`;
-                        }).join(' ')}
-                        fill="none"
-                        stroke="#ef4444"
-                        strokeWidth="2"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                      />
-                    )}
-                    
-                    {/* 自己肯定感のデータポイント */}
+                    {/* データポイント */}
                     {chartData.map((data, index) => {
                       const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
-                      const yPos = 100 - Number(data.selfEsteemScore || 0);
+                      const selfEsteemYPos = 100 - Number(data.selfEsteemScore || 0);
+                      const worthlessnessYPos = 100 - Number(data.worthlessnessScore || 0);
+                      
                       return (
-                        <g key={`self-esteem-${index}`}>
+                        <g key={`data-point-${index}`}>
+                          {/* 自己肯定感のデータポイント */}
                           <circle
-                            cx={`${xPos}%`}
-                            cy={`${yPos}%`}
-                            r="4"
+                            cx={xPos}
+                            cy={selfEsteemYPos}
+                            r="3"
                             fill="#3b82f6"
                             stroke="white"
                             strokeWidth="1"
                           />
                           <text
-                            x={`${xPos}%`}
-                            y={`${yPos - 10}%`}
+                            x={xPos}
+                            y={selfEsteemYPos - 5}
                             textAnchor="middle"
                             fill="#3b82f6"
                             fontSize="10"
                             fontWeight="bold"
+                            className="chart-label"
                           >
                             {data.selfEsteemScore}
                           </text>
-                        </g>
-                      );
-                    })}
-                    
-                    {/* 無価値感のデータポイント */}
-                    {chartData.map((data, index) => {
-                      const xPos = chartData.length > 1 ? (index / (chartData.length - 1)) * 100 : 50;
-                      const yPos = 100 - Number(data.worthlessnessScore || 0);
-                      return (
-                        <g key={`worthlessness-${index}`}>
+                          
+                          {/* 無価値感のデータポイント */}
                           <circle
-                            cx={`${xPos}%`}
-                            cy={`${yPos}%`}
-                            r="4"
+                            cx={xPos}
+                            cy={worthlessnessYPos}
+                            r="3"
                             fill="#ef4444"
                             stroke="white"
                             strokeWidth="1"
                           />
                           <text
-                            x={`${xPos}%`}
-                            y={`${yPos - 10}%`}
+                            x={xPos}
+                            y={worthlessnessYPos - 5}
                             textAnchor="middle"
                             fill="#ef4444"
                             fontSize="10"
                             fontWeight="bold"
+                            className="chart-label"
                           >
                             {data.worthlessnessScore}
                           </text>
@@ -520,7 +531,7 @@ const WorthlessnessChart: React.FC = () => {
                   <div className="absolute left-12 right-0 bottom-0 transform translate-y-6 flex justify-between">
                     {chartData.map((data, index) => (
                       <div 
-                        key={`label-${index}`} 
+                        key={`x-label-${index}`} 
                         className="text-xs text-gray-500 transform -translate-x-1/2"
                         style={{ 
                           left: `${(index / (chartData.length - 1)) * 100}%`,
@@ -537,6 +548,16 @@ const WorthlessnessChart: React.FC = () => {
               </div>
             </div>
             
+            {/* グラフのスタイル */}
+            <style jsx>{`
+              .graph-grid {
+                stroke-dasharray: 2 2;
+              }
+              .chart-label {
+                pointer-events: none;
+              }
+            `}</style>
+            
             {/* 最新スコア */}
             {chartData.length > 0 ? (
               <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
@@ -549,7 +570,7 @@ const WorthlessnessChart: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-white rounded-lg p-4 border border-blue-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-700 font-jp-medium">自己肯定感</span>
+                      <span className="text-gray-700 font-jp-medium">自己肯定感スコア</span>
                       <span className="text-2xl font-jp-bold text-blue-600">
                         {chartData[chartData.length - 1].selfEsteemScore}
                       </span>
@@ -557,7 +578,7 @@ const WorthlessnessChart: React.FC = () => {
                   </div>
                   <div className="bg-white rounded-lg p-4 border border-red-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-700 font-jp-medium">無価値感</span>
+                      <span className="text-gray-700 font-jp-medium">無価値感スコア</span>
                       <span className="text-2xl font-jp-bold text-red-600">
                         {chartData[chartData.length - 1].worthlessnessScore}
                       </span>
@@ -576,7 +597,7 @@ const WorthlessnessChart: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-white rounded-lg p-3 border border-blue-100">
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-700 font-jp-medium text-sm">自己肯定感</span>
+                          <span className="text-gray-700 font-jp-medium text-sm">自己肯定感スコア</span>
                           <span className="text-xl font-jp-bold text-blue-600">
                             {initialScore.selfEsteemScore}
                           </span>
@@ -584,7 +605,7 @@ const WorthlessnessChart: React.FC = () => {
                       </div>
                       <div className="bg-white rounded-lg p-3 border border-red-100">
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-700 font-jp-medium text-sm">無価値感</span>
+                          <span className="text-gray-700 font-jp-medium text-sm">無価値感スコア</span>
                           <span className="text-xl font-jp-bold text-red-600">
                             {initialScore.worthlessnessScore}
                           </span>

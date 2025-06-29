@@ -39,4 +39,13 @@
   .font-jp-bold {
     font-weight: 700;
   }
+  
+  /* グラフ用スタイル */
+  .chart-label {
+    pointer-events: none;
+  }
+  
+  .graph-grid {
+    stroke-dasharray: 2 2;
+  }
 }
