@@ -271,9 +271,9 @@ const DiaryPage: React.FC = () => {
       
       // 無価値感を選んだ場合はスコアを追加
       if (finalFormData.emotion === '無価値感') {
-        // 数値型として保存
-        newEntry.selfEsteemScore = Number(finalWorthlessnessScores.todaySelfEsteem);
-        newEntry.worthlessnessScore = Number(finalWorthlessnessScores.todayWorthlessness);
+        // 数値型として保存（NaNを防ぐため0をデフォルト値に）
+        newEntry.selfEsteemScore = Number(finalWorthlessnessScores.todaySelfEsteem) || 0;
+        newEntry.worthlessnessScore = Number(finalWorthlessnessScores.todayWorthlessness) || 0;
       }
       
       console.log('保存する日記データ:', newEntry);
@@ -295,8 +295,8 @@ const DiaryPage: React.FC = () => {
       // 無価値感を選んだ場合、次回のために今回のスコアを前日のスコアとして設定
       if (finalFormData.emotion === '無価値感') {
         setWorthlessnessScores({
-          yesterdaySelfEsteem: Number(finalWorthlessnessScores.todaySelfEsteem),
-          yesterdayWorthlessness: Number(finalWorthlessnessScores.todayWorthlessness),
+          yesterdaySelfEsteem: Number(finalWorthlessnessScores.todaySelfEsteem) || 0,
+          yesterdayWorthlessness: Number(finalWorthlessnessScores.todayWorthlessness) || 0,
           todaySelfEsteem: 50,
           todayWorthlessness: 50
         });

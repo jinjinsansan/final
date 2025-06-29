@@ -85,8 +85,8 @@ const FirstSteps: React.FC = () => {
       
       // 保存前に値を数値型に変換して確実に計算が正しくなるようにする
       const numericScores = {
-        selfEsteemScore: Number(selfEsteemScore),
-        worthlessnessScore: Number(worthlessnessScore),
+        selfEsteemScore: Number(selfEsteemScore) || 0,
+        worthlessnessScore: Number(worthlessnessScore) || 0,
         measurementMonth: scores.measurementMonth,
         measurementDay: scores.measurementDay
       };

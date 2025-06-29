@@ -67,7 +67,13 @@ const WorthlessnessChart: React.FC = () => {
         
         console.log('期間フィルター後のエントリー数:', filteredEntries.length);
         
-        // 初期スコアがあり、全期間表示の場合は初期スコアも追加
+        // データがない場合は処理を終了
+        if (filteredEntries.length === 0 && period !== 'all') {
+          setChartData([]);
+          return;
+        }
+        
+        // 日記データをフォーマット
         let formattedData = filteredEntries.map((entry: any) => ({
           date: entry.date,
           selfEsteemScore: Number(entry.selfEsteemScore) || 0,
@@ -76,10 +82,12 @@ const WorthlessnessChart: React.FC = () => {
         
         console.log('フォーマット後のデータ:', formattedData);
         
-        // 初期スコアを追加（全期間表示の場合のみ）
-        if (initialScore && period === 'all' && formattedData.length > 0) {
+        // 初期スコアを追加（全期間表示の場合、または他の期間でデータがない場合）
+        if (initialScore && (period === 'all' || formattedData.length === 0)) {
           // 初期スコアの日付を作成（最初の日記の前日）
-          const firstEntryDate = new Date(formattedData[0].date);
+          const firstEntryDate = formattedData.length > 0 
+            ? new Date(formattedData[0].date)
+            : new Date(); // データがない場合は今日の日付を使用
           firstEntryDate.setDate(firstEntryDate.getDate() - 1);
           const initialScoreDate = firstEntryDate.toISOString().split('T')[0];
           
@@ -145,13 +153,19 @@ const WorthlessnessChart: React.FC = () => {
       case 'week':
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
-        result = entries.filter((entry: any) => new Date(entry.date) >= weekAgo);
+        result = entries.filter((entry: any) => {
+          const entryDate = new Date(entry.date);
+          return entryDate >= weekAgo && entryDate <= today;
+        });
         break;
       
       case 'month':
         const monthAgo = new Date(today);
         monthAgo.setDate(monthAgo.getDate() - 30);
-        result = entries.filter((entry: any) => new Date(entry.date) >= monthAgo);
+        result = entries.filter((entry: any) => {
+          const entryDate = new Date(entry.date);
+          return entryDate >= monthAgo && entryDate <= today;
+        });
         break;
       
       case 'all':
