@@ -40,17 +40,23 @@
     font-weight: 700;
   }
   
-  /* SVGグラフ用スタイル */
-  .graph-svg [stroke] { 
+  /* グラフ用スタイル - 線の太さを一定に保つ */
+  .graph-svg [stroke] {
     vector-effect: non-scaling-stroke;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
   
-  .graph-svg circle { 
-    vector-effect: non-scaling-stroke; 
+  /* グラフの点の太さを一定に保つ */
+  .graph-svg circle {
+    vector-effect: non-scaling-stroke;
+    r: 2;
   }
-  .graph-svg text { 
-    font-family: system-ui, sans-serif; 
+  
+  /* グラフのテキスト */
+  .graph-svg text {
+    font-family: 'Noto Sans JP', system-ui, sans-serif;
+    font-size: 3px;
+    user-select: none;
   }
 }
