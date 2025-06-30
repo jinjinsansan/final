@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Calendar, Search, MessageCircle, Settings, Users, AlertTriangle, Edit3, Trash2, Save, X, CheckCircle, Eye, EyeOff, User, Clock, Filter, Shield, Database, RefreshCw, Download, HardDrive } from 'lucide-react';
 import AdvancedSearchFilter from './AdvancedSearchFilter'; 
-import CounselorManagement from './CounselorManagement'; 
-import CounselorChat from './CounselorChat'; 
-import MaintenanceController from './MaintenanceController'; 
-import ConsentHistoryManagement from './ConsentHistoryManagement'; 
-import BackupRestoreManager from './BackupRestoreManager'; 
-import DeviceAuthManagement from './DeviceAuthManagement'; 
-import SecurityDashboard from './SecurityDashboard'; 
-import DataCleanup from './DataCleanup'; 
+import CounselorManagement from './CounselorManagement';
+import CounselorChat from './CounselorChat';
+import MaintenanceController from './MaintenanceController';
+import ConsentHistoryManagement from './ConsentHistoryManagement';
+import BackupRestoreManager from './BackupRestoreManager';
+import DeviceAuthManagement from './DeviceAuthManagement';
+import SecurityDashboard from './SecurityDashboard';
+import DataCleanup from './DataCleanup';
 import { supabase, adminSupabase, diaryService, syncService } from '../lib/supabase'; 
 
 interface JournalEntry {
@@ -39,6 +39,7 @@ interface User {
 
 const AdminPanel: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
@@ -399,6 +400,8 @@ const AdminPanel: React.FC = () => {
                 <Database className="h-4 w-4" />
                 <span>データ整理</span>
               </TabsTrigger>
+            </TabsList>
+          </div>
             </TabsList>
           </div>
 

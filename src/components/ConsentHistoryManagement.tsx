@@ -412,7 +412,7 @@ const ConsentHistoryManagement: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         {filteredHistories.length === 0 ? (
           <div className="text-center py-8">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4 opacity-50" />
             <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
               {consentHistories.length === 0 ? '同意履歴がありません' : '検索結果がありません'}
             </h3>
@@ -421,6 +421,11 @@ const ConsentHistoryManagement: React.FC = () => {
                 ? 'ユーザーがプライバシーポリシーに同意すると履歴が表示されます'
                 : '検索条件を変更してお試しください'
               }
+              {!isConnected && (
+                <p className="mt-4 text-yellow-600 font-jp-medium">
+                  ローカルモードで動作中のため、Supabaseからのデータは表示されません
+                </p>
+              )}
             </p>
           </div>
         ) : (

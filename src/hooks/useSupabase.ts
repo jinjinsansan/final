@@ -6,7 +6,7 @@ import { useAutoSync } from './useAutoSync';
 export const useSupabase = () => {
   // 管理者モードフラグ - カウンセラーとしてログインしている場合はtrue
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
-  const [isConnected, setIsConnected] = useState(import.meta.env.VITE_LOCAL_MODE === 'true' ? false : true);
+  const [isConnected, setIsConnected] = useState<boolean>(import.meta.env.VITE_LOCAL_MODE === 'true' ? false : true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -433,6 +433,7 @@ export const useSupabase = () => {
   return {
     isConnected,
     isAdminMode,
+    supabase,
     currentUser,
     isInitializing,
     loading,
