@@ -53,7 +53,7 @@ const defaultEmotions = [
 
 const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   entries,
-  onFilteredResults,
+  onFilteredResults = () => {},
   onViewEntry,
   onDeleteEntry
 }) => {
@@ -78,7 +78,8 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
     }
   });
 
-  const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>(entries);
+  // Use a local state for filtered entries
+  const [localFilteredEntries, setLocalFilteredEntries] = useState<JournalEntry[]>(entries);
   const [savedSearches, setSavedSearches] = useState<Array<{id: string, name: string, filters: SearchFilters}>>([]);
   const [searchName, setSearchName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -177,7 +178,7 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
       return true;
     });
 
-    setFilteredEntries(filtered);
+    setLocalFilteredEntries(filtered);
     onFilteredResults(filtered);
   }, [entries, filters, onFilteredResults]);
 
@@ -258,7 +259,7 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
   const exportResults = () => {
     const csvContent = [
       ['日付', '感情', '出来事', '気づき', '自尊心スコア', '無価値感スコア', 'ユーザー', 'カウンセラー', '緊急度', 'メモ'],
-      ...filteredEntries.map(entry => [
+      ...localFilteredEntries.map(entry => [
         entry.date,
         entry.emotion,
         entry.event,
@@ -602,14 +603,14 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-jp-bold text-gray-900">検索結果</h3>
           <div className="flex items-center space-x-4 text-sm text-gray-600">
-            <span>表示: {filteredEntries.length}件</span>
-            {filteredEntries.length !== entries.length && (
+            <span>表示: {localFilteredEntries.length}件</span>
+            {localFilteredEntries.length !== entries.length && (
               <span>/ 全体: {entries.length}件</span>
             )}
           </div>
         </div>
 
-        {filteredEntries.length === 0 ? (
+        {localFilteredEntries.length === 0 ? (
           <div className="text-center py-8">
             <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
@@ -621,7 +622,7 @@ const AdvancedSearchFilter: React.FC<AdvancedSearchFilterProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredEntries.map((entry) => (
+            {localFilteredEntries.map((entry) => (
               <div key={entry.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
