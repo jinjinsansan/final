@@ -111,15 +111,34 @@ const AdminPanel: React.FC = () => {
   const handleSyncAdminData = async () => {
     console.log('管理者用データを同期中...');
     setIsSyncInProgress(true);
-    setStatus({message: '管理者データを同期中...（スマートフォンのデータも含めて同期します）', type: 'info'});
+    setStatus({
+      message: '管理者データを同期中...（スマートフォンのデータも含めて同期します）',
+      type: 'info'
+    });
     
     try {
       // 管理者モードでの同期を実行
-      const success = await syncService.adminSync();
+      let success = await syncService.adminSync();
+      
+      // 同期に失敗した場合は再試行
+      if (!success) {
+        console.log('管理者同期に失敗しました。再試行します...');
+        setStatus({
+          message: '管理者データの同期に失敗しました。再試行しています...',
+          type: 'info'
+        });
+        
+        // 少し待機してから再試行
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        success = await syncService.adminSync();
+      }
       
       if (success) {
         console.log('管理者用データの同期が完了しました');
-        setStatus({message: '管理者データの同期が完了しました。すべてのデバイスからのデータが表示されます。', type: 'success'});
+        setStatus({
+          message: '管理者データの同期が完了しました。すべてのデバイスからのデータが表示されます。',
+          type: 'success'
+        });
         
         // 管理者用のデータを読み込み
         const adminEntries = localStorage.getItem('admin_journalEntries');
@@ -134,7 +153,7 @@ const AdminPanel: React.FC = () => {
           setFilteredEntries(parsedEntries);
         }
       } else {
-        console.log('管理者用データの同期に失敗しました');
+        console.log('管理者用データの同期に最終的に失敗しました');
         setStatus({message: '管理者データの同期に失敗しました', type: 'error'});
       }
     } catch (error) {
@@ -625,10 +644,10 @@ const AdminPanel: React.FC = () => {
           <button
             onClick={handleSyncAdminData}
             disabled={syncInProgress || loading || !navigator.onLine}
-            className="ml-auto flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors text-sm"
+            className="ml-auto flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors text-sm whitespace-nowrap"
           >
             <RefreshCw className={`w-4 h-4 ${syncInProgress ? 'animate-spin' : ''}`} />
-            <span>{syncInProgress ? '同期中...' : 'データ同期'}</span>
+            <span>{syncInProgress ? '同期中...' : 'すべてのデータを同期'}</span>
           </button>
         </div>
         

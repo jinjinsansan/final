@@ -542,7 +542,7 @@ export const syncService = {
   // 管理者モードでの同期
   adminSync: async () => {
     try {
-      console.log('管理者同期を開始します', new Date().toISOString());
+      console.log('管理者同期を開始します - スマートフォンのデータも含めて同期します', new Date().toISOString());
       
       // Supabaseクライアントの確認
       if (!supabase) {
@@ -581,6 +581,18 @@ export const syncService = {
       
       console.log('管理者同期: Supabaseからデータを取得中...', new Date().toISOString());
       
+      // 接続テスト
+      try {
+        const testResult = await testSupabaseConnection();
+        if (!testResult.success) {
+          console.error('Supabase接続テスト失敗:', testResult.error);
+          return false;
+        }
+      } catch (testError) {
+        console.error('Supabase接続テストエラー:', testError);
+        return false;
+      }
+      
       // 全ユーザーを取得
       const { data: users, error: usersError } = await supabase
         .from('users')
@@ -594,38 +606,58 @@ export const syncService = {
       if (!users || users.length === 0) {
         console.log('Supabaseにユーザーが見つかりませんでした。ローカルユーザーを作成します。', new Date().toISOString());
         
-        // ローカルユーザーを作成
-        const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
-        const localUser = {
-          id: 'local-user-' + Date.now(),
-          line_username: lineUsername,
-          created_at: new Date().toISOString()
-        };
+        // 再試行: 接続が不安定な場合に備えて再度ユーザー取得を試みる
+        try {
+          console.log('ユーザー取得を再試行します...', new Date().toISOString());
+          const { data: retryUsers, error: retryError } = await supabase
+            .from('users')
+            .select('*');
+            
+          if (!retryError && retryUsers && retryUsers.length > 0) {
+            console.log(`再試行成功: ${retryUsers.length}人のユーザーを取得しました`, new Date().toISOString());
+            users = retryUsers;
+          } else {
+            console.log('再試行失敗: ユーザーが見つかりませんでした', new Date().toISOString());
+          }
+        } catch (retryError) {
+          console.error('ユーザー取得再試行エラー:', retryError);
+        }
         
-        // ローカルデータを取得
-        const savedEntries = localStorage.getItem('journalEntries');
-        if (savedEntries) {
-          try {
-            const entries = JSON.parse(savedEntries);
-            
-            // 管理者用データ形式に変換
-            const adminEntries = entries.map((entry: any) => ({
-              ...entry,
-              user: { line_username: lineUsername },
-              created_at: entry.created_at || new Date().toISOString()
-            }));
-            
-            // 管理者用データとして保存
-            localStorage.setItem('admin_journalEntries', JSON.stringify(adminEntries));
-            console.log(`ローカルユーザー ${lineUsername} の ${entries.length} 件のデータを管理者用データとして保存しました`, new Date().toISOString());
-            return true;
-          } catch (error) {
-            console.error('ローカルデータの解析エラー:', error);
+        // 再試行後もユーザーが見つからない場合はローカルユーザーを使用
+        if (!users || users.length === 0) {
+          // ローカルユーザーを作成
+          const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
+          const localUser = {
+            id: 'local-user-' + Date.now(),
+            line_username: lineUsername,
+            created_at: new Date().toISOString()
+          };
+          
+          // ローカルデータを取得
+          const savedEntries = localStorage.getItem('journalEntries');
+          if (savedEntries) {
+            try {
+              const entries = JSON.parse(savedEntries);
+              
+              // 管理者用データ形式に変換
+              const adminEntries = entries.map((entry: any) => ({
+                ...entry,
+                user: { line_username: lineUsername },
+                created_at: entry.created_at || new Date().toISOString()
+              }));
+              
+              // 管理者用データとして保存
+              localStorage.setItem('admin_journalEntries', JSON.stringify(adminEntries));
+              console.log(`ローカルユーザー ${lineUsername} の ${entries.length} 件のデータを管理者用データとして保存しました`, new Date().toISOString());
+              return true;
+            } catch (error) {
+              console.error('ローカルデータの解析エラー:', error);
+              return false;
+            }
+          } else {
+            console.log('ローカルデータが見つかりませんでした');
             return false;
           }
-        } else {
-          console.log('ローカルデータが見つかりませんでした');
-          return false;
         }
       }
       
@@ -638,7 +670,7 @@ export const syncService = {
           // ユーザーの日記データを取得
           const { data: entries, error } = await supabase
             .from('diary_entries')
-            .select('*')
+            .select('*, users(line_username)')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
           
@@ -651,7 +683,10 @@ export const syncService = {
           
           // 全エントリーに追加
           if (entries && entries.length > 0) {
-            entries.forEach(entry => {
+            entries.forEach((entry: any) => {
+              // ユーザー名を取得（ネストされたユーザーオブジェクトから）
+              const userName = entry.users?.line_username || user.line_username || 'ゲスト';
+              
               allEntries.push({
                 id: entry.id,
                 date: entry.date,
@@ -667,7 +702,7 @@ export const syncService = {
                 urgency_level: entry.urgency_level || '',
                 created_at: entry.created_at || new Date().toISOString(),
                 user: {
-                  line_username: user.line_username
+                  line_username: userName
                 }
               });
             });
@@ -680,6 +715,10 @@ export const syncService = {
       // 全エントリーを管理者用のキーに保存
       if (allEntries.length > 0) {
         console.log(`合計 ${allEntries.length} 件の日記エントリーを管理者用ストレージに保存します`, new Date().toISOString());
+        
+        // 日付順にソート（新しい順）
+        allEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
         localStorage.setItem('admin_journalEntries', JSON.stringify(allEntries));
         return true;
       } else {
@@ -1084,7 +1123,7 @@ export const syncService = {
   // 強制同期を実行する関数
   forceSync: async (userId: string) => {
     try {
-      console.log(`強制同期を開始します - ユーザーID: ${userId}`, new Date().toISOString());
+      console.log(`強制同期を開始します - ユーザーID: ${userId} - スマートフォンのデータも含めて同期します`, new Date().toISOString());
       
       if (!supabase) {
         console.log('Supabase接続がないため、強制同期をスキップします', new Date().toISOString());
@@ -1093,6 +1132,18 @@ export const syncService = {
       
       if (!navigator.onLine) {
         console.log('オフラインモードのため、強制同期をスキップします', new Date().toISOString());
+        return false;
+      }
+      
+      // 接続テスト
+      try {
+        const testResult = await testSupabaseConnection();
+        if (!testResult.success) {
+          console.error('Supabase接続テスト失敗:', testResult.error);
+          return false;
+        }
+      } catch (testError) {
+        console.error('Supabase接続テストエラー:', testError);
         return false;
       }
       
@@ -1109,6 +1160,7 @@ export const syncService = {
         return false;
       }
       
+      // ローカルデータをSupabaseに同期
       console.log(`強制同期: ${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`, new Date().toISOString());
       
       // 各エントリーをSupabaseに保存
@@ -1116,6 +1168,7 @@ export const syncService = {
       let errorCount = 0;
       
       for (const entry of entries) {
+        console.log(`エントリー ${entry.id} を同期中...`, new Date().toISOString());
         try {
           // 既存のエントリーをチェック
           const { data: existingEntry, error: checkError } = await supabase
@@ -1124,7 +1177,7 @@ export const syncService = {
             .eq('id', entry.id)
             .maybeSingle();
           
-          if (checkError) {
+          if (checkError && checkError.code !== 'PGRST116') { // PGRST116はレコードが見つからないエラー
             console.error(`エントリー ${entry.id} の確認エラー:`, checkError, new Date().toISOString());
             errorCount++;
             continue;
@@ -1132,6 +1185,7 @@ export const syncService = {
           
           if (existingEntry) {
             // 既存のエントリーを更新
+            console.log(`エントリー ${entry.id} を更新します`, new Date().toISOString());
             const { error: updateError } = await supabase
               .from('diary_entries')
               .update({
@@ -1155,6 +1209,7 @@ export const syncService = {
             }
           } else {
             // 新しいエントリーを作成
+            console.log(`エントリー ${entry.id} を新規作成します`, new Date().toISOString());
             const { error: insertError } = await supabase
               .from('diary_entries')
               .insert([{
@@ -1184,6 +1239,32 @@ export const syncService = {
         }
       }
       
+      // Supabaseからデータを取得して、ローカルに同期（スマートフォンのデータを取得するため）
+      try {
+        console.log('Supabaseからデータを取得して、ローカルに同期します', new Date().toISOString());
+        const { data: supabaseEntries, error: fetchError } = await supabase
+          .from('diary_entries')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+          
+        if (fetchError) {
+          console.error('Supabaseからのデータ取得エラー:', fetchError);
+        } else if (supabaseEntries && supabaseEntries.length > 0) {
+          console.log(`Supabaseから ${supabaseEntries.length} 件のデータを取得しました`, new Date().toISOString());
+          
+          // ローカルデータと統合
+          await syncService.syncToLocal(userId);
+          
+          // 成功カウントを更新
+          successCount += supabaseEntries.length;
+        } else {
+          console.log('Supabaseにデータがありませんでした', new Date().toISOString());
+        }
+      } catch (fetchError) {
+        console.error('Supabaseからのデータ取得エラー:', fetchError);
+      }
+      
       // 同期ログを記録（可能な場合）
       try {
         await syncService.logSyncOperation(
@@ -1205,7 +1286,7 @@ export const syncService = {
       // 管理者同期も実行して、管理画面のデータを更新
       try {
         console.log('管理者同期も実行して管理画面のデータを更新します', new Date().toISOString());
-        await syncService.adminSync();
+        const adminSyncResult = await syncService.adminSync();
       } catch (adminSyncError) {
         console.error('管理者同期エラー:', adminSyncError);
       }

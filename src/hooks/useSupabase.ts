@@ -17,12 +17,12 @@ export const useSupabase = () => {
   // オフライン状態の監視
   useEffect(() => {
     const handleOnline = () => {
-      console.log('オンラインに戻りました - 接続を再試行します');
+      console.log('オンラインに戻りました - 接続を再試行します', new Date().toISOString());
       checkConnection(false);
     };
     
     const handleOffline = () => {
-      console.log('オフラインになりました - ローカルモードに切り替えます');
+      console.log('オフラインになりました - ローカルモードに切り替えます', new Date().toISOString());
       setIsConnected(false);
       setError('オフラインモードです。インターネット接続を確認してください。');
     };
@@ -157,16 +157,26 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     // 管理者モードの場合は初期化をスキップ
     if (isAdminMode) {
-      console.log('管理者モードのため、ユーザー初期化をスキップします - 管理者IDを返します', new Date().toISOString()); 
+      console.log('管理者モードのため、ユーザー初期化をスキップします - 管理者IDを返します', new Date().toISOString());
       setCurrentUser({ id: 'admin', line_username: 'admin' });
       setIsInitializing(false);
       return { id: 'admin', line_username: 'admin' };
     }
     
     if (!isConnected) {
-      console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString()); 
+      console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString());
       const trimmedUsername = lineUsername.trim();
-      return { id: null, line_username: trimmedUsername };
+      
+      // ローカルストレージからユーザーIDを取得（以前に同期したことがある場合）
+      const savedUserId = localStorage.getItem('supabase_user_id');
+      if (savedUserId) {
+        console.log('ローカルストレージからユーザーIDを取得しました:', savedUserId, new Date().toISOString());
+        setCurrentUser({ id: savedUserId, line_username: trimmedUsername });
+        setIsInitializing(false);
+        return { id: savedUserId, line_username: trimmedUsername };
+      } else {
+        return { id: null, line_username: trimmedUsername };
+      }
     }
     setIsInitializing(true);
 

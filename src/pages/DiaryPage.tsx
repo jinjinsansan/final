@@ -350,20 +350,73 @@ const DiaryPage: React.FC = () => {
       
       // 自動同期を強制的に実行（スマートフォンでの入力後にすぐに同期するため）
       try {
-        console.log('日記保存後に強制同期を実行します');
+        console.log('日記保存後に強制同期を実行します', new Date().toISOString());
         
         // 現在のユーザーIDを取得
         const userId = localStorage.getItem('supabase_user_id');
         
         if (userId) {
           // 強制同期を実行
-          const syncService = await import('../lib/supabase').then(module => module.syncService);
-          if (syncService && syncService.forceSync) {
-            await syncService.forceSync(userId);
-            console.log('強制同期が完了しました');
+          try {
+            const syncModule = await import('../lib/supabase');
+            const { syncService } = syncModule;
+            
+            if (syncService && syncService.forceSync) {
+              console.log('強制同期を実行します - ユーザーID:', userId, new Date().toISOString());
+              const result = await syncService.forceSync(userId);
+              console.log('強制同期の結果:', result ? '成功' : '失敗', new Date().toISOString());
+              
+              if (!result) {
+                // 失敗した場合は再試行
+                console.log('強制同期に失敗しました。再試行します...', new Date().toISOString());
+                // 少し待機してから再試行
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const retryResult = await syncService.forceSync(userId);
+                console.log('強制同期の再試行結果:', retryResult ? '成功' : '失敗', new Date().toISOString());
+              }
+            } else {
+              console.log('syncService.forceSync が見つかりません', new Date().toISOString());
+            }
+          } catch (importError) {
+            console.error('同期モジュールのインポートエラー:', importError);
           }
         } else {
-          console.log('ユーザーIDが見つからないため、強制同期をスキップします');
+          console.log('ユーザーIDが見つからないため、強制同期をスキップします', new Date().toISOString());
+          
+          // ユーザーIDがない場合は、ローカルユーザー名を使用して同期を試みる
+          try {
+            const lineUsername = localStorage.getItem('line-username');
+            if (lineUsername) {
+              console.log('ユーザー名を使用して同期を試みます:', lineUsername, new Date().toISOString());
+              
+              const syncModule = await import('../lib/supabase');
+              const { userService, syncService } = syncModule;
+              
+              // ユーザーを検索または作成
+              const user = await userService.getUserByUsername(lineUsername);
+              if (user && user.id) {
+                console.log('ユーザーが見つかりました:', user.id, new Date().toISOString());
+                localStorage.setItem('supabase_user_id', user.id);
+                
+                // 強制同期を実行
+                const result = await syncService.forceSync(user.id);
+                console.log('強制同期の結果:', result ? '成功' : '失敗', new Date().toISOString());
+              } else {
+                console.log('ユーザーが見つかりませんでした。新規作成を試みます...', new Date().toISOString());
+                const newUser = await userService.createUser(lineUsername);
+                if (newUser && newUser.id) {
+                  console.log('新規ユーザーを作成しました:', newUser.id, new Date().toISOString());
+                  localStorage.setItem('supabase_user_id', newUser.id);
+                  
+                  // 強制同期を実行
+                  const result = await syncService.forceSync(newUser.id);
+                  console.log('強制同期の結果:', result ? '成功' : '失敗', new Date().toISOString());
+                }
+              }
+            }
+          } catch (userError) {
+            console.error('ユーザー検索/作成エラー:', userError);
+          }
         }
       } catch (syncError) {
         console.error('強制同期エラー:', syncError);
@@ -1067,13 +1120,14 @@ const DiaryPage: React.FC = () => {
       <div className="fixed bottom-4 right-4 bg-green-100 border border-green-200 rounded-lg p-3 shadow-lg z-10">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-green-800 font-jp-medium text-sm flex items-center">
+          <span className="text-green-800 font-jp-medium text-sm flex items-center whitespace-nowrap">
             {import.meta.env.VITE_LOCAL_MODE === 'true'
               ? 'ローカル保存モード'
               : !navigator.onLine
                 ? 'オフラインモード'
                 : saving 
-                  ? <>データ保存中<div className="ml-1 w-3 h-3 border-2 border-t-transparent border-green-500 rounded-full animate-spin"></div></>
+                  ? <>データ保存中<div className="ml-1 w-3 h-3 border-2 border-t-transparent border-green-500 rounded-full animate-spin"></div>
+                    </>
                   : `${localStorage.getItem('line-username') || 'ゲスト'}のデータ`}
           </span>
         </div>

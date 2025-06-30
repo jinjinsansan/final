@@ -278,7 +278,7 @@ export const useAutoSync = () => {
   // 手動同期実行
   const triggerManualSync = async () => {
     setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
-    console.log('手動同期を開始します - 強制的に全データを同期します', new Date().toISOString());
+    console.log('手動同期を開始します - 強制的に全データを同期します（スマートフォンのデータも含む）', new Date().toISOString());
 
     try {
       if (!isConnected || !currentUser) {
@@ -295,7 +295,13 @@ export const useAutoSync = () => {
         // 通常ユーザーの場合は強制同期を実行
         console.log('強制同期を実行します - ユーザーID: ' + currentUser.id, new Date().toISOString());
         await syncService.forceSync(currentUser.id);
-        console.log('強制同期が完了しました - ユーザーID: ' + currentUser.id, new Date().toISOString());
+        
+        // 少し待機してから管理者同期も実行（スマートフォンのデータを確実に取得するため）
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('管理者同期も実行して、スマートフォンのデータを取得します', new Date().toISOString());
+        await syncService.adminSync();
+        
+        console.log('すべての同期処理が完了しました - ユーザーID: ' + currentUser.id, new Date().toISOString());
       }
       
       try {
@@ -308,7 +314,7 @@ export const useAutoSync = () => {
       // 最終同期時間を更新
       const now = new Date().toISOString();
       localStorage.setItem('last_sync_time', now);
-      setStatus(prev => ({ ...prev, lastSyncTime: now }));
+      setStatus(prev => ({ ...prev, lastSyncTime: now, syncError: null }));
       
       return true;
     } finally {
