@@ -16,8 +16,8 @@ export const useSupabase = () => {
 
   useEffect(() => {
     // ローカルモードが有効な場合は接続チェックをスキップ
-   if (import.meta.env.VITE_LOCAL_MODE === 'true' && import.meta.env.DEV) {
-     console.log('開発環境でローカルモードが有効です - Supabase接続チェックをスキップします');
+   if (import.meta.env.VITE_LOCAL_MODE === 'true') {
+     console.log('ローカルモードが有効です - Supabase接続チェックをスキップします');
       setIsConnected(false);
       setLoading(false);
       setIsInitializing(false);
@@ -41,8 +41,8 @@ export const useSupabase = () => {
 
   const checkConnection = async (isInitialCheck = false) => {
     // ローカルモードが有効な場合は接続チェックをスキップ
-   if (import.meta.env.VITE_LOCAL_MODE === 'true' && import.meta.env.DEV) {
-     console.log('開発環境でローカルモードが有効です - 接続チェックをスキップします');
+   if (import.meta.env.VITE_LOCAL_MODE === 'true') {
+     console.log('ローカルモードが有効です - 接続チェックをスキップします');
       setIsConnected(false);
       setIsInitializing(false);
       setLoading(false);
@@ -75,12 +75,11 @@ export const useSupabase = () => {
     try {
       // 新しい接続テスト関数を使用
       console.log(`Checking Supabase connection... (attempt: ${retryCount + 1})`);
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      // APIキーは安全のため最初の10文字だけ表示
-      console.log('Supabase Key (first 10 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10) + '...');
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      // APIキーは安全のため最初の10文字だけ表示
-      console.log('Supabase Key (first 10 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10) + '...');
+      if (import.meta.env.DEV) {
+        console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+        // APIキーは安全のため最初の10文字だけ表示
+        console.log('Supabase Key (first 10 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10) + '...');
+      }
       const result = await testSupabaseConnection();
       
       if (!result.success) {
@@ -88,10 +87,10 @@ export const useSupabase = () => {
         setIsConnected(false);
         setIsInitializing(false);
 
-       if (result.error === 'APIキーが無効です' || result.error.includes('API')) {
-         setError('接続エラー: APIキーが無効です。環境変数を確認してください。');
+       if (result.error === 'APIキーが無効です' || result.error?.includes('API')) {
+         setError('接続エラー: Supabase APIキーが無効です。環境変数を確認してください。');
         } else {
-         setError(`接続エラー: ${result.error}。ローカルモードで動作します。`);
+         setError(`接続エラー: ${result.error || '不明なエラー'}。ローカルモードで動作します。`);
         }
       } else {
         console.log('Supabase接続成功');

@@ -56,15 +56,15 @@ export const useAutoSync = () => {
         console.log('自動同期: ユーザー名が見つかりません', new Date().toISOString());
         hasInitializedRef.current = true;
       }
-   } else if (!hasInitializedRef.current && !isConnected) {
-     // 接続できない場合でも初期化を完了させる
-     console.log('自動同期: Supabase接続できませんでした - ローカルモードで動作します', new Date().toISOString());
-     hasInitializedRef.current = true;
-     // ローカルモードであることをユーザーに通知
-     setStatus(prev => ({
-       ...prev,
-       syncError: 'Supabaseに接続できません。ローカルモードで動作します。'
-     }));
+    } else if (!hasInitializedRef.current && !isConnected) {
+      // 接続できない場合でも初期化を完了させる
+      console.log('自動同期: Supabase接続できませんでした - ローカルモードで動作します', new Date().toISOString());
+      hasInitializedRef.current = true;
+      // ローカルモードであることをユーザーに通知
+      setStatus(prev => ({
+        ...prev,
+        syncError: 'Supabaseに接続できません。ローカルモードで動作します。'
+      }));
     }
   }, [isConnected]);
 

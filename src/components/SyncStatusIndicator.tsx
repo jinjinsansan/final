@@ -66,7 +66,7 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
   
   const getStatusText = () => {
     if (autoSync.syncInProgress) return '同期中...';
-    if (!isConnected) return 'ローカルモード';
+    if (!isConnected) return 'オフラインモード';
     if (!autoSync.isAutoSyncEnabled) return '自動同期オフ';
     return '同期済み';
   };

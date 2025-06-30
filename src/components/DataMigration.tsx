@@ -30,8 +30,8 @@ const DataMigration: React.FC = () => {
   useEffect(() => {
     loadDataInfo();
     // 自動同期設定を読み込み
-    const autoSyncSetting = localStorage.getItem('auto_sync_enabled');
-    setAutoSyncEnabled(autoSyncSetting !== 'false'); // デフォルトはtrue
+    const autoSyncSetting = localStorage.getItem('auto_sync_enabled') || 'true';
+    setAutoSyncEnabled(autoSyncSetting !== 'false');
 
     // カウンセラーとしてログインしているかチェック
     const counselorName = localStorage.getItem('current_counselor');
@@ -286,17 +286,63 @@ const DataMigration: React.FC = () => {
             <div className="flex items-center justify-between bg-white rounded-lg p-4 border border-gray-200">
               <div className="flex items-center space-x-3">
                 <div className={`w-3 h-3 rounded-full ${autoSyncEnabled ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                <span className="font-jp-medium text-gray-900">自動同期</span>
+                <span className="font-jp-medium text-gray-900">自動同期 {!isConnected && '(オフライン中)'}</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input 
                   type="checkbox" 
                   checked={autoSyncEnabled} 
                   onChange={(e) => toggleAutoSync(e.target.checked)}
+                  disabled={!isConnected}
                   className="sr-only peer" 
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
+            </div>
+            
+            {!isConnected && (
+              <div className="mt-2 bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                <div className="flex items-start space-x-2">
+                  <div className="text-yellow-600 text-sm">⚠️</div>
+                  <p className="text-sm text-yellow-800 font-jp-normal">
+                    現在オフラインモードです。Supabaseに接続できないため、自動同期は一時的に無効になっています。
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {isConnected && !autoSyncEnabled && (
+              <div className="mt-2 bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                <div className="flex items-start space-x-2">
+                  <div className="text-yellow-600 text-sm">⚠️</div>
+                  <p className="text-sm text-yellow-800 font-jp-normal">
+                    自動同期が無効になっています。データの安全な保存のため、有効にすることをお勧めします。
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {isConnected && autoSyncEnabled && (
+              <div className="mt-2 bg-green-50 rounded-lg p-3 border border-green-200">
+                <div className="flex items-start space-x-2">
+                  <div className="text-green-600 text-sm">✅</div>
+                  <p className="text-sm text-green-800 font-jp-normal">
+                    自動同期が有効です。5分ごとにデータが自動的に同期されます。
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-start space-x-3 mb-4">
+                <RefreshCw className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-jp-bold text-gray-900 mb-2">自動同期について</h4>
+                  <p className="text-sm text-gray-700 font-jp-normal mb-4">
+                    自動同期機能は5分ごとにデータをクラウドに保存します。端末を変更する際にもデータが引き継がれます。
+                  </p>
+                </div>
+              </div>
             </div>
             
             <div className="mt-4 bg-green-50 rounded-lg p-4 border border-green-200">
