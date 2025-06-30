@@ -48,7 +48,7 @@ function App() {
   const { isConnected, error: supabaseError, retryConnection } = useSupabase();
   
   // ローカルモードの確認
-  const isLocalMode = import.meta.env.VITE_LOCAL_MODE === 'true';
+ const isLocalMode = import.meta.env.VITE_LOCAL_MODE === 'true' || !isConnected;
   
   // 自動同期フックを初期化
   const autoSync = useAutoSync();
@@ -601,7 +601,7 @@ function App() {
             )}
 
             {/* Supabase接続エラー表示（ローカルモードでない場合のみ） */}
-            {supabaseError && !isLocalMode && (
+           {supabaseError && import.meta.env.VITE_LOCAL_MODE !== 'true' && (
               <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
                 <div className="flex items-start space-x-3">
                   <div className="w-3 h-3 bg-yellow-500 rounded-full mt-1"></div>
@@ -624,7 +624,11 @@ function App() {
               <div className="bg-green-50 rounded-lg p-3 border border-green-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-green-800 font-jp-medium text-sm">ローカルモードで動作中（Supabase接続なし）</span>
+                 <span className="text-green-800 font-jp-medium text-sm">
+                   {import.meta.env.VITE_LOCAL_MODE === 'true' 
+                     ? 'ローカルモードで動作中（設定により）' 
+                     : 'ローカルモードで動作中（Supabase接続できないため）'}
+                 </span>
                 </div>
               </div>
             )}
