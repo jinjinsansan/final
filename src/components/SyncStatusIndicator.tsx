@@ -41,7 +41,7 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
   // 同期状態に基づいて表示を変更
   const getStatusColor = () => {
     if (!isConnected) return 'bg-gray-100 text-gray-600 border-gray-200';
-    if (autoSync.syncInProgress) return 'bg-blue-100 text-blue-600 border-blue-200 animate-pulse';
+    if (autoSync.syncInProgress) return 'bg-blue-100 text-blue-600 border-blue-200 animate-pulse'; 
     if (!autoSync.isAutoSyncEnabled) return 'bg-yellow-100 text-yellow-600 border-yellow-200';
     
     // 最終同期時間から6時間以上経過している場合は警告表示
@@ -66,7 +66,7 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
   
   const getStatusText = () => {
     if (autoSync.syncInProgress) return '同期中...';
-    if (!isConnected) return 'オフラインモード';
+    if (!isConnected) return navigator.onLine ? 'Supabase未接続' : 'オフラインモード';
     if (!autoSync.isAutoSyncEnabled) return '自動同期オフ';
     return '同期済み';
   };
@@ -87,12 +87,12 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
         <span className="text-xs font-jp-medium">{getStatusText()}</span>
         {localStorage.getItem('last_sync_time') ? (
           <div className="flex items-center space-x-1 text-xs opacity-80">
-            <Clock className="w-3 h-3" />
-            <span>{timeSinceSync}</span>
+            <Clock className="w-3 h-3" /> 
+            <span>{timeSinceSync}</span> 
           </div>
         ) : (
-          <div className="flex items-center space-x-1 text-xs opacity-80">
-            <span>同期履歴なし</span>
+          <div className="flex items-center space-x-1 text-xs opacity-80"> 
+            <span>{!isConnected ? 'オフライン中' : '同期履歴なし'}</span> 
           </div>
         )}
       </div>
