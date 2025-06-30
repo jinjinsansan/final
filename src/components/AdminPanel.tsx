@@ -53,7 +53,6 @@ const AdminPanel: React.FC = () => {
   const [assignedCounselor, setAssignedCounselor] = useState(''); 
   const [savingMemo, setSavingMemo] = useState(false); 
   const [activeTab, setActiveTab] = useState('search'); 
-  const [deleting, setDeleting] = useState(false); 
   const [syncInProgress, setIsSyncInProgress] = useState(false); 
 
   // ステータス表示用の状態
@@ -63,7 +62,7 @@ const AdminPanel: React.FC = () => {
     // カウンセラー名を取得
     const counselorName = localStorage.getItem('current_counselor');
     setCurrentCounselor(counselorName);
-    
+
     loadEntries();
   }, []);
 
@@ -107,8 +106,10 @@ const AdminPanel: React.FC = () => {
       const success = await syncService.adminSync();
       
       if (success) {
-        console.log('管理者用データの同期が完了しました');
-        setStatus({message: '管理者データの同期が完了しました', type: 'success'}); 
+        // 管理者モードでは、管理者用のデータを同期
+        if (supabase) {
+          await handleSyncAdminData();
+        }
         
         // 管理者用のデータを読み込み
         const adminEntries = localStorage.getItem('admin_journalEntries');
@@ -307,7 +308,7 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  if (loading) {
+  const renderLoading = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -315,6 +316,11 @@ const AdminPanel: React.FC = () => {
           <p className="text-gray-600">データを読み込み中...</p>
         </div>
       </div>
+    );
+  };
+
+  if (loading) {
+    return renderLoading();
     );
   }
 
