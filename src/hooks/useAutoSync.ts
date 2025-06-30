@@ -178,13 +178,6 @@ export const useAutoSync = () => {
         await syncService.adminSync();
       }
       
-      // 管理者モードの場合は管理者同期を実行
-      const currentCounselor = localStorage.getItem('current_counselor');
-      if (currentCounselor) {
-        console.log('管理者モードで同期を実行します', new Date().toISOString());
-        await syncService.adminSync();
-      }
-      
       if (!userId || typeof userId !== 'string') {
         console.error('自動同期エラー: 無効なユーザーID:', userId);
         setStatus(prev => ({ 
@@ -271,9 +264,12 @@ export const useAutoSync = () => {
   // 自動同期の有効/無効切り替え
   const toggleAutoSync = async (enabled: boolean) => {
     localStorage.setItem('auto_sync_enabled', enabled.toString());
-    console.log('自動同期設定を変更:', enabled ? '有効' : '無効');
+    console.log('自動同期設定を変更:', enabled ? '有効' : '無効', new Date().toISOString());
+    
+    let success = false;
     try {
       const user = getCurrentUser();
+      logSecurityEvent('auto_sync_toggled', user?.lineUsername || 'system', `自動同期が${enabled ? '有効' : '無効'}になりました`);
       
       if (currentCounselor) {
         console.log('管理者モードで強制同期を実行します', new Date().toISOString());
@@ -320,20 +316,6 @@ export const useAutoSync = () => {
         console.log('すべての同期処理が完了しました - ユーザーID: ' + currentUser.id, new Date().toISOString());
       }
       
-      try {
-        const user = getCurrentUser();
-        logSecurityEvent('manual_sync_triggered', user?.lineUsername || currentUser.id, '手動同期が実行されました');
-      } catch (error) {
-        console.error('セキュリティログ記録エラー:', error);
-      }
-      
-      // 最終同期時間を更新
-      const now = new Date().toISOString();
-      localStorage.setItem('last_sync_time', now);
-      setStatus(prev => ({ ...prev, lastSyncTime: now, syncError: null }));
-      
-      return true;
-      
       // 最終同期時間を更新
       const now = new Date().toISOString();
       localStorage.setItem('last_sync_time', now);
@@ -348,10 +330,9 @@ export const useAutoSync = () => {
   // 定期同期の設定（5分間隔）
   useEffect(() => { 
     if (status.isAutoSyncEnabled && isConnected && currentUser) {
-      console.log('自動同期タイマーを設定します - 5分間隔', new Date().toISOString());
-      
-      // 前回のタイマーをクリアして新しいタイマーを設定
-      
+      console.log('自動同期タイマーを設定します - 5分間隔', new Date().toISOString()); 
+       
+      // 前回のタイマーをクリア
       if (syncTimeoutRef.current) {
         clearInterval(syncTimeoutRef.current);
       }
