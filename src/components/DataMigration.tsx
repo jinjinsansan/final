@@ -75,6 +75,21 @@ const DataMigration: React.FC = () => {
     }
   };
 
+  // 自動同期の有効/無効を切り替える
+  const toggleAutoSync = (enabled: boolean) => {
+    localStorage.setItem('auto_sync_enabled', enabled.toString());
+    setAutoSyncEnabled(enabled);
+    
+    try {
+      const user = getCurrentUser();
+      console.log(`自動同期が${enabled ? '有効' : '無効'}になりました - ユーザー: ${user?.lineUsername || 'unknown'}`);
+    } catch (error) {
+      console.error('ログ記録エラー:', error);
+    }
+    
+    setMigrationStatus(`自動同期が${enabled ? '有効' : '無効'}になりました`);
+  };
+
   // 全体のデータ数を取得する関数
   const loadTotalData = async () => {
     try {
@@ -141,21 +156,6 @@ const DataMigration: React.FC = () => {
     } finally {
       setForceSyncInProgress(false);
     }
-  };
-
-  // 自動同期の有効/無効を切り替える
-  const toggleAutoSync = (enabled: boolean) => {
-    localStorage.setItem('auto_sync_enabled', enabled.toString());
-    setAutoSyncEnabled(enabled);
-    
-    try {
-      const user = getCurrentUser();
-      console.log(`自動同期が${enabled ? '有効' : '無効'}になりました - ユーザー: ${user?.lineUsername || 'unknown'}`);
-    } catch (error) {
-      console.error('ログ記録エラー:', error);
-    }
-    
-    setMigrationStatus(`自動同期が${enabled ? '有効' : '無効'}になりました`);
   };
 
   // バックアップデータの作成
