@@ -184,7 +184,7 @@ const AdminPanel: React.FC = () => {
   const handleSaveMemo = async () => {
     if (!selectedEntry) return;
     
-    setSavingMemo(true);
+    setSavingMemo(true); 
     
     try {
       // ローカルストレージの更新
@@ -210,7 +210,7 @@ const AdminPanel: React.FC = () => {
       
       // Supabaseの更新（接続されている場合）
       if (supabase && selectedEntry.id) {
-        console.log('Supabaseでメモを更新:', selectedEntry.id);
+        console.log('Supabaseでメモを更新:', selectedEntry.id); 
         try { 
           const { error } = await supabase
             .from('diary_entries')
@@ -222,12 +222,42 @@ const AdminPanel: React.FC = () => {
               counselor_name: isVisibleToUser ? currentCounselor : null
             })
             .eq('id', selectedEntry.id);
-          
+            
           if (error) {
-            console.error('Supabaseメモ更新エラー:', error);
+            console.error('Supabaseメモ更新エラー:', error); 
+            // エラーがあっても処理を続行（ローカルストレージには保存される）
+            console.log('ローカルストレージのみに保存します');
           }
         } catch (supabaseError) {
-          console.error('Supabase接続エラー:', supabaseError);
+          console.error('Supabase接続エラー:', supabaseError); 
+          // エラーがあっても処理を続行（ローカルストレージには保存される）
+          console.log('ローカルストレージのみに保存します');
+        }
+      }
+      
+      // 管理者用データも更新
+      const adminEntries = localStorage.getItem('admin_journalEntries');
+      if (adminEntries) {
+        try {
+          const entries = JSON.parse(adminEntries);
+          const updatedEntries = entries.map((entry: any) => {
+            if (entry.id === selectedEntry.id) {
+              return {
+                ...entry,
+                counselor_memo: memoText,
+                is_visible_to_user: isVisibleToUser,
+                urgency_level: urgencyLevel as any || undefined,
+                assigned_counselor: assignedCounselor || undefined,
+                counselor_name: isVisibleToUser ? currentCounselor : undefined
+              };
+            }
+            return entry;
+          });
+          
+          localStorage.setItem('admin_journalEntries', JSON.stringify(updatedEntries));
+        } catch (parseError) {
+          console.error('管理者データの解析エラー:', parseError);
+          // エラーがあっても処理を続行
         }
       }
       
@@ -277,9 +307,9 @@ const AdminPanel: React.FC = () => {
   const handleDeleteEntry = async (entryId: string) => {
     if (!window.confirm('この日記を削除してもよろしいですか？この操作は元に戻せません。')) {
       return;
-    }
+    } 
     
-    setDeleting(true);
+    setDeleting(true); 
     
     try {
       // ローカルストレージの更新
@@ -287,7 +317,7 @@ const AdminPanel: React.FC = () => {
       if (savedEntries) {
         const entries = JSON.parse(savedEntries);
         const updatedEntries = entries.filter((entry: any) => entry.id !== entryId);
-        localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
+        localStorage.setItem('journalEntries', JSON.stringify(updatedEntries)); 
       }
       
       // Supabaseの更新（接続されている場合）
@@ -295,7 +325,7 @@ const AdminPanel: React.FC = () => {
         console.log('Supabaseから日記を削除:', entryId);
         try {
           const { error } = await supabase
-            .from('diary_entries')
+            .from('diary_entries') 
             .delete()
             .eq('id', entryId);
           
@@ -303,7 +333,7 @@ const AdminPanel: React.FC = () => {
             console.error('Supabase削除エラー:', error);
             throw new Error('Supabaseからの削除に失敗しました');
           }
-        } catch (supabaseError) {
+        } catch (supabaseError) { 
           console.error('Supabase接続エラー:', supabaseError);
           throw new Error('Supabaseとの接続に失敗しました');
         }
@@ -311,7 +341,20 @@ const AdminPanel: React.FC = () => {
       
       // エントリーリストの更新
       setEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
-      setFilteredEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
+      setFilteredEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId)); 
+      
+      // 管理者用データも更新
+      const adminEntries = localStorage.getItem('admin_journalEntries');
+      if (adminEntries) {
+        try {
+          const entries = JSON.parse(adminEntries);
+          const updatedEntries = entries.filter((entry: any) => entry.id !== entryId);
+          localStorage.setItem('admin_journalEntries', JSON.stringify(updatedEntries));
+        } catch (parseError) {
+          console.error('管理者データの解析エラー:', parseError);
+          // エラーがあっても処理を続行
+        }
+      }
       
       alert('日記を削除しました！');
     } catch (error) {
