@@ -56,53 +56,40 @@ const AdminPanel: React.FC = () => {
   const [backupInProgress, setBackupInProgress] = useState(false); 
   const [syncInProgress, setIsSyncInProgress] = useState(false); 
 
+  // ステータス表示用の状態
+  const [status, setStatus] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+
   useEffect(() => {
     // カウンセラー名を取得
-    const counselorName = localStorage.getItem('counselor_name');
+    const counselorName = localStorage.getItem('current_counselor');
     setCurrentCounselor(counselorName);
     
-    loadData();
+    loadEntries();
   }, []);
 
-  const loadData = async () => {
+  const loadEntries = async () => {
+    console.log('日記データを読み込み中...');
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // 日記エントリーを取得
-      const { data: entriesData, error: entriesError } = await adminSupabase
-        .from('journal_entries')
-        .select(`
-          *,
-          profiles:user_id (
-            email,
-            name
-          )
-        `)
-        .order('created_at', { ascending: false });
+      // 管理者モードでは、まず管理者用のデータを同期
+      await handleSyncAdminData();
 
-      if (entriesError) {
-        console.error('エントリー取得エラー:', entriesError);
+      // 管理者用のデータを読み込み
+      const adminEntries = localStorage.getItem('admin_journalEntries');
+      if (adminEntries) {
+        const parsedEntries = JSON.parse(adminEntries);
+        console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+        
+        // 日付順でソート（新しい順）
+        parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        setEntries(parsedEntries);
+        setFilteredEntries(parsedEntries);
       } else {
-        const formattedEntries = entriesData?.map(entry => ({
-          ...entry,
-          user_email: entry.profiles?.email,
-          user_name: entry.profiles?.name
-        })) || [];
-        setEntries(formattedEntries);
+        console.log('管理者用データが見つかりません');
+        setEntries([]);
+        setFilteredEntries([]);
       }
-
-      // ユーザー情報を取得
-      const { data: usersData, error: usersError } = await adminSupabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (usersError) {
-        console.error('ユーザー取得エラー:', usersError);
-      } else {
-        setUsers(usersData || []);
-      }
-
     } catch (error) {
       console.error('データ読み込みエラー:', error);
     } finally {
@@ -127,11 +114,14 @@ const AdminPanel: React.FC = () => {
         const adminEntries = localStorage.getItem('admin_journalEntries');
         if (adminEntries) {
           const parsedEntries = JSON.parse(adminEntries);
+          console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+          
+          // 日付順でソート（新しい順）
+          parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
           setEntries(parsedEntries);
+          setFilteredEntries(parsedEntries);
         }
-        
-        // データを再読み込み
-        await loadData();
       } else {
         console.log('管理者用データの同期に失敗しました');
         setStatus({message: '管理者データの同期に失敗しました', type: 'error'}); 
@@ -144,9 +134,6 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  // ステータス表示用の状態
-  const [status, setStatus] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
-
   const handleViewEntry = (entry: JournalEntry) => { 
     setSelectedEntry(entry); 
     setMemoText(entry.counselor_memo || '');
@@ -158,57 +145,140 @@ const AdminPanel: React.FC = () => {
 
   const handleSaveMemo = async () => {
     if (!selectedEntry) return;
-
+    
     setSavingMemo(true);
+    
     try {
-      const { error } = await adminSupabase
-        .from('journal_entries')
-        .update({
-          counselor_memo: memoText,
-          is_visible_to_user: isVisibleToUser,
-          urgency_level: urgencyLevel || null,
-          assigned_counselor: assignedCounselor || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedEntry.id);
-
-      if (error) {
-        console.error('メモ保存エラー:', error);
-        alert('メモの保存に失敗しました');
-      } else {
-        alert('メモが保存されました');
-        await loadData(); // データを再読み込み
-        setShowEntryDetails(false);
+      // ローカルストレージの更新
+      const savedEntries = localStorage.getItem('journalEntries');
+      if (savedEntries) {
+        const entries = JSON.parse(savedEntries);
+        const updatedEntries = entries.map((entry: any) => {
+          if (entry.id === selectedEntry.id) {
+            return {
+              ...entry,
+              counselor_memo: memoText,
+              is_visible_to_user: isVisibleToUser,
+              urgency_level: urgencyLevel || undefined,
+              assigned_counselor: assignedCounselor || undefined,
+              counselor_name: isVisibleToUser ? currentCounselor : undefined
+            };
+          }
+          return entry;
+        });
+        
+        localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
       }
+      
+      // Supabaseの更新（接続されている場合）
+      if (supabase && selectedEntry.id) {
+        console.log('Supabaseでメモを更新:', selectedEntry.id);
+        try { 
+          const { error } = await supabase
+            .from('diary_entries')
+            .update({
+              counselor_memo: memoText,
+              is_visible_to_user: isVisibleToUser,
+              urgency_level: urgencyLevel || null,
+              assigned_counselor: assignedCounselor || null,
+              counselor_name: isVisibleToUser ? currentCounselor : null
+            })
+            .eq('id', selectedEntry.id);
+          
+          if (error) {
+            console.error('Supabaseメモ更新エラー:', error);
+          }
+        } catch (supabaseError) {
+          console.error('Supabase接続エラー:', supabaseError);
+        }
+      }
+      
+      // エントリーリストの更新
+      setEntries(prevEntries => 
+        prevEntries.map(entry => {
+          if (entry.id === selectedEntry.id) {
+            return {
+              ...entry,
+              counselor_memo: memoText,
+              is_visible_to_user: isVisibleToUser,
+              urgency_level: urgencyLevel as any || undefined,
+              assigned_counselor: assignedCounselor || undefined,
+              counselor_name: isVisibleToUser ? currentCounselor : undefined
+            };
+          }
+          return entry;
+        })
+      );
+      
+      setFilteredEntries(prevEntries => 
+        prevEntries.map(entry => {
+          if (entry.id === selectedEntry.id) {
+            return {
+              ...entry,
+              counselor_memo: memoText,
+              is_visible_to_user: isVisibleToUser,
+              urgency_level: urgencyLevel as any || undefined,
+              assigned_counselor: assignedCounselor || undefined,
+              counselor_name: isVisibleToUser ? currentCounselor : undefined
+            };
+          }
+          return entry;
+        })
+      );
+      
+      alert('メモを保存しました！');
+      setShowEntryDetails(false);
     } catch (error) {
       console.error('メモ保存エラー:', error);
-      alert('メモの保存中にエラーが発生しました');
+      alert('メモの保存に失敗しました。もう一度お試しください。');
     } finally {
       setSavingMemo(false);
     }
   };
 
   const handleDeleteEntry = async (entryId: string) => {
-    if (!confirm('この日記エントリーを削除してもよろしいですか？')) return;
-
+    if (!window.confirm('この日記を削除してもよろしいですか？この操作は元に戻せません。')) {
+      return;
+    }
+    
     setDeleting(true);
+    
     try {
-      const { error } = await adminSupabase
-        .from('journal_entries')
-        .delete()
-        .eq('id', entryId);
-
-      if (error) {
-        console.error('削除エラー:', error);
-        alert('エントリーの削除に失敗しました');
-      } else {
-        alert('エントリーが削除されました');
-        await loadData();
-        setShowEntryDetails(false);
+      // ローカルストレージの更新
+      const savedEntries = localStorage.getItem('journalEntries');
+      if (savedEntries) {
+        const entries = JSON.parse(savedEntries);
+        const updatedEntries = entries.filter((entry: any) => entry.id !== entryId);
+        localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
       }
+      
+      // Supabaseの更新（接続されている場合）
+      if (supabase) {
+        console.log('Supabaseから日記を削除:', entryId);
+        try {
+          const { error } = await supabase
+            .from('diary_entries')
+            .delete()
+            .eq('id', entryId);
+          
+          if (error) {
+            console.error('Supabase削除エラー:', error);
+            throw new Error('Supabaseからの削除に失敗しました');
+          }
+        } catch (supabaseError) {
+          console.error('Supabase接続エラー:', supabaseError);
+          throw new Error('Supabaseとの接続に失敗しました');
+        }
+      }
+      
+      // エントリーリストの更新
+      setEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
+      setFilteredEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
+      
+      alert('日記を削除しました！');
     } catch (error) {
       console.error('削除エラー:', error);
-      alert('削除中にエラーが発生しました');
+      alert('削除に失敗しました。もう一度お試しください。');
     } finally {
       setDeleting(false);
     }

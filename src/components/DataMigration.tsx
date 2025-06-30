@@ -18,8 +18,9 @@ const DataMigration: React.FC = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true);
-  const [backupInProgress, setBackupInProgress] = useState(false);
-  const [forceSyncInProgress, setForceSyncInProgress] = useState(false);
+  const [backupInProgress, setBackupInProgress] = useState<boolean>(false);
+  const [forceSyncInProgress, setForceSyncInProgress] = useState<boolean>(false);
+  const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
 
   // 全体のデータ数を保持する状態
   const [totalLocalDataCount, setTotalLocalDataCount] = useState<number>(0);
@@ -121,7 +122,7 @@ const DataMigration: React.FC = () => {
   // 強制同期を実行する関数
   const handleForceSync = async () => {
     if (!isConnected || !currentUser) {
-      alert('Supabaseに接続されていないか、ユーザーが設定されていません。');
+      alert('Supabaseに接続されていないか、ユーザーが設定されていません。ローカルモードで動作中です。');
       return;
     }
     
@@ -161,7 +162,7 @@ const DataMigration: React.FC = () => {
   // バックアップデータの作成
   const handleCreateBackup = () => {
     setBackupInProgress(true);
-    setMigrationStatus(null);
+    if (setMigrationStatus) setMigrationStatus(null);
     
     try {
       // ローカルストレージからデータを収集
@@ -197,7 +198,7 @@ const DataMigration: React.FC = () => {
       setMigrationStatus('バックアップが正常に作成されました！');
     } catch (error) {
       console.error('バックアップ作成エラー:', error);
-      setMigrationStatus('バックアップの作成に失敗しました。');
+      if (setMigrationStatus) setMigrationStatus('バックアップの作成に失敗しました。');
     } finally {
       setBackupInProgress(false);
     }
