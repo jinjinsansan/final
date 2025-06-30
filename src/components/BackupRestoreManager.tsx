@@ -33,8 +33,8 @@ const BackupRestoreManager: React.FC = () => {
   const loadBackupLogs = async () => {
     if (!supabase) return;
     
-    setLoading(true);
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('backup_logs')
         .select('*')
@@ -44,7 +44,7 @@ const BackupRestoreManager: React.FC = () => {
       if (error) {
         console.error('バックアップログ取得エラー:', error);
         setStatus({
-          message: 'バックアップ履歴の取得に失敗しました',
+          message: 'バックアップ履歴の取得に失敗しました: ' + error.message,
           type: 'error'
         });
       } else if (data) {
@@ -52,6 +52,10 @@ const BackupRestoreManager: React.FC = () => {
       }
     } catch (error) {
       console.error('バックアップログ読み込みエラー:', error);
+      setStatus({
+        message: 'バックアップログの読み込みに失敗しました',
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
