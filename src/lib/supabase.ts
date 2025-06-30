@@ -200,12 +200,7 @@ export const userService = {
   // 新規ユーザーを作成
   createUser: async (lineUsername: string) => {
     try {
-      if (!supabase) {
-        console.log('Supabase接続がないため、ユーザー作成をスキップします', new Date().toISOString());
-        return null;
-      }
-      
-      console.log(`ユーザー作成開始: ${lineUsername}`, new Date().toISOString());
+      if (!supabase) return null;
       
       const { data, error } = await supabase
         .from('users')
@@ -213,13 +208,8 @@ export const userService = {
         .select()
         .single();
       
-      if (error) {
-        console.error('ユーザー作成エラー:', error);
-        console.log(`ユーザー作成エラーの詳細:`, error.details || error.message || 'エラー詳細なし');
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log(`ユーザー作成成功: ${lineUsername}, ID: ${data?.id}`, new Date().toISOString());
       return data;
     } catch (error) {
       console.error('ユーザー作成エラー:', error);
@@ -703,8 +693,13 @@ export const syncService = {
   // ローカルデータをSupabaseに移行
   migrateLocalData: async (userId: string) => {
     try {
-      if (!supabase || !userId) {
-        console.log('Supabase接続がないため、データ移行をスキップします', new Date().toISOString());
+      if (!supabase) {
+        console.log('Supabase接続がないため、データ移行をスキップします', new Date().toISOString()); 
+        return false;
+      }
+      
+      if (!userId) {
+        console.log('ユーザーIDが指定されていないため、データ移行をスキップします', new Date().toISOString());
         return false;
       }
       
@@ -717,16 +712,16 @@ export const syncService = {
       
       const entries = JSON.parse(savedEntries);
       if (!entries || entries.length === 0) {
-        console.log('日記エントリーが空のため、データ移行をスキップします');
+        console.log('日記エントリーが空のため、データ移行をスキップします', new Date().toISOString());
         return false;
       }
       
-      console.log(`${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`);
+      console.log(`${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`, new Date().toISOString());
       
       // 各エントリーをSupabaseに保存
       let successCount = 0;
       let errorCount = 0;
-      console.log(`${entries.length}件のエントリーを同期開始 - ユーザーID: ${userId}`, new Date().toISOString());
+      console.log(`同期開始: ${entries.length}件のエントリー - ユーザーID: ${userId}`, new Date().toISOString());
       
       for (const entry of entries) {
         // 既存のエントリーをチェック
@@ -740,7 +735,8 @@ export const syncService = {
           if (checkError) {
             console.error(`エントリー ${entry.id} の確認エラー:`, checkError);
             errorCount++;
-            continue;
+            console.log(`エントリー ${entry.id} の確認に失敗しました - スキップします`, new Date().toISOString());
+            continue; 
           }
           
           if (existingEntry) {
@@ -750,8 +746,8 @@ export const syncService = {
               .update({
                 date: entry.date,
                 emotion: entry.emotion,
-                event: entry.event,
-                realization: entry.realization,
+                event: entry.event || '',
+                realization: entry.realization || '',
                 self_esteem_score: entry.selfEsteemScore || 0,
                 worthlessness_score: entry.worthlessnessScore || 0,
                 counselor_memo: entry.counselor_memo,
@@ -762,9 +758,11 @@ export const syncService = {
               
             if (updateError) {
               console.error(`エントリー ${entry.id} の更新エラー:`, updateError, new Date().toISOString());
+              console.log(`更新エラーの詳細:`, updateError.details || updateError.message || 'エラー詳細なし');
               errorCount++;
             } else {
               successCount++;
+              console.log(`エントリー ${entry.id} を更新しました`, new Date().toISOString());
             }
           } else {
             // 新しいエントリーを作成
@@ -775,9 +773,9 @@ export const syncService = {
                 id: entry.id,
                 user_id: userId,
                 date: entry.date,
-                emotion: entry.emotion,
-                event: entry.event || '',
-                realization: entry.realization || '',
+                emotion: entry.emotion || 'その他',
+                event: entry.event || '(内容なし)',
+                realization: entry.realization || '(内容なし)',
                 self_esteem_score: entry.selfEsteemScore || 0,
                 worthlessness_score: entry.worthlessnessScore || 0,
                 counselor_memo: entry.counselor_memo,
@@ -787,9 +785,11 @@ export const syncService = {
               
             if (insertError) {
               console.error(`エントリー ${entry.id} の作成エラー:`, insertError, new Date().toISOString());
+              console.log(`作成エラーの詳細:`, insertError.details || insertError.message || 'エラー詳細なし');
               errorCount++;
             } else {
               successCount++;
+              console.log(`エントリー ${entry.id} を新規作成しました`, new Date().toISOString());
             }
           }
         } catch (entryError) {
@@ -799,13 +799,15 @@ export const syncService = {
       }
       
       console.log(`同期完了: 成功=${successCount}, 失敗=${errorCount}`);
+      console.log(`同期結果の詳細: 全${entries.length}件中、成功=${successCount}件、失敗=${errorCount}件`, new Date().toISOString());
       
       // 最終同期時間を更新
       localStorage.setItem('last_sync_time', new Date().toISOString());
       
-      return true;
+      return successCount > 0;
     } catch (error) {
       console.error('データ移行エラー:', error);
+      console.log('データ移行中に予期しないエラーが発生しました:', error instanceof Error ? error.message : String(error));
       return false;
     }
   },
@@ -963,11 +965,7 @@ export const syncService = {
   // 同意履歴をSupabaseに同期
   syncConsentHistories: async () => {
     try {
-      if (!supabase) {
-        console.log('Supabase接続がないため、同意履歴同期をスキップします', new Date().toISOString());
-        return false;
-      }
-      
+      if (!supabase) return false;
       console.log('同意履歴をSupabaseに同期開始');
       
       // ローカルストレージから同意履歴を取得
@@ -985,7 +983,7 @@ export const syncService = {
       
       console.log(`${histories.length}件の同意履歴を同期します`);
       
-      // 各履歴をSupabaseに保存 
+      // 各履歴をSupabaseに保存
       let successCount = 0;
       for (const history of histories) {
         try {
@@ -1005,22 +1003,19 @@ export const syncService = {
           if (!existingHistory) {
             // 新しい履歴を作成
             const { error: insertError } = await supabase
-              .from('consent_histories') 
+              .from('consent_histories')
               .insert([{
                 line_username: history.line_username,
                 consent_date: history.consent_date,
                 consent_given: history.consent_given,
                 ip_address: history.ip_address || 'unknown',
                 user_agent: history.user_agent || navigator.userAgent
-                user_agent: history.user_agent || navigator.userAgent
               }]);
               
             if (insertError) {
               console.error(`同意履歴 ${history.line_username} の作成エラー:`, insertError);
-              console.log(`同意履歴作成エラーの詳細:`, insertError.details || insertError.message || 'エラー詳細なし');
             } else {
               successCount++;
-              console.log(`同意履歴を作成しました: ${history.line_username}`, new Date().toISOString());
             }
           }
         } catch (historyError) {
