@@ -548,6 +548,8 @@ export const syncService = {
         return false;
       }
       
+      console.log('管理者同期: Supabaseからデータを取得中...');
+      
       // 全ユーザーを取得
       const { data: users, error: usersError } = await supabase
         .from('users')
@@ -559,97 +561,43 @@ export const syncService = {
       }
       
       if (!users || users.length === 0) {
-        console.log('ユーザーが見つかりませんでした');
-        return false;
-      }
-      
-      console.log(`管理者同期: ${users.length}人のユーザーを同期します`);
-      
-      // 各ユーザーのデータを同期
-      const allEntries = [];
-      for (const user of users) {
-        try {
-          // ユーザーの日記データを取得
-          const { data: entries, error } = await supabase
-            .from('diary_entries')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-          
-          if (error) {
-            console.error(`ユーザー ${user.id} の日記データ取得エラー:`, error);
-            continue;
+        console.log('Supabaseにユーザーが見つかりませんでした。ローカルユーザーを作成します。');
+        
+        // ローカルユーザーを作成
+        const lineUsername = localStorage.getItem('line-username') || 'にさんテスト用vivaldiさん';
+        const localUser = {
+          id: 'local-user-' + Date.now(),
+          line_username: lineUsername,
+          created_at: new Date().toISOString()
+        };
+        
+        // ローカルデータを取得
+        const savedEntries = localStorage.getItem('journalEntries');
+        if (savedEntries) {
+          try {
+            const entries = JSON.parse(savedEntries);
+            
+            // 管理者用データ形式に変換
+            const adminEntries = entries.map((entry: any) => ({
+              ...entry,
+              user: { line_username: lineUsername },
+              created_at: entry.created_at || new Date().toISOString()
+            }));
+            
+            // 管理者用データとして保存
+            localStorage.setItem('admin_journalEntries', JSON.stringify(adminEntries));
+            console.log(`ローカルユーザー ${lineUsername} の ${entries.length} 件のデータを管理者用データとして保存しました`);
+            return true;
+          } catch (error) {
+            console.error('ローカルデータの解析エラー:', error);
+            return false;
           }
-          
-          console.log(`ユーザー ${user.id} の日記データを取得: ${entries?.length || 0}件`);
-          
-          // 全エントリーに追加
-          if (entries && entries.length > 0) {
-            entries.forEach(entry => {
-              allEntries.push({
-                id: entry.id,
-                date: entry.date,
-                emotion: entry.emotion,
-                event: entry.event,
-                realization: entry.realization,
-                selfEsteemScore: entry.self_esteem_score,
-                worthlessnessScore: entry.worthlessness_score,
-                counselor_memo: entry.counselor_memo,
-                is_visible_to_user: entry.is_visible_to_user,
-                counselor_name: entry.counselor_name,
-                assigned_counselor: entry.assigned_counselor,
-                urgency_level: entry.urgency_level,
-                created_at: entry.created_at,
-                user: {
-                  line_username: user.line_username
-                }
-              });
-            });
-          }
-        } catch (userError) {
-          console.error(`ユーザー ${user.id} の同期エラー:`, userError);
+        } else {
+          console.log('ローカルデータが見つかりませんでした');
+          return false;
         }
       }
       
-      // 全エントリーを管理者用のキーに保存
-      if (allEntries.length > 0) {
-        console.log(`合計 ${allEntries.length} 件の日記エントリーを管理者用ストレージに保存します`);
-        localStorage.setItem('admin_journalEntries', JSON.stringify(allEntries));
-      } else {
-        console.log('保存するエントリーがありませんでした');
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('管理者同期エラー:', error);
-      return false;
-    }
-  },
-  
-  // 管理者モードでの同期
-  adminSync: async () => {
-    try {
-      // 管理者用Supabaseクライアントの確認
-      if (!supabase) {
-        console.log('Supabaseクライアントが利用できないため、同期をスキップします');
-        return false;
-      }
-      
-      // 全ユーザーを取得
-      const { data: users, error: usersError } = await supabase
-        .from('users')
-        .select('*');
-      
-      if (usersError) {
-        console.error('ユーザー取得エラー:', usersError);
-        return false;
-      }
-      
-      if (!users || users.length === 0) {
-        console.log('ユーザーが見つかりませんでした');
-        return false;
-      }
-      
       console.log(`管理者同期: ${users.length}人のユーザーを同期します`);
       
       // 各ユーザーのデータを同期
@@ -681,12 +629,12 @@ export const syncService = {
                 realization: entry.realization,
                 selfEsteemScore: entry.self_esteem_score,
                 worthlessnessScore: entry.worthlessness_score,
-                counselor_memo: entry.counselor_memo,
-                is_visible_to_user: entry.is_visible_to_user,
-                counselor_name: entry.counselor_name,
-                assigned_counselor: entry.assigned_counselor,
-                urgency_level: entry.urgency_level,
-                created_at: entry.created_at,
+                counselor_memo: entry.counselor_memo || '',
+                is_visible_to_user: entry.is_visible_to_user || false,
+                counselor_name: entry.counselor_name || '',
+                assigned_counselor: entry.assigned_counselor || '',
+                urgency_level: entry.urgency_level || '',
+                created_at: entry.created_at || new Date().toISOString(),
                 user: {
                   line_username: user.line_username
                 }
