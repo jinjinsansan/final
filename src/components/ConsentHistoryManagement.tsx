@@ -209,13 +209,12 @@ const ConsentHistoryManagement: React.FC = () => {
     setError(null);
 
     try {
+      // Supabase接続確認
       if (!supabase) {
         alert('Supabase接続が初期化されていません。');
         return;
       }
-    } catch (error) {
-      console.error('Supabase接続確認エラー:', error);
-    } finally {
+      
       // Supabaseから同意履歴を取得
       const { data, error } = await supabase
         .from('consent_histories') 
@@ -564,7 +563,7 @@ const ConsentHistoryManagement: React.FC = () => {
       {/* 同意履歴一覧 */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         {filteredHistories.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="text-center py-8 px-4">
             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4 opacity-50" />
             <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
               {consentHistories.length === 0 ? '同意履歴がありません' : '検索結果がありません'}
