@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Download, Search, Calendar, User, CheckCircle, XCircle, Filter, RotateCcw, FileText } from 'lucide-react';
 import { consentService, syncService, supabase } from '../lib/supabase';
 import { useSupabase } from '../hooks/useSupabase';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ConsentHistory {
   id: string;
@@ -23,6 +24,7 @@ const ConsentHistoryManagement: React.FC = () => {
     start: '',
     end: ''
   });
+  const [error, setError] = useState<string | null>(null);
 
   const { isConnected } = useSupabase();
 
@@ -38,8 +40,12 @@ const ConsentHistoryManagement: React.FC = () => {
     setLoading(true);
     try {
       console.log('同意履歴を読み込み中...', isConnected ? 'Supabase接続あり' : 'Supabase接続なし');
+      
+      // ローカルストレージから読み込み（常に実行）
+      loadLocalHistories();
+      
+      // Supabaseからの読み込みは接続がある場合のみ
       if (isConnected) {
-        // Supabaseから読み込み（supabaseが定義されている場合のみ）
         if (supabase) {
           try {
             const { data, error } = await supabase
@@ -48,40 +54,60 @@ const ConsentHistoryManagement: React.FC = () => {
               .order('consent_date', { ascending: false });
             
             if (error) {
-              console.error('同意履歴取得エラー:', error);
-              loadLocalHistories();
+              console.error('Supabaseからの同意履歴取得エラー:', error);
+              setError(`Supabaseからの同意履歴取得に失敗しました: ${error.message}`);
             } else if (data && data.length > 0) {
-              setConsentHistories(data);
+              console.log(`Supabaseから${data.length}件の同意履歴を取得しました`);
+              // ローカルデータとマージ
+              const localHistories = JSON.parse(localStorage.getItem('consent_histories') || '[]');
+              const mergedHistories = mergeHistories(localHistories, data);
+              setConsentHistories(mergedHistories);
+              
               // ローカルストレージにも保存
-              localStorage.setItem('consent_histories', JSON.stringify(data));
-            } else {
-              // Supabaseにデータがない場合はローカルから読み込み
-              loadLocalHistories();
+              localStorage.setItem('consent_histories', JSON.stringify(mergedHistories));
             }
           } catch (error) {
-            console.error('Supabase同意履歴取得エラー:', error);
-            loadLocalHistories();
+            console.error('Supabase同意履歴取得中の例外:', error);
+            setError(`Supabase接続エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
           }
         }
-      } else {
-        // ローカルストレージから読み込み
-        loadLocalHistories();
       }
     } catch (error) {
       console.error('同意履歴読み込みエラー:', error);
-      // エラーの場合はローカルから読み込み
-      loadLocalHistories();
+      setError(`同意履歴読み込みエラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // ローカルとSupabaseのデータをマージする関数
+  const mergeHistories = (local: ConsentHistory[], remote: ConsentHistory[]): ConsentHistory[] => {
+    const merged = [...local];
+    const localIds = new Set(local.map(h => h.id));
+    
+    // リモートデータで存在しないものを追加
+    remote.forEach(remoteHistory => {
+      if (!localIds.has(remoteHistory.id)) {
+        merged.push(remoteHistory);
+      }
+    });
+    
+    return merged;
+  };
+
   const loadLocalHistories = () => {
     const savedHistories = localStorage.getItem('consent_histories');
     if (savedHistories) {
-      const parsedHistories = JSON.parse(savedHistories);
-      setConsentHistories(parsedHistories);
+      try {
+        const parsedHistories = JSON.parse(savedHistories);
+        console.log(`ローカルストレージから${parsedHistories.length}件の同意履歴を読み込みました`);
+        setConsentHistories(parsedHistories);
+      } catch (error) {
+        console.error('ローカル同意履歴の解析エラー:', error);
+        setConsentHistories([]);
+      }
     } else {
+      console.log('ローカルストレージに同意履歴がありません');
       setConsentHistories([]);
     }
   };
@@ -89,22 +115,84 @@ const ConsentHistoryManagement: React.FC = () => {
   const handleSyncToSupabase = async () => {
     if (!isConnected) {
       alert('Supabaseに接続されていません。');
-      console.log('Supabase未接続のため同期をスキップします');
+      setError('Supabase未接続のため同期をスキップします');
       return;
     }
 
     setSyncing(true);
+    setError(null);
+    
     try {
-      const success = await syncService.syncConsentHistories();
-      if (success) {
-        alert('同意履歴をSupabaseに同期しました！');
-        await loadConsentHistories(); // 再読み込み
+      // ローカルストレージから同意履歴を取得
+      const savedHistories = localStorage.getItem('consent_histories');
+      if (!savedHistories) {
+        alert('同期する同意履歴がありません。');
+        return;
+      }
+      
+      const histories = JSON.parse(savedHistories);
+      if (!histories || histories.length === 0) {
+        alert('同期する同意履歴がありません。');
+        return;
+      }
+      
+      console.log(`${histories.length}件の同意履歴を同期します`);
+      
+      // 各履歴をSupabaseに保存
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const history of histories) {
+        try {
+          // 既存の履歴をチェック
+          const { data: existingHistory, error: checkError } = await supabase
+            .from('consent_histories')
+            .select('id')
+            .eq('id', history.id)
+            .maybeSingle();
+          
+          if (checkError && checkError.code !== 'PGRST116') {
+            console.error(`同意履歴 ${history.id} の確認エラー:`, checkError);
+            errorCount++;
+            continue;
+          }
+          
+          if (!existingHistory) {
+            // 新しい履歴を作成
+            const { error: insertError } = await supabase
+              .from('consent_histories')
+              .insert([{
+                id: history.id || uuidv4(),
+                line_username: history.line_username,
+                consent_given: history.consent_given,
+                consent_date: history.consent_date,
+                ip_address: history.ip_address || 'unknown',
+                user_agent: history.user_agent || navigator.userAgent
+              }]);
+              
+            if (insertError) {
+              console.error(`同意履歴 ${history.line_username} の作成エラー:`, insertError);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          }
+        } catch (historyError) {
+          console.error(`同意履歴 ${history.line_username} の同期エラー:`, historyError);
+          errorCount++;
+        }
+      }
+      
+      if (successCount > 0) {
+        alert(`${successCount}件の同意履歴をSupabaseに同期しました！`);
+        await loadConsentHistories();
       } else {
-        alert('同期に失敗しました。');
+        alert('同期に失敗しました。詳細はコンソールを確認してください。');
       }
     } catch (error) {
       console.error('同期エラー:', error);
-      alert('同期中にエラーが発生しました。');
+      setError(`同期中にエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      alert('同期中にエラーが発生しました。詳細はコンソールを確認してください。');
     } finally {
       setSyncing(false);
     }
@@ -113,22 +201,70 @@ const ConsentHistoryManagement: React.FC = () => {
   const handleSyncFromSupabase = async () => {
     if (!isConnected) {
       alert('Supabaseに接続されていません。');
-      console.log('Supabase未接続のため同期をスキップします');
+      setError('Supabase未接続のため同期をスキップします');
       return;
     }
 
     setSyncing(true);
+    setError(null);
+    
     try {
-      const success = await syncService.syncConsentHistoriesToLocal();
-      if (success) {
-        alert('Supabaseから同意履歴を同期しました！');
-        await loadConsentHistories(); // 再読み込み
-      } else {
-        alert('同期に失敗しました。');
+      if (!supabase) {
+        alert('Supabase接続が初期化されていません。');
+        return;
       }
+      
+      // Supabaseから同意履歴を取得
+      const { data, error } = await supabase
+        .from('consent_histories')
+        .select('*')
+        .order('consent_date', { ascending: false });
+      
+      if (error) {
+        console.error('Supabaseからの同意履歴取得エラー:', error);
+        setError(`Supabaseからの同意履歴取得に失敗しました: ${error.message}`);
+        alert('Supabaseからの同意履歴取得に失敗しました。');
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        alert('Supabaseに同意履歴がありません。');
+        return;
+      }
+      
+      // ローカルストレージのデータと統合
+      const savedHistories = localStorage.getItem('consent_histories');
+      const localHistories = savedHistories ? JSON.parse(savedHistories) : [];
+      
+      // IDをキーとしたマップを作成
+      const historiesMap = new Map();
+      
+      // ローカルデータをマップに追加
+      localHistories.forEach((history: ConsentHistory) => {
+        historiesMap.set(history.id, history);
+      });
+      
+      // Supabaseデータをマップに追加（同じIDの場合は上書き）
+      data.forEach((history) => {
+        historiesMap.set(history.id, history);
+      });
+      
+      // マップから配列に変換
+      const mergedHistories = Array.from(historiesMap.values());
+      
+      // ローカルストレージに保存
+      localStorage.setItem('consent_histories', JSON.stringify(mergedHistories));
+      
+      // 状態を更新
+      setConsentHistories(mergedHistories);
+      
+      alert(`${data.length}件の同意履歴をSupabaseから同期しました！`);
+      } else {
+        alert('同期に失敗しました。詳細はコンソールを確認してください。');
     } catch (error) {
       console.error('同期エラー:', error);
-      alert('同期中にエラーが発生しました。');
+      setError(`同期中にエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      alert('同期中にエラーが発生しました。詳細はコンソールを確認してください。');
     } finally {
       setSyncing(false);
     }
@@ -250,7 +386,7 @@ const ConsentHistoryManagement: React.FC = () => {
     <div className="space-y-6">
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <div>
+        <div className="flex-1">
           <h2 className="text-2xl font-jp-bold text-gray-900">同意履歴管理</h2>
           <p className="text-gray-600 font-jp-normal text-sm mt-1">
             プライバシーポリシーの同意履歴を管理します
@@ -259,7 +395,7 @@ const ConsentHistoryManagement: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isConnected && (
+          {isConnected && supabase && (
             <>
               <button
                 onClick={handleSyncToSupabase}
@@ -297,6 +433,21 @@ const ConsentHistoryManagement: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* エラー表示 */}
+      {error && (
+        <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+          <div className="flex items-start space-x-3">
+            <div className="text-red-600 mt-0.5">⚠️</div>
+            <div>
+              <p className="text-red-800 font-jp-medium">{error}</p>
+              <p className="text-red-700 text-sm mt-1">
+                ローカルモードでは、Supabaseとの同期ができません。環境変数を確認してください。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* フィルター */}
       <div className="bg-gray-50 rounded-lg p-4">
@@ -422,8 +573,9 @@ const ConsentHistoryManagement: React.FC = () => {
                 : '検索条件を変更してお試しください'
               }
               {!isConnected && (
-                <p className="mt-4 text-yellow-600 font-jp-medium">
-                  ローカルモードで動作中のため、Supabaseからのデータは表示されません
+                <p className="mt-4 text-yellow-600 font-jp-medium text-sm">
+                  ローカルモードで動作中のため、Supabaseからのデータは表示されません。
+                  <br />環境変数を確認してください。
                 </p>
               )}
             </p>

@@ -54,7 +54,9 @@ const AdminPanel: React.FC = () => {
   const [savingMemo, setSavingMemo] = useState(false); 
   const [activeTab, setActiveTab] = useState('search'); 
   const [deleting, setDeleting] = useState(false);
-  const [syncInProgress, setSyncInProgress] = useState(false);
+  const [syncInProgress, setSyncInProgress] = useState(false); 
+  const [backupInProgress, setBackupInProgress] = useState(false);
+
   // ステータス表示用の状態
   const [status, setStatus] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
 
@@ -72,7 +74,7 @@ const AdminPanel: React.FC = () => {
     try {
       // 管理者モードでは、まず管理者用のデータを同期
       await handleSyncAdminData();
-
+      
       // 管理者用のデータを読み込み
       const adminEntries = localStorage.getItem('admin_journalEntries');
       if (adminEntries) {
@@ -100,17 +102,15 @@ const AdminPanel: React.FC = () => {
     console.log('管理者用データを同期中...');
     setSyncInProgress(true);
     setStatus({message: '管理者データを同期中...', type: 'info'});
-    
+
     try {
       // 管理者モードでの同期を実行
       const success = await syncService.adminSync();
-      
+
       if (success) {
-        // 管理者モードでは、管理者用のデータを同期
-        if (supabase) {
-          await handleSyncAdminData();
-        }
-        
+        console.log('管理者用データの同期が完了しました');
+        setStatus({message: '管理者データの同期が完了しました', type: 'success'});
+
         // 管理者用のデータを読み込み
         const adminEntries = localStorage.getItem('admin_journalEntries');
         if (adminEntries) {
@@ -309,18 +309,20 @@ const AdminPanel: React.FC = () => {
   };
 
   const renderLoading = () => {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">データを読み込み中...</p>
-        </div>
-      </div>
-    );
+    return renderLoadingState();
   };
 
+  const renderLoadingState = () => (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">データを読み込み中...</p>
+      </div>
+    </div>
+  );
+
   if (loading) {
-    return renderLoading();
+    return renderLoadingState();
   }
 
   return (
@@ -368,39 +370,39 @@ const AdminPanel: React.FC = () => {
           <TabsList className="grid w-full grid-cols-3 md:grid-cols-9 gap-1">
             <TabsTrigger value="search" className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
-              <span>検索・閲覧</span>
+              <span className="hidden sm:inline">検索・閲覧</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
-              <span>ユーザー管理</span>
+              <span className="hidden sm:inline">ユーザー管理</span>
             </TabsTrigger>
             <TabsTrigger value="counselors" className="flex items-center space-x-2">
               <User className="h-4 w-4" />
-              <span>カウンセラー</span>
+              <span className="hidden sm:inline">カウンセラー</span>
             </TabsTrigger>
             <TabsTrigger value="chat" className="flex items-center space-x-2">
               <MessageCircle className="h-4 w-4" />
-              <span>チャット</span>
+              <span className="hidden sm:inline">チャット</span>
             </TabsTrigger>
             <TabsTrigger value="maintenance" className="flex items-center space-x-2">
               <Settings className="h-4 w-4" />
-              <span>メンテナンス</span>
+              <span className="hidden sm:inline">メンテナンス</span>
             </TabsTrigger>
             <TabsTrigger value="consent" className="flex items-center space-x-2">
               <CheckCircle className="h-4 w-4" />
-              <span>同意履歴</span>
+              <span className="hidden sm:inline">同意履歴</span>
             </TabsTrigger>
             <TabsTrigger value="backup" className="flex items-center space-x-2">
               <HardDrive className="h-4 w-4" />
-              <span>バックアップ</span>
+              <span className="hidden sm:inline">バックアップ</span>
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center space-x-2">
               <Shield className="h-4 w-4" />
-              <span>セキュリティ</span>
+              <span className="hidden sm:inline">セキュリティ</span>
             </TabsTrigger>
             <TabsTrigger value="cleanup" className="flex items-center space-x-2">
               <Database className="h-4 w-4" />
-              <span>データ整理</span>
+              <span className="hidden sm:inline">データ整理</span>
             </TabsTrigger>
           </TabsList>
 

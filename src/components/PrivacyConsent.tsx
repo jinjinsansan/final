@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Shield, Eye, Lock, Database, AlertTriangle, Users, Clock, MessageCircle, Upload, RefreshCw, Download, CheckCircle, User } from 'lucide-react';
-import { logSecurityEvent } from '../lib/deviceAuth'; 
+import { logSecurityEvent } from '../lib/deviceAuth';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '../lib/supabase';
 
 interface PrivacyConsentProps {
   onConsent: (accepted: boolean) => void;
@@ -19,8 +20,50 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isChecked && lineUsername.trim()) {
-      // ユーザー名をローカルストレージに保存
+      // ユーザー名をローカルストレージに保存し、同意履歴を記録
       localStorage.setItem('line-username', lineUsername);
+      
+      // 同意履歴を記録
+      const consentRecord = {
+        id: uuidv4(),
+        line_username: lineUsername,
+        consent_given: true,
+        consent_date: new Date().toISOString(),
+        ip_address: 'unknown', // 実際の実装では取得可能
+        user_agent: navigator.userAgent
+      };
+      
+      // ローカルストレージに保存
+      const existingHistories = localStorage.getItem('consent_histories');
+      const histories = existingHistories ? JSON.parse(existingHistories) : [];
+      histories.push(consentRecord);
+      localStorage.setItem('consent_histories', JSON.stringify(histories));
+      
+      // Supabaseにも保存（接続されている場合のみ）
+      if (supabase) {
+        try {
+          supabase
+            .from('consent_histories')
+            .insert([{
+              id: consentRecord.id,
+              line_username: consentRecord.line_username,
+              consent_given: consentRecord.consent_given,
+              consent_date: consentRecord.consent_date,
+              ip_address: consentRecord.ip_address,
+              user_agent: consentRecord.user_agent
+            }])
+            .then(({ error }) => {
+              if (error) {
+                console.error('同意履歴の保存エラー:', error);
+              } else {
+                console.log('同意履歴をSupabaseに保存しました');
+              }
+            });
+        } catch (error) {
+          console.error('Supabase同意履歴保存エラー:', error);
+        }
+      }
+      
       onConsent(true);
     } else if (!lineUsername.trim()) {
       alert('LINEユーザー名を入力してください。');
@@ -30,11 +73,11 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
   const handleReject = () => {
     // 拒否履歴を記録
     const consentRecord = {
-      id: uuidv4(), // UUIDを生成
+      id: uuidv4(),
       line_username: 'declined_user_' + Date.now(),
       consent_given: false,
       consent_date: new Date().toISOString(),
-      ip_address: 'unknown',
+      ip_address: 'unknown', // 実際の実装では取得可能
       user_agent: navigator.userAgent
     };
     
@@ -49,6 +92,31 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
     }
     histories.push(consentRecord);
     localStorage.setItem('consent_histories', JSON.stringify(histories));
+
+    // Supabaseにも保存（接続されている場合のみ）
+    if (supabase) {
+      try {
+        supabase
+          .from('consent_histories')
+          .insert([{
+            id: consentRecord.id,
+            line_username: consentRecord.line_username,
+            consent_given: consentRecord.consent_given,
+            consent_date: consentRecord.consent_date,
+            ip_address: consentRecord.ip_address,
+            user_agent: consentRecord.user_agent
+          }])
+          .then(({ error }) => {
+            if (error) {
+              console.error('拒否履歴の保存エラー:', error);
+            } else {
+              console.log('拒否履歴をSupabaseに保存しました');
+            }
+          });
+      } catch (error) {
+        console.error('Supabase拒否履歴保存エラー:', error);
+      }
+    }
 
     // セキュリティイベントをログ
     logSecurityEvent('privacy_consent_rejected', consentRecord.line_username, 'プライバシーポリシーを拒否');
