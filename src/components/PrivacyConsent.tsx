@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Shield, Eye, Lock, Database, AlertTriangle, Users, Clock, MessageCircle, Upload, RefreshCw, Download, CheckCircle, User } from 'lucide-react';
 import { logSecurityEvent } from '../lib/deviceAuth'; 
 import { v4 as uuidv4 } from 'uuid';
-import { v4 as uuidv4 } from 'uuid';
 
 interface PrivacyConsentProps {
   onConsent: (accepted: boolean) => void;

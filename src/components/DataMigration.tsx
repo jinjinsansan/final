@@ -10,11 +10,6 @@ const debugLog = (message: string, data?: any) => {
   console.log(`[同期デバッグ] ${message}`, data ? data : '');
 };
 
-// デバッグ用のログ関数
-const debugLog = (message: string, data?: any) => {
-  console.log(`[同期デバッグ] ${message}`, data ? data : '');
-};
-
 const DataMigration: React.FC = () => {
   const [localDataCount, setLocalDataCount] = useState(0);
   const [supabaseDataCount, setSupabaseDataCount] = useState(0);
@@ -30,7 +25,6 @@ const DataMigration: React.FC = () => {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true); 
   const [backupInProgress, setBackupInProgress] = useState<boolean>(false); 
   const [forceSyncInProgress, setForceSyncInProgress] = useState<boolean>(false); 
-  const [debugInfo, setDebugInfo] = useState<string>('');
   const [debugInfo, setDebugInfo] = useState<string>('');
 
   // 全体のデータ数を保持する状態
@@ -151,11 +145,6 @@ const DataMigration: React.FC = () => {
     // デバッグ情報を表示
     debugLog('強制同期開始', { userId: currentUser.id, isConnected });
     setDebugInfo(`強制同期開始: ユーザーID=${currentUser.id}, 接続状態=${isConnected}`);
-    
-    // デバッグ情報を表示
-    debugLog('強制同期開始', { userId: currentUser.id, isConnected });
-    setDebugInfo(`強制同期開始: ユーザーID=${currentUser.id}, 接続状態=${isConnected}`);
-    
     try {
       if (syncService) {
         // ローカルデータをSupabaseに同期
@@ -163,8 +152,6 @@ const DataMigration: React.FC = () => {
         
         if (success) {
           const successMsg = '強制同期が完了しました！';
-          setMigrationStatus(successMsg);
-          setDebugInfo(debugInfo + '\n' + successMsg);
           setMigrationStatus(successMsg);
           setDebugInfo(debugInfo + '\n' + successMsg);
           
@@ -175,12 +162,8 @@ const DataMigration: React.FC = () => {
           const now = new Date().toISOString();
           localStorage.setItem('last_sync_time', now);
           debugLog('同期成功', { time: now });
-          debugLog('同期成功', { time: now });
         } else {
           const errorMsg = '強制同期に失敗しました。もう一度お試しください。';
-          setMigrationStatus(errorMsg);
-          setDebugInfo(debugInfo + '\n' + errorMsg);
-          debugLog('同期失敗');
           setMigrationStatus(errorMsg);
           setDebugInfo(debugInfo + '\n' + errorMsg);
           debugLog('同期失敗');
@@ -189,9 +172,6 @@ const DataMigration: React.FC = () => {
     } catch (error) {
       console.error('強制同期エラー:', error);
       const errorMsg = '強制同期中にエラーが発生しました: ' + (error instanceof Error ? error.message : String(error));
-      setMigrationStatus(errorMsg);
-      setDebugInfo(debugInfo + '\n' + errorMsg);
-      debugLog('同期エラー', error);
       setMigrationStatus(errorMsg);
       setDebugInfo(debugInfo + '\n' + errorMsg);
       debugLog('同期エラー', error);
@@ -471,17 +451,6 @@ const DataMigration: React.FC = () => {
             </pre>
           </div>
         )}
-
-        {/* デバッグ情報表示 */}
-        {debugInfo && (
-          <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <h3 className="font-jp-bold text-gray-900 mb-2 text-sm">デバッグ情報</h3>
-            <pre className="text-xs text-gray-700 whitespace-pre-wrap bg-gray-100 p-3 rounded overflow-auto max-h-40">
-              {debugInfo}
-            </pre>
-          </div>
-        )}
-
         {/* 進捗表示 */}
         {migrationStatus && (
           <div className={`rounded-lg p-4 border ${
