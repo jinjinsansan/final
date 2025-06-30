@@ -16,11 +16,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
 }
 
-// 環境変数が設定されているかチェック
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
-}
-
 // Supabaseクライアントの作成（環境変数が設定されている場合のみ）
 export let supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
@@ -59,7 +54,6 @@ export const testSupabaseConnection = async () => {
     if (!navigator.onLine) {
       console.log('オフラインモードです');
       console.warn('ネットワーク接続がありません。オフラインモードで動作します。');
-      console.warn('ネットワーク接続がありません。オフラインモードで動作します。');
       return { 
         success: false,
         error: 'オフラインモードです',
@@ -75,11 +69,7 @@ export const testSupabaseConnection = async () => {
       // タイムアウト付きのfetch
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒でタイムアウト
-      
-      // タイムアウト付きのfetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒でタイムアウト
-      
+
       try {
         const response = await fetch(`${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`, {
           method: 'HEAD',
@@ -136,27 +126,7 @@ export const testSupabaseConnection = async () => {
       // タイムアウト付きのクエリ
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒でタイムアウト
-      
-      let error;
-      try {
-        const result = await supabase.from('users').select('id', { count: 'exact', head: true });
-        error = result.error;
-        clearTimeout(timeoutId);
-      } catch (abortError) {
-        clearTimeout(timeoutId);
-        if (abortError.name === 'AbortError') {
-          return {
-            success: false,
-            error: 'Supabaseクエリがタイムアウトしました',
-            details: '接続がタイムアウトしました。ネットワーク状態を確認してください。'
-          };
-        }
-        throw abortError;
-      }
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒でタイムアウト
-      
+
       let error;
       try {
         const result = await supabase.from('users').select('id', { count: 'exact', head: true });
@@ -176,38 +146,6 @@ export const testSupabaseConnection = async () => {
       
       console.log('Supabaseクエリテスト結果:', error ? `エラー: ${error.message}` : '成功');
       
-      try {
-        const response = await fetch(`${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`, {
-          method: 'HEAD',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': supabaseAnonKey
-          },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-      
-        if (!response.ok) {
-          console.log('Supabase API接続エラー:', response.status);
-          return {
-            success: false,
-            error: `Supabase API接続エラー: ${response.status}`,
-            details: '接続に失敗しました。環境変数を確認してください。'
-          };
-            error: 'APIキーが無効です',
-      } catch (abortError) {
-        clearTimeout(timeoutId);
-        if (abortError.name === 'AbortError') {
-          console.log('Supabase API接続がタイムアウトしました');
-          return {
-            success: false,
-            error: 'Supabase API接続タイムアウト',
-            details: '接続がタイムアウトしました。ネットワーク状態を確認してください。'
-          };
-        }
-        throw abortError;
-      }
     } catch (queryError) {
       console.log('Supabase接続テスト(query)エラー:', queryError);
       return {
@@ -632,51 +570,6 @@ export const syncService = {
         if (!testResult.success) {
           console.error('Supabase接続テスト失敗:', testResult.error);
           return false;
-      console.log('管理者同期を開始します - スマートフォンのデータも含めて同期します', new Date().toISOString());
-      
-      // Supabaseクライアントの確認
-      } catch (testError) {
-        console.log('Supabaseクライアントが利用できないため、同期をスキップします', new Date().toISOString());
-        
-        // オフラインの場合はローカルデータのみを使用
-        if (!navigator.onLine) {
-          console.log('オフラインモードのため、ローカルデータのみを使用します', new Date().toISOString());
-          
-          // ローカルデータを取得
-          const savedEntries = localStorage.getItem('journalEntries');
-          if (savedEntries) {
-            try {
-              const entries = JSON.parse(savedEntries);
-              const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
-              
-              // 管理者用データ形式に変換
-              const adminEntries = entries.map((entry: any) => ({
-                ...entry,
-                user: { line_username: lineUsername },
-                created_at: entry.created_at || new Date().toISOString()
-              }));
-              
-              // 管理者用データとして保存
-              localStorage.setItem('admin_journalEntries', JSON.stringify(adminEntries));
-              console.log(`ローカルユーザー ${lineUsername} の ${entries.length} 件のデータを管理者用データとして保存しました`);
-              return true;
-            } catch (error) {
-              console.error('ローカルデータの解析エラー:', error);
-            }
-          }
-        }
-        
-        return false;
-      }
-      
-      console.log('管理者同期: Supabaseからデータを取得中...', new Date().toISOString());
-      
-      // 接続テスト
-      try {
-        const testResult = await testSupabaseConnection();
-        if (!testResult.success) {
-          console.error('Supabase接続テスト失敗:', testResult.error);
-          return false;
         }
       } catch (testError) {
         console.error('Supabase接続テストエラー:', testError);
@@ -695,121 +588,6 @@ export const syncService = {
       
       if (!users || users.length === 0) {
         console.log('Supabaseにユーザーが見つかりませんでした。ローカルユーザーを作成します。', new Date().toISOString());
-        
-        // 再試行: 接続が不安定な場合に備えて再度ユーザー取得を試みる
-        try {
-          console.log('ユーザー取得を再試行します...', new Date().toISOString());
-          const { data: retryUsers, error: retryError } = await supabase
-            .from('users')
-            .select('*');
-            
-          if (!retryError && retryUsers && retryUsers.length > 0) {
-            console.log(`再試行成功: ${retryUsers.length}人のユーザーを取得しました`, new Date().toISOString());
-            users = retryUsers;
-          } else {
-            console.log('再試行失敗: ユーザーが見つかりませんでした', new Date().toISOString());
-          }
-        } catch (retryError) {
-          console.error('ユーザー取得再試行エラー:', retryError);
-        }
-        
-        // 再試行後もユーザーが見つからない場合はローカルユーザーを使用
-        if (!users || users.length === 0) {
-          // ローカルユーザーを作成
-          const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
-          const localUser = {
-            id: 'local-user-' + Date.now(),
-            line_username: lineUsername,
-            created_at: new Date().toISOString()
-          };
-          
-          // ローカルデータを取得
-          const savedEntries = localStorage.getItem('journalEntries');
-          if (savedEntries) {
-            try {
-              const entries = JSON.parse(savedEntries);
-              
-              // 管理者用データ形式に変換
-              const adminEntries = entries.map((entry: any) => ({
-                ...entry,
-                user: { line_username: lineUsername },
-                created_at: entry.created_at || new Date().toISOString()
-              }));
-              
-              // 管理者用データとして保存
-              localStorage.setItem('admin_journalEntries', JSON.stringify(adminEntries));
-              console.log(`ローカルユーザー ${lineUsername} の ${entries.length} 件のデータを管理者用データとして保存しました`, new Date().toISOString());
-              return true;
-            } catch (error) {
-              console.error('ローカルデータの解析エラー:', error);
-              return false;
-            }
-          } else {
-            console.log('ローカルデータが見つかりませんでした');
-            return false;
-          }
-        }
-      }
-      
-      console.log(`管理者同期: ${users.length}人のユーザーを同期します`, new Date().toISOString());
-      
-      // 各ユーザーのデータを同期
-      const allEntries = [];
-      for (const user of users) {
-        try {
-          // ユーザーの日記データを取得
-          const { data: entries, error } = await supabase
-            .from('diary_entries')
-            .select('*, users(line_username)')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-          
-          if (error) {
-            console.error(`ユーザー ${user.id} (${user.line_username}) の日記データ取得エラー:`, error);
-            continue;
-          }
-          
-          console.log(`ユーザー ${user.id} (${user.line_username}) の日記データを取得: ${entries?.length || 0}件`, new Date().toISOString());
-          
-          // 全エントリーに追加
-          if (entries && entries.length > 0) {
-            entries.forEach((entry: any) => {
-              // ユーザー名を取得（ネストされたユーザーオブジェクトから）
-              const userName = entry.users?.line_username || user.line_username || 'ゲスト';
-              
-              allEntries.push({
-                id: entry.id,
-                date: entry.date,
-                emotion: entry.emotion,
-                event: entry.event || '',
-                realization: entry.realization || '',
-                selfEsteemScore: entry.self_esteem_score,
-                worthlessnessScore: entry.worthlessness_score,
-                counselor_memo: entry.counselor_memo || '',
-                is_visible_to_user: entry.is_visible_to_user || false,
-                counselor_name: entry.counselor_name || '',
-                assigned_counselor: entry.assigned_counselor || '',
-                urgency_level: entry.urgency_level || '',
-                created_at: entry.created_at || new Date().toISOString(),
-                user: {
-                  line_username: userName
-                }
-              });
-            });
-          }
-        } catch (userError) {
-          console.error(`ユーザー ${user.id} (${user.line_username}) の同期エラー:`, userError);
-        }
-      }
-      
-      // 全エントリーを管理者用のキーに保存
-      if (allEntries.length > 0) {
-        console.log(`合計 ${allEntries.length} 件の日記エントリーを管理者用ストレージに保存します`, new Date().toISOString());
-        
-        // 日付順にソート（新しい順）
-        allEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        localStorage.setItem('admin_journalEntries', JSON.stringify(allEntries));
         
         // 再試行: 接続が不安定な場合に備えて再度ユーザー取得を試みる
         try {
@@ -1204,10 +982,60 @@ export const syncService = {
       
       // ローカルストレージから同意履歴を取得
       const savedHistories = localStorage.getItem('consent_histories');
-      else {
-        console.log('保存するエントリーがありませんでした', new Date().toISOString());
+      if (!savedHistories) {
+        console.log('ローカルストレージに同意履歴がないため、同期をスキップします');
         return false;
       }
+      
+      const histories = JSON.parse(savedHistories);
+      if (!histories || histories.length === 0) {
+        console.log('同意履歴が空のため、同期をスキップします');
+        return false;
+      }
+      
+      console.log(`${histories.length}件の同意履歴を同期します`);
+      
+      // 各履歴をSupabaseに保存
+      let successCount = 0;
+      for (const history of histories) {
+        try {
+          // 既存の履歴をチェック
+          const { data: existingHistory, error: checkError } = await supabase
+            .from('consent_histories')
+            .select('id')
+            .eq('line_username', history.line_username)
+            .eq('consent_date', history.consent_date)
+            .maybeSingle();
+          
+          if (checkError && checkError.code !== 'PGRST116') {
+            console.error(`同意履歴 ${history.line_username} の確認エラー:`, checkError);
+            continue;
+          }
+          
+          if (!existingHistory) {
+            // 新しい履歴を作成
+            const { error: insertError } = await supabase
+              .from('consent_histories')
+              .insert([{
+                line_username: history.line_username,
+                consent_date: history.consent_date,
+                consent_type: history.consent_type || 'general',
+                consent_version: history.consent_version || '1.0'
+              }]);
+              
+            if (insertError) {
+              console.error(`同意履歴 ${history.line_username} の作成エラー:`, insertError);
+            } else {
+              successCount++;
+            }
+          }
+        } catch (historyError) {
+          console.error(`同意履歴 ${history.line_username} の同期エラー:`, historyError);
+        }
+      }
+      
+      console.log(`同意履歴同期完了: ${successCount}/${histories.length}件成功`);
+      return successCount > 0;
     } catch (error) {
       console.error('同意履歴同期エラー:', error);
       return false;
@@ -1277,27 +1105,8 @@ export const syncService = {
     try {
       console.log(`強制同期を開始します - ユーザーID: ${userId} - スマートフォンのデータも含めて同期します`, new Date().toISOString());
       
-      console.log(`強制同期を開始します - ユーザーID: ${userId} - スマートフォンのデータも含めて同期します`, new Date().toISOString());
-      
       if (!supabase) {
         console.log('Supabase接続がないため、強制同期をスキップします', new Date().toISOString());
-        return false;
-      }
-      
-      if (!navigator.onLine) {
-        console.log('オフラインモードのため、強制同期をスキップします', new Date().toISOString());
-        return false;
-      }
-      
-      // 接続テスト
-      try {
-        const testResult = await testSupabaseConnection();
-        if (!testResult.success) {
-          console.error('Supabase接続テスト失敗:', testResult.error);
-          return false;
-        }
-      } catch (testError) {
-        console.error('Supabase接続テストエラー:', testError);
         return false;
       }
       
@@ -1333,15 +1142,12 @@ export const syncService = {
       
       // ローカルデータをSupabaseに同期
       console.log(`強制同期: ${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`, new Date().toISOString());
-      console.log(`強制同期: ${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`, new Date().toISOString());
       
       // 各エントリーをSupabaseに保存
       let successCount = 0;
       let errorCount = 0;
       
-      
       for (const entry of entries) {
-        console.log(`エントリー ${entry.id} を同期中...`, new Date().toISOString());
         console.log(`エントリー ${entry.id} を同期中...`, new Date().toISOString());
         try {
           // 既存のエントリーをチェック
@@ -1359,7 +1165,6 @@ export const syncService = {
           
           if (existingEntry) {
             // 既存のエントリーを更新
-            console.log(`エントリー ${entry.id} を更新します`, new Date().toISOString());
             console.log(`エントリー ${entry.id} を更新します`, new Date().toISOString());
             const { error: updateError } = await supabase
               .from('diary_entries')
@@ -1453,48 +1258,7 @@ export const syncService = {
         console.error('同期ログ記録エラー:', logError);
       }
       
-      // Supabaseからデータを取得して、ローカルに同期（スマートフォンのデータを取得するため）
-      try {
-        console.log('Supabaseからデータを取得して、ローカルに同期します', new Date().toISOString());
-        const { data: supabaseEntries, error: fetchError } = await supabase
-          .from('diary_entries')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
-          
-        if (fetchError) {
-          console.error('Supabaseからのデータ取得エラー:', fetchError);
-        } else if (supabaseEntries && supabaseEntries.length > 0) {
-          console.log(`Supabaseから ${supabaseEntries.length} 件のデータを取得しました`, new Date().toISOString());
-          
-          // ローカルデータと統合
-          await syncService.syncToLocal(userId);
-          
-          // 成功カウントを更新
-          successCount += supabaseEntries.length;
-        } else {
-          console.log('Supabaseにデータがありませんでした', new Date().toISOString());
-        }
-      } catch (fetchError) {
-        console.error('Supabaseからのデータ取得エラー:', fetchError);
-      }
-      
-      // 同期ログを記録（可能な場合）
-      try {
-        await syncService.logSyncOperation(
-          userId,
-          'force',
-          successCount,
-          errorCount === 0,
-          errorCount > 0 ? `${errorCount}件のエントリーで同期エラーが発生しました` : undefined
-        );
-      } catch (logError) {
-        console.error('同期ログ記録エラー:', logError);
-      }
       console.log(`強制同期完了: 成功=${successCount}, 失敗=${errorCount}`, new Date().toISOString());
-      } catch (adminSyncError) {
-        console.error('管理者同期エラー:', adminSyncError);
-      }
       
       // 管理者同期も実行して、管理画面のデータを更新
       try {
