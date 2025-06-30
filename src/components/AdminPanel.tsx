@@ -53,8 +53,7 @@ const AdminPanel: React.FC = () => {
   const [assignedCounselor, setAssignedCounselor] = useState(''); 
   const [savingMemo, setSavingMemo] = useState(false); 
   const [activeTab, setActiveTab] = useState('search'); 
-  const [syncInProgress, setIsSyncInProgress] = useState(false); 
-
+  const [deleting, setDeleting] = useState(false);
   // ステータス表示用の状態
   const [status, setStatus] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
 

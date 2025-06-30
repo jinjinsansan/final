@@ -1,8 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Save, ArrowUpDown } from 'lucide-react';
-import { userService, syncService } from '../lib/supabase';
-import { useSupabase } from '../hooks/useSupabase'; 
-import { getCurrentUser } from '../lib/deviceAuth';
 const DataMigration: React.FC = () => {
   const [localDataCount, setLocalDataCount] = useState(0);
   const [supabaseDataCount, setSupabaseDataCount] = useState(0);
@@ -19,8 +15,13 @@ const DataMigration: React.FC = () => {
   const [backupInProgress, setBackupInProgress] = useState<boolean>(false); 
   const [forceSyncInProgress, setForceSyncInProgress] = useState<boolean>(false); 
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
-
+  
   // 全体のデータ数を保持する状態
+  const [totalLocalDataCount, setTotalLocalDataCount] = useState<number>(0);
+  const [totalSupabaseDataCount, setTotalSupabaseDataCount] = useState<number>(0);
+
+  const { isConnected, currentUser, isInitializing } = useSupabase();
+
   useEffect(() => {
     loadDataInfo();
     // 自動同期設定を読み込み

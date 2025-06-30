@@ -625,5 +625,3 @@ const BackupRestoreManager: React.FC = () => {
     </div>
   );
 };
-
-export default BackupRestoreManager;
