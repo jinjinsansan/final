@@ -12,15 +12,14 @@ const DataMigration: React.FC = () => {
   const [migrationStatus, setMigrationStatus] = useState<string>('');
   const [migrationProgress, setMigrationProgress] = useState(0);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
-  const [userExists, setUserExists] = useState(false);
-  const [userCreationError, setUserCreationError] = useState<string | null>(null);
-  const [syncDirection, setSyncDirection] = useState<'local-to-supabase' | 'supabase-to-local'>('local-to-supabase');
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
-  const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true);
-  const [backupInProgress, setBackupInProgress] = useState<boolean>(false);
-  const [forceSyncInProgress, setForceSyncInProgress] = useState<boolean>(false);
-  const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
+  const [userExists, setUserExists] = useState(false); 
+  const [userCreationError, setUserCreationError] = useState<string | null>(null); 
+  const [syncDirection, setSyncDirection] = useState<'local-to-supabase' | 'supabase-to-local'>('local-to-supabase'); 
+  const [showAdvanced, setShowAdvanced] = useState(false); 
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false); 
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true); 
+  const [backupInProgress, setBackupInProgress] = useState<boolean>(false); 
+  const [forceSyncInProgress, setForceSyncInProgress] = useState<boolean>(false); 
 
   // 全体のデータ数を保持する状態
   const [totalLocalDataCount, setTotalLocalDataCount] = useState<number>(0);
@@ -162,7 +161,7 @@ const DataMigration: React.FC = () => {
   // バックアップデータの作成
   const handleCreateBackup = () => {
     setBackupInProgress(true);
-    if (setMigrationStatus) setMigrationStatus(null);
+    setMigrationStatus(null);
     
     try {
       // ローカルストレージからデータを収集
@@ -197,8 +196,8 @@ const DataMigration: React.FC = () => {
       
       setMigrationStatus('バックアップが正常に作成されました！');
     } catch (error) {
-      console.error('バックアップ作成エラー:', error);
-      if (setMigrationStatus) setMigrationStatus('バックアップの作成に失敗しました。');
+      console.error('バックアップ作成エラー:', error); 
+      setMigrationStatus({message: 'バックアップの作成に失敗しました。', type: 'error'});
     } finally {
       setBackupInProgress(false);
     }

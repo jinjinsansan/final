@@ -23,7 +23,7 @@ const DiarySearchPage: React.FC = () => {
       {/* ... [rest of the JSX remains the same until the end] */}
       <div className="fixed bottom-4 right-4 bg-green-100 border border-green-200 rounded-lg p-3 shadow-lg z-10">
         <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div> 
           <span className="text-green-800 font-jp-medium text-sm whitespace-nowrap">
             {import.meta.env.VITE_LOCAL_MODE === 'true'
               ? 'ローカルモードで動作中'
