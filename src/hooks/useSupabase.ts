@@ -14,6 +14,28 @@ export const useSupabase = () => {
   const [lastAttemptTime, setLastAttemptTime] = useState(0);
   const [isInitializing, setIsInitializing] = useState(true);
 
+  // オフライン状態の監視
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('オンラインに戻りました - 接続を再試行します');
+      checkConnection(false);
+    };
+    
+    const handleOffline = () => {
+      console.log('オフラインになりました - ローカルモードに切り替えます');
+      setIsConnected(false);
+      setError('オフラインモードです。インターネット接続を確認してください。');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   useEffect(() => {
     // ローカルモードが有効な場合は接続チェックをスキップ
    if (import.meta.env.VITE_LOCAL_MODE === 'true') {
@@ -42,7 +64,7 @@ export const useSupabase = () => {
   const checkConnection = async (isInitialCheck = false) => {
     // ローカルモードが有効な場合は接続チェックをスキップ
    if (import.meta.env.VITE_LOCAL_MODE === 'true') {
-     console.log('ローカルモードが有効です - 接続チェックをスキップします');
+      console.log('ローカルモードが有効です - 接続チェックをスキップします', new Date().toISOString());
       setIsConnected(false);
       setIsInitializing(false);
       setLoading(false);
@@ -51,8 +73,8 @@ export const useSupabase = () => {
     
     const now = Date.now();
     // 最後の接続試行から3秒以上経過している場合のみ実行
-    if (!isInitialCheck && now - lastAttemptTime < 3000) {
-      console.log('接続チェックをスキップ: 前回の試行から3秒経過していません');
+    if (!isInitialCheck && now - lastAttemptTime < 5000) {
+      console.log('接続チェックをスキップ: 前回の試行から5秒経過していません');
       return;
     }
     
@@ -65,10 +87,10 @@ export const useSupabase = () => {
     
     if (!supabase) {
       console.log('Supabase未設定 - ローカルモードで動作');
-      setIsConnected(false);
-      setIsInitializing(false);
-      setError('Supabase接続エラー: 環境変数が設定されていません。.envファイルを確認してください。');
-      setLoading(false);
+      setIsConnected(false); 
+      setIsInitializing(false); 
+      setError('Supabase接続エラー: 環境変数が設定されていません。.envファイルを確認してください。'); 
+      setLoading(false); 
       return;
     }
     
@@ -123,7 +145,7 @@ export const useSupabase = () => {
   // 接続を再試行する関数
   const retryConnection = () => {
     if (retryCount < 5) {
-      console.log(`接続を再試行します... (${retryCount + 1}/5)`);
+      console.log(`接続を再試行します... (${retryCount + 1}/5)`, new Date().toISOString());
       setRetryCount(prev => prev + 1);
       setError(null);
       checkConnection(false);
@@ -135,14 +157,14 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     // 管理者モードの場合は初期化をスキップ
     if (isAdminMode) {
-      console.log('管理者モードのため、ユーザー初期化をスキップします - 管理者IDを返します', new Date().toISOString());
+      console.log('管理者モードのため、ユーザー初期化をスキップします - 管理者IDを返します', new Date().toISOString()); 
       setCurrentUser({ id: 'admin', line_username: 'admin' });
       setIsInitializing(false);
       return { id: 'admin', line_username: 'admin' };
     }
     
     if (!isConnected) {
-      console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString());
+      console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString()); 
       const trimmedUsername = lineUsername.trim();
       return { id: null, line_username: trimmedUsername };
     }

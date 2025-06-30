@@ -9,6 +9,11 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl}` : 'not set');
 console.log('Supabase Key:', supabaseAnonKey ? 'Key is set' : 'Key is not set');
 
+// 環境変数が設定されているかチェック
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Supabase環境変数が設定されていません。ローカルモードで動作します。');
+}
+
 // Supabaseクライアントの作成（環境変数が設定されている場合のみ）
 export let supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
@@ -32,7 +37,7 @@ export let adminSupabase = supabaseUrl && supabaseAnonKey
 
 // Supabase接続テスト関数
 export const testSupabaseConnection = async () => {
-  console.log('Supabase接続をテスト中...');
+  console.log('Supabase接続をテスト中...', new Date().toISOString());
   try {
     if (!supabase) {
       console.log('Supabase設定が見つかりません');
@@ -46,7 +51,8 @@ export const testSupabaseConnection = async () => {
     // オフラインモードの場合は早期リターン
     if (!navigator.onLine) {
       console.log('オフラインモードです');
-      return {
+      console.warn('ネットワーク接続がありません。オフラインモードで動作します。');
+      return { 
         success: false,
         error: 'オフラインモードです',
         details: 'インターネット接続を確認してください'
@@ -56,22 +62,43 @@ export const testSupabaseConnection = async () => {
     // 接続エラーを防ぐためのフォールバック
     try {
       // 軽量な接続テスト
-      console.log('Supabase API接続テスト中...');
-      const response = await fetch(`${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`, {
-        method: 'HEAD',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseAnonKey
-        }
-      });
+      console.log('Supabase API接続テスト中...', new Date().toISOString());
       
-      if (!response.ok) {
-        console.log('Supabase API接続エラー:', response.status);
-        return {
-          success: false,
-          error: `Supabase API接続エラー: ${response.status}`,
-          details: '接続に失敗しました。環境変数を確認してください。'
-        };
+      // タイムアウト付きのfetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒でタイムアウト
+      
+      try {
+        const response = await fetch(`${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`, {
+          method: 'HEAD',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseAnonKey
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+      
+        if (!response.ok) {
+          console.log('Supabase API接続エラー:', response.status);
+          return {
+            success: false,
+            error: `Supabase API接続エラー: ${response.status}`,
+            details: '接続に失敗しました。環境変数を確認してください。'
+          };
+        }
+      } catch (abortError) {
+        clearTimeout(timeoutId);
+        if (abortError.name === 'AbortError') {
+          console.log('Supabase API接続がタイムアウトしました');
+          return {
+            success: false,
+            error: 'Supabase API接続タイムアウト',
+            details: '接続がタイムアウトしました。ネットワーク状態を確認してください。'
+          };
+        }
+        throw abortError;
       }
     } catch (fetchError) {
       console.log('Supabase接続テスト(fetch)エラー:', fetchError);
@@ -86,15 +113,35 @@ export const testSupabaseConnection = async () => {
     // オフラインモードの場合は早期リターン
     if (!navigator.onLine) {
       return {
-        success: false,
-        error: 'オフラインモードです',
-        details: 'インターネット接続を確認してください'
+        success: false, 
+        error: 'オフラインモードです', 
+        details: 'インターネット接続を確認してください' 
       };
     }
 
     // 接続テスト（軽量なクエリを実行）
     try {
-      const { error } = await supabase.from('users').select('id', { count: 'exact', head: true });
+      // タイムアウト付きのクエリ
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒でタイムアウト
+      
+      let error;
+      try {
+        const result = await supabase.from('users').select('id', { count: 'exact', head: true });
+        error = result.error;
+        clearTimeout(timeoutId);
+      } catch (abortError) {
+        clearTimeout(timeoutId);
+        if (abortError.name === 'AbortError') {
+          return {
+            success: false,
+            error: 'Supabaseクエリがタイムアウトしました',
+            details: '接続がタイムアウトしました。ネットワーク状態を確認してください。'
+          };
+        }
+        throw abortError;
+      }
+      
       console.log('Supabaseクエリテスト結果:', error ? `エラー: ${error.message}` : '成功');
 
       if (error) {

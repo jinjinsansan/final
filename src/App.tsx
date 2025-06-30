@@ -605,17 +605,25 @@ function App() {
             {/* Supabase接続エラー表示（ローカルモードでない場合のみ） */}
            {supabaseError && !isLocalMode && (
               <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                <div className="flex items-start space-x-3">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full mt-1"></div>
-                  <div>
-                    <h3 className="font-jp-medium text-yellow-800 text-sm">Supabase接続エラー</h3>
-                    <p className="text-yellow-700 text-xs mt-1">{supabaseError}</p>
-                    <button
-                      onClick={retryConnection}
-                      className="mt-2 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded-md font-jp-medium transition-colors"
-                    >
-                      再接続
-                    </button>
+                <div className="flex items-start space-x-3"> 
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full mt-1"></div> 
+                  <div> 
+                    <h3 className="font-jp-medium text-yellow-800 text-sm">Supabase接続エラー</h3> 
+                    <p className="text-yellow-700 text-xs mt-1">{supabaseError}</p> 
+                    <div className="flex space-x-2 mt-2">
+                      <button 
+                        onClick={retryConnection} 
+                        className="text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded-md font-jp-medium transition-colors" 
+                      > 
+                        再接続 
+                      </button>
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-md font-jp-medium transition-colors"
+                      >
+                        ページを再読み込み
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -624,12 +632,15 @@ function App() {
             {/* ローカルモード表示 */}
             {effectiveLocalMode && (
               <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-green-800 font-jp-medium text-sm">
-                    {isLocalMode 
-                     ? 'ローカルモードで動作中（設定により）' 
-                     : 'ローカルモードで動作中（Supabase接続できないため）'}</span>
+                <div className="flex items-center space-x-2"> 
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div> 
+                  <span className="text-green-800 font-jp-medium text-sm"> 
+                    {isLocalMode  
+                     ? 'ローカルモードで動作中（設定により）'  
+                     : !navigator.onLine 
+                       ? 'オフラインモードで動作中（インターネット接続なし）'
+                       : 'ローカルモードで動作中（Supabase接続できないため）'}
+                  </span>
                 </div>
               </div>
             )}

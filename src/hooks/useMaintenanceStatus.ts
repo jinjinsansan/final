@@ -31,7 +31,7 @@ export const useMaintenanceStatus = () => {
   const checkMaintenanceStatus = async (showLoading = false) => {
     try {
       // 管理者バイパスチェック
-      const isAdmin = checkAdminStatus();
+      const isAdmin = checkAdminStatus(); 
       
       setStatus(prev => ({ ...prev, loading: showLoading, error: null }));
 
@@ -62,10 +62,12 @@ export const useMaintenanceStatus = () => {
       // 2. リモート設定をチェック（Supabase Functions経由）
       try {
         const response = await fetch('/api/maintenance-status', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          method: 'GET', 
+          headers: { 
+            'Content-Type': 'application/json', 
+          }, 
+          // タイムアウト設定
+          signal: AbortSignal.timeout(3000) // 3秒でタイムアウト
         });
 
         if (response.ok) {
@@ -82,7 +84,10 @@ export const useMaintenanceStatus = () => {
           }
         }
       } catch (remoteError) {
-        console.log('リモート設定の取得に失敗しました（環境変数を使用）:', remoteError);
+        console.log('リモート設定の取得に失敗しました（環境変数を使用）:', 
+          remoteError instanceof DOMException && remoteError.name === 'TimeoutError' 
+            ? 'タイムアウト' 
+            : remoteError);
       }
 
       // 3. ローカル設定をチェック（開発・テスト用）
