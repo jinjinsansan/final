@@ -693,13 +693,8 @@ export const syncService = {
   // ローカルデータをSupabaseに移行
   migrateLocalData: async (userId: string) => {
     try {
-      if (!supabase) {
-        console.log('Supabase接続がないため、データ移行をスキップします', new Date().toISOString()); 
-        return false;
-      }
-      
-      if (!userId) {
-        console.log('ユーザーIDが指定されていないため、データ移行をスキップします', new Date().toISOString());
+      if (!supabase || !userId) {
+        console.log('Supabase接続がないため、データ移行をスキップします', new Date().toISOString());
         return false;
       }
       
@@ -712,16 +707,16 @@ export const syncService = {
       
       const entries = JSON.parse(savedEntries);
       if (!entries || entries.length === 0) {
-        console.log('日記エントリーが空のため、データ移行をスキップします', new Date().toISOString());
+        console.log('日記エントリーが空のため、データ移行をスキップします');
         return false;
       }
       
-      console.log(`${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`, new Date().toISOString());
+      console.log(`${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`);
       
       // 各エントリーをSupabaseに保存
       let successCount = 0;
       let errorCount = 0;
-      console.log(`同期開始: ${entries.length}件のエントリー - ユーザーID: ${userId}`, new Date().toISOString());
+      console.log(`${entries.length}件のエントリーを同期開始 - ユーザーID: ${userId}`, new Date().toISOString());
       
       for (const entry of entries) {
         // 既存のエントリーをチェック
@@ -735,8 +730,7 @@ export const syncService = {
           if (checkError) {
             console.error(`エントリー ${entry.id} の確認エラー:`, checkError);
             errorCount++;
-            console.log(`エントリー ${entry.id} の確認に失敗しました - スキップします`, new Date().toISOString());
-            continue; 
+            continue;
           }
           
           if (existingEntry) {
@@ -746,8 +740,8 @@ export const syncService = {
               .update({
                 date: entry.date,
                 emotion: entry.emotion,
-                event: entry.event || '',
-                realization: entry.realization || '',
+                event: entry.event,
+                realization: entry.realization,
                 self_esteem_score: entry.selfEsteemScore || 0,
                 worthlessness_score: entry.worthlessnessScore || 0,
                 counselor_memo: entry.counselor_memo,
@@ -758,11 +752,9 @@ export const syncService = {
               
             if (updateError) {
               console.error(`エントリー ${entry.id} の更新エラー:`, updateError, new Date().toISOString());
-              console.log(`更新エラーの詳細:`, updateError.details || updateError.message || 'エラー詳細なし');
               errorCount++;
             } else {
               successCount++;
-              console.log(`エントリー ${entry.id} を更新しました`, new Date().toISOString());
             }
           } else {
             // 新しいエントリーを作成
@@ -773,9 +765,9 @@ export const syncService = {
                 id: entry.id,
                 user_id: userId,
                 date: entry.date,
-                emotion: entry.emotion || 'その他',
-                event: entry.event || '(内容なし)',
-                realization: entry.realization || '(内容なし)',
+                emotion: entry.emotion,
+                event: entry.event || '',
+                realization: entry.realization || '',
                 self_esteem_score: entry.selfEsteemScore || 0,
                 worthlessness_score: entry.worthlessnessScore || 0,
                 counselor_memo: entry.counselor_memo,
@@ -785,11 +777,9 @@ export const syncService = {
               
             if (insertError) {
               console.error(`エントリー ${entry.id} の作成エラー:`, insertError, new Date().toISOString());
-              console.log(`作成エラーの詳細:`, insertError.details || insertError.message || 'エラー詳細なし');
               errorCount++;
             } else {
               successCount++;
-              console.log(`エントリー ${entry.id} を新規作成しました`, new Date().toISOString());
             }
           }
         } catch (entryError) {
@@ -799,15 +789,13 @@ export const syncService = {
       }
       
       console.log(`同期完了: 成功=${successCount}, 失敗=${errorCount}`);
-      console.log(`同期結果の詳細: 全${entries.length}件中、成功=${successCount}件、失敗=${errorCount}件`, new Date().toISOString());
       
       // 最終同期時間を更新
       localStorage.setItem('last_sync_time', new Date().toISOString());
       
-      return successCount > 0;
+      return true;
     } catch (error) {
       console.error('データ移行エラー:', error);
-      console.log('データ移行中に予期しないエラーが発生しました:', error instanceof Error ? error.message : String(error));
       return false;
     }
   },
@@ -1099,6 +1087,11 @@ export const syncService = {
         return false;
       }
       
+      if (!userId) {
+        console.log('ユーザーIDが指定されていないため、強制同期をスキップします', new Date().toISOString());
+        return false;
+      }
+      
       if (!navigator.onLine) {
         console.log('オフラインモードのため、強制同期をスキップします', new Date().toISOString());
         return false;
@@ -1119,7 +1112,7 @@ export const syncService = {
       // ローカルストレージから日記データを取得
       const savedEntries = localStorage.getItem('journalEntries');
       if (!savedEntries) {
-        console.log('ローカルデータがないため、強制同期をスキップします', new Date().toISOString());
+        console.log('ローカルストレージに日記データがないため、強制同期をスキップします', new Date().toISOString());
         return false;
       }
       
@@ -1129,39 +1122,38 @@ export const syncService = {
         return false;
       }
       
-      // ローカルデータをSupabaseに同期
-      console.log(`強制同期: ${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`, new Date().toISOString());
+      console.log(`強制同期: ${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`);
       
       // 各エントリーをSupabaseに保存
       let successCount = 0;
       let errorCount = 0;
       
       for (const entry of entries) {
-        console.log(`エントリー ${entry.id} を同期中...`, new Date().toISOString());
         try {
           // 既存のエントリーをチェック
+          console.log(`エントリー ${entry.id} の同期を開始します`, new Date().toISOString());
           const { data: existingEntry, error: checkError } = await supabase
             .from('diary_entries')
             .select('id')
             .eq('id', entry.id)
             .maybeSingle();
           
-          if (checkError && checkError.code !== 'PGRST116') { // PGRST116はレコードが見つからないエラー
-            console.error(`エントリー ${entry.id} の確認エラー:`, checkError, new Date().toISOString());
+          if (checkError) {
+            console.error(`エントリー ${entry.id} の確認エラー:`, checkError);
+            console.log(`確認エラーの詳細:`, checkError.details || checkError.message || 'エラー詳細なし');
             errorCount++;
             continue;
           }
           
           if (existingEntry) {
             // 既存のエントリーを更新
-            console.log(`エントリー ${entry.id} を更新します`, new Date().toISOString());
             const { error: updateError } = await supabase
               .from('diary_entries')
               .update({
                 date: entry.date,
                 emotion: entry.emotion,
-                event: entry.event || '',
-                realization: entry.realization || '',
+                event: entry.event || '(内容なし)',
+                realization: entry.realization || '(内容なし)', 
                 self_esteem_score: entry.selfEsteemScore || 0,
                 worthlessness_score: entry.worthlessnessScore || 0,
                 counselor_memo: entry.counselor_memo,
@@ -1171,23 +1163,24 @@ export const syncService = {
               .eq('id', entry.id);
               
             if (updateError) {
-              console.error(`エントリー ${entry.id} の更新エラー:`, updateError, new Date().toISOString());
+              console.error(`エントリー ${entry.id} の更新エラー:`, updateError);
+              console.log(`更新エラーの詳細:`, updateError.details || updateError.message || 'エラー詳細なし');
               errorCount++;
             } else {
               successCount++;
+              console.log(`エントリー ${entry.id} を更新しました`, new Date().toISOString());
             }
           } else {
-            // 新しいエントリーを作成
-            console.log(`エントリー ${entry.id} を新規作成します`, new Date().toISOString());
+            // 新規エントリーを作成
             const { error: insertError } = await supabase
               .from('diary_entries')
               .insert([{
                 id: entry.id,
                 user_id: userId,
                 date: entry.date,
-                emotion: entry.emotion,
-                event: entry.event || '',
-                realization: entry.realization || '',
+                emotion: entry.emotion || 'その他',
+                event: entry.event || '(内容なし)',
+                realization: entry.realization || '(内容なし)',
                 self_esteem_score: entry.selfEsteemScore || 0,
                 worthlessness_score: entry.worthlessnessScore || 0,
                 counselor_memo: entry.counselor_memo,
@@ -1196,10 +1189,12 @@ export const syncService = {
               }]);
               
             if (insertError) {
-              console.error(`エントリー ${entry.id} の作成エラー:`, insertError, new Date().toISOString());
+              console.error(`エントリー ${entry.id} の作成エラー:`, insertError);
+              console.log(`作成エラーの詳細:`, insertError.details || insertError.message || 'エラー詳細なし');
               errorCount++;
             } else {
               successCount++;
+              console.log(`エントリー ${entry.id} を新規作成しました`, new Date().toISOString());
             }
           }
         } catch (entryError) {
@@ -1234,7 +1229,7 @@ export const syncService = {
         console.error('Supabaseからのデータ取得エラー:', fetchError);
       }
       
-      // 同期ログを記録（可能な場合）
+      // 同期ログを記録
       try {
         await syncService.logSyncOperation(
           userId,
@@ -1247,7 +1242,7 @@ export const syncService = {
         console.error('同期ログ記録エラー:', logError);
       }
       
-      console.log(`強制同期完了: 成功=${successCount}, 失敗=${errorCount}`, new Date().toISOString());
+      console.log(`強制同期完了: 成功=${successCount}, 失敗=${errorCount}`);
       
       // 管理者同期も実行して、管理画面のデータを更新
       try {
