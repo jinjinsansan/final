@@ -146,16 +146,16 @@ const DataMigration: React.FC = () => {
   // 強制同期を実行する関数
   const handleForceSync = async () => {
     if (!isConnected || !currentUser) {
-      alert('Supabaseに接続されていないため、同期できません。インターネット接続を確認してください。');
+      alert('Supabaseに接続されていないため、同期できません。インターネット接続を確認してください。ページを再読み込みすると接続状態が更新されます。');
       return;
     }
     
-    if (!window.confirm('強制同期を実行しますか？このプロセスでは、ローカルデータをSupabaseに強制的に同期し、最新の状態に更新します。')) {
+    if (!window.confirm('強制同期を実行しますか？このプロセスでは、ローカルデータをSupabaseに強制的に同期し、スマートフォンのデータも含めて最新の状態に更新します。')) {
       return;
     }
     
     setForceSyncInProgress(true);
-    setMigrationStatus('強制同期を実行中...データの量によっては時間がかかる場合があります');
+    setMigrationStatus('強制同期を実行中...スマートフォンのデータも含めて同期します。時間がかかる場合があります。');
     
     try {
       if (syncService) {
@@ -166,16 +166,34 @@ const DataMigration: React.FC = () => {
         if (currentCounselor) {
           console.log('管理者モードで強制同期を実行します', new Date().toISOString());
           success = await syncService.adminSync();
-          console.log('管理者同期の結果:', success ? '成功' : '失敗');
+          
+          // 管理者同期が失敗した場合は、もう一度試行
+          if (!success) {
+            console.log('管理者同期に失敗しました。もう一度試行します。', new Date().toISOString());
+            // 少し待機してから再試行
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            success = await syncService.adminSync();
+          }
+          
+          console.log('管理者同期の最終結果:', success ? '成功' : '失敗');
         } else {
           // 通常ユーザーの場合は強制同期を実行
           console.log('強制同期を実行します - ユーザーID: ' + currentUser.id, new Date().toISOString());
           success = await syncService.forceSync(currentUser.id);
-          console.log('強制同期の結果:', success ? '成功' : '失敗');
+          
+          // 強制同期が失敗した場合は、もう一度試行
+          if (!success) {
+            console.log('強制同期に失敗しました。もう一度試行します。', new Date().toISOString());
+            // 少し待機してから再試行
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            success = await syncService.forceSync(currentUser.id);
+          }
+          
+          console.log('強制同期の最終結果:', success ? '成功' : '失敗');
         }
         
         if (success) {
-          setMigrationStatus('強制同期が完了しました！データが最新の状態に更新されました。');
+          setMigrationStatus('強制同期が完了しました！スマートフォンのデータも含めて最新の状態に更新されました。');
           
           // データ数を再読み込み
           await loadDataInfo();
@@ -187,14 +205,18 @@ const DataMigration: React.FC = () => {
           // 管理者モードの場合は管理画面を更新
           if (currentCounselor) {
             window.location.reload();
+          } else {
+            // 通常ユーザーの場合は、最終同期時間を更新
+            const now = new Date().toISOString();
+            localStorage.setItem('last_sync_time', now);
           }
         } else {
-          setMigrationStatus('強制同期に失敗しました。インターネット接続を確認して、もう一度お試しください。');
+          setMigrationStatus('強制同期に失敗しました。インターネット接続を確認して、ページを再読み込みしてから再度お試しください。');
         }
       }
     } catch (error) {
       console.error('強制同期エラー:', error);
-      setMigrationStatus('強制同期中にエラーが発生しました: ' + (error instanceof Error ? error.message : String(error)));
+      setMigrationStatus('強制同期中にエラーが発生しました。ページを再読み込みしてから再度お試しください。');
     } finally {
       setForceSyncInProgress(false);
     }
