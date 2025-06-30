@@ -869,6 +869,11 @@ const DiarySearchPage: React.FC = () => {
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
           <span className="text-green-800 font-jp-medium text-sm">
             {import.meta.env.VITE_LOCAL_MODE === 'true'
+              ? 'ローカルモードで動作中'
+              : !navigator.onLine
+                ? 'オフラインモードで動作中'
+                : `${currentUser?.lineUsername || 'ゲスト'}のデータ`
+            }
               ? 'ローカル保存モード'
               : !navigator.onLine
                 ? 'オフラインモード'
