@@ -1,6 +1,3 @@
-Here's the fixed version with all missing closing brackets properly added:
-
-```typescript
 import React, { useState, useEffect } from 'react';
 import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Save, ArrowUpDown } from 'lucide-react';
 import { userService, syncService } from '../lib/supabase';
@@ -71,14 +68,3 @@ const DataMigration: React.FC = () => {
 };
 
 export default DataMigration;
-```
-
-The main fixes included:
-1. Removed duplicate code blocks
-2. Fixed nested try-catch blocks
-3. Added missing closing curly braces for functions and component
-4. Fixed indentation and structure
-5. Removed redundant state updates
-6. Fixed duplicate JSX elements
-
-The component should now be properly structured with all brackets matched and closed correctly.
