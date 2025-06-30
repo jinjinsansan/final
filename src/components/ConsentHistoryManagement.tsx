@@ -25,7 +25,7 @@ const ConsentHistoryManagement: React.FC = () => {
     end: ''
   });
   const [error, setError] = useState<string | null>(null);
-
+  
   const { isConnected } = useSupabase();
 
   useEffect(() => {
@@ -41,7 +41,7 @@ const ConsentHistoryManagement: React.FC = () => {
     try {
       console.log('同意履歴を読み込み中...', isConnected ? 'Supabase接続あり' : 'Supabase接続なし');
       
-      // ローカルストレージから読み込み（常に実行）
+      // まずローカルストレージから読み込み（常に実行）
       loadLocalHistories();
       
       // Supabaseからの読み込みは接続がある場合のみ
@@ -121,7 +121,7 @@ const ConsentHistoryManagement: React.FC = () => {
 
     setSyncing(true);
     setError(null);
-    
+
     try {
       // ローカルストレージから同意履歴を取得
       const savedHistories = localStorage.getItem('consent_histories');
@@ -130,7 +130,7 @@ const ConsentHistoryManagement: React.FC = () => {
         return;
       }
       
-      const histories = JSON.parse(savedHistories);
+      const histories = savedHistories ? JSON.parse(savedHistories) : [];
       if (!histories || histories.length === 0) {
         alert('同期する同意履歴がありません。');
         return;
@@ -138,7 +138,7 @@ const ConsentHistoryManagement: React.FC = () => {
       
       console.log(`${histories.length}件の同意履歴を同期します`);
       
-      // 各履歴をSupabaseに保存
+      // 各履歴をSupabaseに保存（try-catchブロック内）
       let successCount = 0;
       let errorCount = 0;
       
@@ -146,7 +146,7 @@ const ConsentHistoryManagement: React.FC = () => {
         try {
           // 既存の履歴をチェック
           const { data: existingHistory, error: checkError } = await supabase
-            .from('consent_histories')
+            .from('consent_histories') 
             .select('id')
             .eq('id', history.id)
             .maybeSingle();
@@ -182,7 +182,7 @@ const ConsentHistoryManagement: React.FC = () => {
           errorCount++;
         }
       }
-      
+
       if (successCount > 0) {
         alert(`${successCount}件の同意履歴をSupabaseに同期しました！`);
         await loadConsentHistories();
@@ -190,7 +190,7 @@ const ConsentHistoryManagement: React.FC = () => {
         alert('同期に失敗しました。詳細はコンソールを確認してください。');
       }
     } catch (error) {
-      console.error('同期エラー:', error);
+      console.error('同期処理中のエラー:', error);
       setError(`同期中にエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
       alert('同期中にエラーが発生しました。詳細はコンソールを確認してください。');
     } finally {
@@ -207,16 +207,18 @@ const ConsentHistoryManagement: React.FC = () => {
 
     setSyncing(true);
     setError(null);
-    
+
     try {
       if (!supabase) {
         alert('Supabase接続が初期化されていません。');
         return;
       }
-      
+    } catch (error) {
+      console.error('Supabase接続確認エラー:', error);
+    } finally {
       // Supabaseから同意履歴を取得
       const { data, error } = await supabase
-        .from('consent_histories')
+        .from('consent_histories') 
         .select('*')
         .order('consent_date', { ascending: false });
       
@@ -230,7 +232,7 @@ const ConsentHistoryManagement: React.FC = () => {
       if (!data || data.length === 0) {
         alert('Supabaseに同意履歴がありません。');
         return;
-      }
+      } 
       
       // ローカルストレージのデータと統合
       const savedHistories = localStorage.getItem('consent_histories');
@@ -256,7 +258,7 @@ const ConsentHistoryManagement: React.FC = () => {
       localStorage.setItem('consent_histories', JSON.stringify(mergedHistories));
       
       // 状態を更新
-      setConsentHistories(mergedHistories);
+      setConsentHistories(mergedHistories); 
       
       alert(`${data.length}件の同意履歴をSupabaseから同期しました！`);
       } else {
@@ -387,7 +389,7 @@ const ConsentHistoryManagement: React.FC = () => {
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div className="flex-1">
-          <h2 className="text-2xl font-jp-bold text-gray-900">同意履歴管理</h2>
+          <h2 className="text-2xl font-jp-bold text-gray-900">同意履歴管理</h2> 
           <p className="text-gray-600 font-jp-normal text-sm mt-1">
             プライバシーポリシーの同意履歴を管理します
             {isConnected && <span className="text-green-600 ml-2">• Supabase接続中</span>}
@@ -435,7 +437,7 @@ const ConsentHistoryManagement: React.FC = () => {
       </div>
 
       {/* エラー表示 */}
-      {error && (
+      {error && (  
         <div className="bg-red-50 rounded-lg p-4 border border-red-200">
           <div className="flex items-start space-x-3">
             <div className="text-red-600 mt-0.5">⚠️</div>
@@ -444,7 +446,7 @@ const ConsentHistoryManagement: React.FC = () => {
               <p className="text-red-700 text-sm mt-1">
                 ローカルモードでは、Supabaseとの同期ができません。環境変数を確認してください。
               </p>
-            </div>
+            </div> 
           </div>
         </div>
       )}
@@ -573,7 +575,7 @@ const ConsentHistoryManagement: React.FC = () => {
                 : '検索条件を変更してお試しください'
               }
               {!isConnected && (
-                <p className="mt-4 text-yellow-600 font-jp-medium text-sm">
+                <p className="mt-4 text-yellow-600 font-jp-medium text-sm"> 
                   ローカルモードで動作中のため、Supabaseからのデータは表示されません。
                   <br />環境変数を確認してください。
                 </p>
