@@ -586,9 +586,20 @@ export const syncService = {
           // 全エントリーに追加
           if (entries && entries.length > 0) {
             entries.forEach(entry => {
+              // 日付文字列を正しく処理
+              const entryDate = entry.date ? new Date(entry.date) : new Date();
+              const formattedDate = !isNaN(entryDate.getTime()) 
+                ? entryDate.toISOString().split('T')[0] 
+                : new Date().toISOString().split('T')[0];
+                
+              // created_atが無効な場合は現在時刻を使用
+              const createdAt = entry.created_at && !isNaN(new Date(entry.created_at).getTime())
+                ? entry.created_at
+                : new Date().toISOString();
+                
               allEntries.push({
                 id: entry.id,
-                date: entry.date,
+                date: formattedDate,
                 emotion: entry.emotion,
                 event: entry.event,
                 realization: entry.realization,
@@ -599,7 +610,7 @@ export const syncService = {
                 counselor_name: entry.counselor_name,
                 assigned_counselor: entry.assigned_counselor,
                 urgency_level: entry.urgency_level,
-                created_at: entry.created_at,
+                created_at: createdAt,
                 user: {
                   line_username: user.line_username
                 }

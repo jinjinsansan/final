@@ -43,8 +43,12 @@ const DataMigration: React.FC = () => {
   const loadDataInfo = async () => {
     try {
       if (isAdminMode) {
-        // 管理者モードの場合は全体のデータ数を取得
-        loadTotalData();
+        try {
+          // 管理者モードの場合は全体のデータ数を取得
+          await loadTotalData();
+        } catch (error) {
+          console.error('管理者データ読み込みエラー:', error);
+        }
       } else {
         // 通常モードの場合は現在のユーザーのデータ数を取得
         const localEntries = localStorage.getItem('journalEntries');
@@ -93,10 +97,24 @@ const DataMigration: React.FC = () => {
   // 全体のデータ数を取得する関数
   const loadTotalData = async () => {
     try {
-      // 管理者用のデータを取得
-      const adminEntries = localStorage.getItem('admin_journalEntries');
-      const parsedEntries = adminEntries ? JSON.parse(adminEntries) : [];
-      setTotalLocalDataCount(parsedEntries.length);
+      // 管理者用のデータを取得（ローカルストレージから）
+      try {
+        const adminEntries = localStorage.getItem('admin_journalEntries');
+        if (adminEntries) {
+          const parsedEntries = JSON.parse(adminEntries);
+          console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+          setTotalLocalDataCount(parsedEntries.length);
+          setLocalDataCount(parsedEntries.length);
+        } else {
+          console.log('管理者用データが見つかりません');
+          setTotalLocalDataCount(0);
+          setLocalDataCount(0);
+        }
+      } catch (parseError) {
+        console.error('管理者用データの解析エラー:', parseError);
+        setTotalLocalDataCount(0);
+        setLocalDataCount(0);
+      }
 
       // Supabaseから全データ数を取得
       if (isConnected) {
@@ -105,16 +123,23 @@ const DataMigration: React.FC = () => {
           if (error) {
             console.error('Supabase全データ数取得エラー:', error);
             setTotalSupabaseDataCount(0);
+            setSupabaseDataCount(0);
           } else {
             setTotalSupabaseDataCount(data || 0);
+            setSupabaseDataCount(data || 0);
           }
         } catch (error) {
           console.error('Supabase全データ数取得エラー:', error);
           setTotalSupabaseDataCount(0);
+          setSupabaseDataCount(0);
         }
       }
     } catch (error) {
       console.error('全体データ読み込みエラー:', error);
+      setTotalLocalDataCount(0);
+      setLocalDataCount(0);
+      setTotalSupabaseDataCount(0);
+      setSupabaseDataCount(0);
     }
   };
 
