@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Download, Search, Calendar, User, CheckCircle, XCircle, Filter, RotateCcw, FileText } from 'lucide-react';
-import { consentService, syncService, supabase } from '../lib/supabase';
+import { consentService, syncService } from '../lib/supabase';
 import { useSupabase } from '../hooks/useSupabase';
 
 interface ConsentHistory {
@@ -23,8 +23,8 @@ const ConsentHistoryManagement: React.FC = () => {
     start: '',
     end: ''
   });
-  
-  const { isConnected } = useSupabase();
+
+  const { isConnected, supabase } = useSupabase();
 
   useEffect(() => {
     loadConsentHistories();
@@ -39,7 +39,7 @@ const ConsentHistoryManagement: React.FC = () => {
     try {
       console.log('同意履歴を読み込み中...', isConnected ? 'Supabase接続あり' : 'Supabase接続なし');
       if (isConnected) {
-        // Supabaseから読み込み
+        // Supabaseから読み込み（supabaseが定義されている場合のみ）
         if (supabase) {
           try {
             const { data, error } = await supabase
@@ -89,7 +89,7 @@ const ConsentHistoryManagement: React.FC = () => {
   const handleSyncToSupabase = async () => {
     if (!isConnected) {
       alert('Supabaseに接続されていません。');
-      console.log('Supabase未接続のため同期をスキップ');
+      console.log('Supabase未接続のため同期をスキップします');
       return;
     }
 
@@ -113,7 +113,7 @@ const ConsentHistoryManagement: React.FC = () => {
   const handleSyncFromSupabase = async () => {
     if (!isConnected) {
       alert('Supabaseに接続されていません。');
-      console.log('Supabase未接続のため同期をスキップ');
+      console.log('Supabase未接続のため同期をスキップします');
       return;
     }
 
