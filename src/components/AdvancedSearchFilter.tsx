@@ -40,7 +40,7 @@ interface JournalEntry {
 
 interface AdvancedSearchFilterProps {
   entries: JournalEntry[];
-  onFilteredResults: (filtered: JournalEntry[]) => void;
+  onFilteredResults?: (filtered: JournalEntry[]) => void;
   onViewEntry: (entry: JournalEntry) => void; 
   onDeleteEntry?: (entryId: string) => void;
 }

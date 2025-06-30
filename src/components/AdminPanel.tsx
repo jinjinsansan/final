@@ -39,6 +39,7 @@ interface User {
 
 const AdminPanel: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
