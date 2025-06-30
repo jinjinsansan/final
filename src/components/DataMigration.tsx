@@ -49,6 +49,10 @@ const DataMigration: React.FC = () => {
         } catch (error) {
           console.error('管理者データ読み込みエラー:', error);
         }
+          await loadTotalData();
+        } catch (error) {
+          console.error('管理者データ読み込みエラー:', error);
+        }
       } else {
         // 通常モードの場合は現在のユーザーのデータ数を取得
         const localEntries = localStorage.getItem('journalEntries');
@@ -115,6 +119,20 @@ const DataMigration: React.FC = () => {
         setTotalLocalDataCount(0);
         setLocalDataCount(0);
       }
+          const parsedEntries = JSON.parse(adminEntries);
+          console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+          setTotalLocalDataCount(parsedEntries.length);
+          setLocalDataCount(parsedEntries.length);
+        } else {
+          console.log('管理者用データが見つかりません');
+          setTotalLocalDataCount(0);
+          setLocalDataCount(0);
+        }
+      } catch (parseError) {
+        console.error('管理者用データの解析エラー:', parseError);
+        setTotalLocalDataCount(0);
+        setLocalDataCount(0);
+      }
 
       // Supabaseから全データ数を取得
       if (isConnected) {
@@ -124,18 +142,25 @@ const DataMigration: React.FC = () => {
             console.error('Supabase全データ数取得エラー:', error);
             setTotalSupabaseDataCount(0);
             setSupabaseDataCount(0);
+            setSupabaseDataCount(0);
           } else {
             setTotalSupabaseDataCount(data || 0);
+            setSupabaseDataCount(data || 0);
             setSupabaseDataCount(data || 0);
           }
         } catch (error) {
           console.error('Supabase全データ数取得エラー:', error);
           setTotalSupabaseDataCount(0);
           setSupabaseDataCount(0);
+          setSupabaseDataCount(0);
         }
       }
     } catch (error) {
       console.error('全体データ読み込みエラー:', error);
+      setTotalLocalDataCount(0);
+      setLocalDataCount(0);
+      setTotalSupabaseDataCount(0);
+      setSupabaseDataCount(0);
       setTotalLocalDataCount(0);
       setLocalDataCount(0);
       setTotalSupabaseDataCount(0);
@@ -189,6 +214,36 @@ const DataMigration: React.FC = () => {
             success = await syncService.forceSync(currentUser.id);
           }
           
+        // 管理者モードの場合は管理者同期を実行
+        const currentCounselor = localStorage.getItem('current_counselor');
+        let success = false;
+        
+        if (currentCounselor) {
+          console.log('管理者モードで強制同期を実行します', new Date().toISOString());
+          success = await syncService.adminSync();
+          
+          // 管理者同期が失敗した場合は、もう一度試行
+          if (!success) {
+            console.log('管理者同期に失敗しました。もう一度試行します。', new Date().toISOString());
+            // 少し待機してから再試行
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            success = await syncService.adminSync();
+          }
+          
+          console.log('管理者同期の最終結果:', success ? '成功' : '失敗');
+        } else {
+          // 通常ユーザーの場合は強制同期を実行
+          console.log('強制同期を実行します - ユーザーID: ' + currentUser.id, new Date().toISOString());
+          success = await syncService.forceSync(currentUser.id);
+          
+          // 強制同期が失敗した場合は、もう一度試行
+          if (!success) {
+            console.log('強制同期に失敗しました。もう一度試行します。', new Date().toISOString());
+            // 少し待機してから再試行
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            success = await syncService.forceSync(currentUser.id);
+          }
+          
           console.log('強制同期の最終結果:', success ? '成功' : '失敗');
         }
         
@@ -201,6 +256,15 @@ const DataMigration: React.FC = () => {
           // 最終同期時間を更新
           const now = new Date().toISOString();
           localStorage.setItem('last_sync_time', now);
+          
+          // 管理者モードの場合は管理画面を更新
+          if (currentCounselor) {
+            window.location.reload();
+          } else {
+            // 通常ユーザーの場合は、最終同期時間を更新
+            const now = new Date().toISOString();
+            localStorage.setItem('last_sync_time', now);
+          }
           
           // 管理者モードの場合は管理画面を更新
           if (currentCounselor) {
@@ -358,10 +422,56 @@ const DataMigration: React.FC = () => {
                   checked={autoSyncEnabled} 
                   onChange={(e) => toggleAutoSync(e.target.checked)}
                   disabled={!isConnected}
+                  disabled={!isConnected}
                   className="sr-only peer" 
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
+            </div>
+            
+            {!isConnected && (
+              <div className="mt-2 bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                <div className="flex items-start space-x-2">
+                  <div className="text-yellow-600 text-sm">⚠️</div>
+                  <p className="text-sm text-yellow-800 font-jp-normal">
+                    現在オフラインモードです。Supabaseに接続できないため、自動同期は一時的に無効になっています。
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {isConnected && !autoSyncEnabled && (
+              <div className="mt-2 bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                <div className="flex items-start space-x-2">
+                  <div className="text-yellow-600 text-sm">⚠️</div>
+                  <p className="text-sm text-yellow-800 font-jp-normal">
+                    自動同期が無効になっています。データの安全な保存のため、有効にすることをお勧めします。
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {isConnected && autoSyncEnabled && (
+              <div className="mt-2 bg-green-50 rounded-lg p-3 border border-green-200">
+                <div className="flex items-start space-x-2">
+                  <div className="text-green-600 text-sm">✅</div>
+                  <p className="text-sm text-green-800 font-jp-normal">
+                    自動同期が有効です。5分ごとにデータが自動的に同期されます。
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-start space-x-3 mb-4">
+                <RefreshCw className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-jp-bold text-gray-900 mb-2">自動同期について</h4>
+                  <p className="text-sm text-gray-700 font-jp-normal mb-4">
+                    自動同期機能は5分ごとにデータをクラウドに保存します。端末を変更する際にもデータが引き継がれます。
+                  </p>
+                </div>
+              </div>
             </div>
             
             {!isConnected && (
@@ -433,6 +543,9 @@ const DataMigration: React.FC = () => {
                     同期が正常に動作していない場合や、スマートフォンで入力したデータが表示されない場合に使用します。
                     強制的にすべてのデータを同期して最新の状態に更新します。
                   </p>
+                    同期が正常に動作していない場合や、スマートフォンで入力したデータが表示されない場合に使用します。
+                    強制的にすべてのデータを同期して最新の状態に更新します。
+                  </p>
                 </div>
               </div>
               <button
@@ -440,6 +553,25 @@ const DataMigration: React.FC = () => {
                 disabled={forceSyncInProgress || !isConnected}
                 className="flex items-center justify-center space-x-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-jp-medium transition-colors w-full"
               >
+                {forceSyncInProgress ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>同期中...</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpDown className="w-4 h-4" />
+                    <span>強制同期を実行（データ修復）</span>
+                  </>
+                )}
+              </button>
+              {!isConnected && (
+                <div className="mt-2 bg-red-50 rounded-lg p-2 border border-red-200">
+                  <p className="text-xs text-red-700 text-center">
+                    インターネットに接続されていないため、同期できません
+                  </p>
+                </div>
+              )}
                 {forceSyncInProgress ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />

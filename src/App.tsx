@@ -51,6 +51,8 @@ function App() {
   const isLocalMode = import.meta.env.VITE_LOCAL_MODE === 'true';
   // 接続状態に基づいたローカルモード（Supabase接続がない場合はローカルモードとして動作）
   const effectiveLocalMode = isLocalMode || !isConnected || !navigator.onLine;
+  // 接続状態に基づいたローカルモード（Supabase接続がない場合はローカルモードとして動作）
+  const effectiveLocalMode = isLocalMode || !isConnected || !navigator.onLine;
   
   // 自動同期フックを初期化
   const autoSync = useAutoSync();
@@ -605,7 +607,7 @@ function App() {
             {/* Supabase接続エラー表示（ローカルモードでない場合のみ） */}
            {supabaseError && !isLocalMode && (
               <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                <div className="flex items-start space-x-3">
+                <div className="flex items-start space-x-3"> 
                   <div className="w-3 h-3 bg-yellow-500 rounded-full mt-1"></div>
                   <div>
                     <h3 className="font-jp-medium text-yellow-800 text-sm">Supabase接続エラー</h3>
@@ -616,6 +618,14 @@ function App() {
                         className="text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded-md font-jp-medium transition-colors"
                       >
                         再接続
+                      </button>
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-md font-jp-medium transition-colors"
+                      >
+                        ページを再読み込み
+                      </button>
+                    </div>
                       </button>
                       <button
                         onClick={() => window.location.reload()}
@@ -635,6 +645,21 @@ function App() {
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   <span className="text-green-800 font-jp-medium text-sm">
+                    {isLocalMode
+                     ? 'ローカルモードで動作中（設定により）'
+                     : !navigator.onLine
+                       ? 'オフラインモードで動作中（インターネット接続なし）'
+                       : 'ローカルモードで動作中（Supabase接続できないため）'
+                     }
+                     {!navigator.onLine && 
+                       <button 
+                         onClick={() => window.location.reload()} 
+                         className="ml-2 text-xs bg-green-200 hover:bg-green-300 text-green-800 px-2 py-0.5 rounded-md font-jp-medium transition-colors"
+                       >
+                         再接続
+                       </button>
+                     }
+                  </span>
                     {isLocalMode
                      ? 'ローカルモードで動作中（設定により）'
                      : !navigator.onLine

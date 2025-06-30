@@ -65,6 +65,9 @@ const AdminPanel: React.FC = () => {
     
     const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
     
+    
+    const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
+    
     try {
       // 管理者モードでは、まず管理者用のデータを同期
       await handleSyncAdminData();
@@ -74,6 +77,21 @@ const AdminPanel: React.FC = () => {
       if (adminEntries) {
         const parsedEntries = JSON.parse(adminEntries);
         console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+
+        // ユーザー名とタイムスタンプを修正
+        const fixedEntries = parsedEntries.map((entry: any) => {
+          // ユーザー名が設定されていない場合は現在のユーザー名を使用
+          if (!entry.user || !entry.user.line_username) {
+            entry.user = { line_username: lineUsername };
+          }
+          
+          // タイムスタンプが無効な場合は現在の時刻を使用
+          if (!entry.created_at || entry.created_at === 'Invalid Date') {
+            entry.created_at = new Date().toISOString();
+          }
+          
+          return entry;
+        });
 
         // ユーザー名とタイムスタンプを修正
         const fixedEntries = parsedEntries.map((entry: any) => {
@@ -115,6 +133,9 @@ const AdminPanel: React.FC = () => {
       message: '管理者データを同期中...（スマートフォンのデータも含めて同期します）',
       type: 'info'
     });
+      message: '管理者データを同期中...（スマートフォンのデータも含めて同期します）',
+      type: 'info'
+    });
     
     try {
       // 管理者モードでの同期を実行
@@ -133,9 +154,25 @@ const AdminPanel: React.FC = () => {
         success = await syncService.adminSync();
       }
       
+      // 同期に失敗した場合は再試行
+      if (!success) {
+        console.log('管理者同期に失敗しました。再試行します...');
+        setStatus({
+          message: '管理者データの同期に失敗しました。再試行しています...',
+          type: 'info'
+        });
+        
+        // 少し待機してから再試行
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        success = await syncService.adminSync();
+      }
+      
       if (success) {
         console.log('管理者用データの同期が完了しました');
         setStatus({
+          message: '管理者データの同期が完了しました。すべてのデバイスからのデータが表示されます。',
+          type: 'success'
+        });
           message: '管理者データの同期が完了しました。すべてのデバイスからのデータが表示されます。',
           type: 'success'
         });
@@ -441,6 +478,14 @@ const AdminPanel: React.FC = () => {
         day: 'numeric'
       });
     }
+    // 無効な日付の場合は現在の日付を使用
+    if (isNaN(date.getTime())) {
+      return new Date().toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
     return date.toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: 'short',
@@ -650,6 +695,15 @@ const AdminPanel: React.FC = () => {
             <span>{syncInProgress ? '同期中...' : 'すべてのデータを同期'}</span>
           </button>
         </div>
+        
+        {!navigator.onLine && (
+          <div className="mb-4 rounded-lg p-3 border bg-yellow-50 border-yellow-200 text-yellow-800">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="text-sm">オフラインモードです。インターネットに接続するとデータを同期できます。</span>
+            </div>
+          </div>
+        )}
         
         {!navigator.onLine && (
           <div className="mb-4 rounded-lg p-3 border bg-yellow-50 border-yellow-200 text-yellow-800">

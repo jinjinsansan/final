@@ -78,7 +78,7 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
       }
     }
     
-    return '同期済';
+    return '同期済み';
   };
   
   const handleClick = () => {

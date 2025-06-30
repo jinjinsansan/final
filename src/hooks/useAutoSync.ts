@@ -65,6 +65,15 @@ export const useAutoSync = () => {
         ...prev,
         syncError: 'Supabaseに接続できません。ローカルモードで動作します。'
       }));
+    } else if (!hasInitializedRef.current && !isConnected) {
+      // 接続できない場合でも初期化を完了させる
+      console.log('自動同期: Supabase接続できませんでした - ローカルモードで動作します', new Date().toISOString());
+      hasInitializedRef.current = true;
+      // ローカルモードであることをユーザーに通知
+      setStatus(prev => ({
+        ...prev,
+        syncError: 'Supabaseに接続できません。ローカルモードで動作します。'
+      }));
     }
   }, [isConnected]);
 
@@ -162,6 +171,13 @@ export const useAutoSync = () => {
   // 自動同期実行
   const performAutoSync = async (userId: string) => {
     try {
+      // 管理者モードの場合は管理者同期を実行
+      const currentCounselor = localStorage.getItem('current_counselor');
+      if (currentCounselor) {
+        console.log('管理者モードで同期を実行します', new Date().toISOString());
+        await syncService.adminSync();
+      }
+      
       // 管理者モードの場合は管理者同期を実行
       const currentCounselor = localStorage.getItem('current_counselor');
       if (currentCounselor) {
@@ -287,6 +303,36 @@ export const useAutoSync = () => {
       
       // 管理者モードの場合は管理者同期を実行
       const currentCounselor = localStorage.getItem('current_counselor');
+      let success = false;
+      
+      if (currentCounselor) {
+        console.log('管理者モードで強制同期を実行します', new Date().toISOString());
+        success = await syncService.adminSync();
+        
+        // 管理者同期が失敗した場合は、もう一度試行
+        if (!success) {
+          console.log('管理者同期に失敗しました。もう一度試行します。', new Date().toISOString());
+          // 少し待機してから再試行
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          success = await syncService.adminSync();
+        }
+        
+        console.log('管理者同期の最終結果:', success ? '成功' : '失敗');
+      } else {
+        // 通常ユーザーの場合は強制同期を実行
+        console.log('強制同期を実行します - ユーザーID: ' + currentUser.id, new Date().toISOString());
+        success = await syncService.forceSync(currentUser.id);
+        
+        // 強制同期が失敗した場合は、もう一度試行
+        if (!success) {
+          console.log('強制同期に失敗しました。もう一度試行します。', new Date().toISOString());
+          // 少し待機してから再試行
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          success = await syncService.forceSync(currentUser.id);
+        }
+        
+        console.log('強制同期の最終結果:', success ? '成功' : '失敗');
+      }
       if (currentCounselor) {
         console.log('管理者モードで強制同期を実行します', new Date().toISOString());
         await syncService.adminSync();
@@ -317,6 +363,13 @@ export const useAutoSync = () => {
       setStatus(prev => ({ ...prev, lastSyncTime: now, syncError: null }));
       
       return true;
+      
+      // 最終同期時間を更新
+      const now = new Date().toISOString();
+      localStorage.setItem('last_sync_time', now);
+      setStatus(prev => ({ ...prev, lastSyncTime: now, syncError: null }));
+      
+      return true;
     } finally {
       setStatus(prev => ({ ...prev, syncInProgress: false }));
     }
@@ -326,6 +379,8 @@ export const useAutoSync = () => {
   useEffect(() => { 
     if (status.isAutoSyncEnabled && isConnected && currentUser) {
       console.log('自動同期タイマーを設定します - 5分間隔', new Date().toISOString());
+      
+      // 前回のタイマーをクリアして新しいタイマーを設定
       
       // 前回のタイマーをクリアして新しいタイマーを設定
       if (syncTimeoutRef.current) {
@@ -341,7 +396,17 @@ export const useAutoSync = () => {
       }, 30 * 1000); // 30秒
       
       // 以降は5分間隔で実行
+      // 初回は30秒後に実行
+      const initialTimeout = setTimeout(() => {
+        console.log('初回自動同期を実行します', new Date().toISOString());
+        performAutoSync(currentUser.id).catch(error => { 
+          console.error('初回自動同期エラー:', error);
+        });
+      }, 30 * 1000); // 30秒
+      
+      // 以降は5分間隔で実行
       syncTimeoutRef.current = setInterval(() => {
+        console.log('定期自動同期を実行します', new Date().toISOString());
         console.log('定期自動同期を実行します', new Date().toISOString());
         performAutoSync(currentUser.id).catch(error => { 
           console.error('自動同期エラー:', error);
@@ -350,11 +415,13 @@ export const useAutoSync = () => {
 
       return () => {
         clearTimeout(initialTimeout);
+        clearTimeout(initialTimeout);
         if (syncTimeoutRef.current) {
           clearInterval(syncTimeoutRef.current);
         }
       };
     } else if (syncTimeoutRef.current) {
+      console.log('自動同期タイマーを停止します', new Date().toISOString());
       console.log('自動同期タイマーを停止します', new Date().toISOString());
       clearInterval(syncTimeoutRef.current);
     }

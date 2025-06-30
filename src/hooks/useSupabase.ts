@@ -36,6 +36,28 @@ export const useSupabase = () => {
     };
   }, []);
 
+  // オフライン状態の監視
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('オンラインに戻りました - 接続を再試行します', new Date().toISOString());
+      checkConnection(false);
+    };
+    
+    const handleOffline = () => {
+      console.log('オフラインになりました - ローカルモードに切り替えます', new Date().toISOString());
+      setIsConnected(false);
+      setError('オフラインモードです。インターネット接続を確認してください。');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   useEffect(() => {
     // ローカルモードが有効な場合は接続チェックをスキップ
    if (import.meta.env.VITE_LOCAL_MODE === 'true') {
@@ -102,6 +124,11 @@ export const useSupabase = () => {
         // APIキーは安全のため最初の10文字だけ表示
         console.log('Supabase Key (first 10 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10) + '...');
       }
+      if (import.meta.env.DEV) {
+        console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+        // APIキーは安全のため最初の10文字だけ表示
+        console.log('Supabase Key (first 10 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10) + '...');
+      }
       const result = await testSupabaseConnection();
       
       if (!result.success) {
@@ -109,10 +136,10 @@ export const useSupabase = () => {
         setIsConnected(false);
         setIsInitializing(false);
 
-       if (result.error === 'APIキーが無効です' || result.error?.includes('API')) {
-         setError('接続エラー: Supabase APIキーが無効です。環境変数を確認してください。');
+        if (result.error === 'APIキーが無効です' || result.error?.includes('API')) {
+          setError('接続エラー: Supabase APIキーが無効です。環境変数を確認してください。');
         } else {
-         setError(`接続エラー: ${result.error || '不明なエラー'}。ローカルモードで動作します。`);
+          setError(`接続エラー: ${result.error || '不明なエラー'}。ローカルモードで動作します。`);
         }
       } else {
         console.log('Supabase接続成功');
@@ -306,7 +333,17 @@ export const useSupabase = () => {
       setError(errorMessage);
       setIsInitializing(false);
       console.log(`ユーザー初期化エラー: ${errorMessage}`);
-      return { id: null, line_username: trimmedUsername };
+      
+      // ローカルストレージからユーザーIDを取得（以前に同期したことがある場合）
+      const savedUserId = localStorage.getItem('supabase_user_id');
+      if (savedUserId) {
+        console.log('ローカルストレージからユーザーIDを取得しました:', savedUserId, new Date().toISOString());
+        setCurrentUser({ id: savedUserId, line_username: trimmedUsername });
+        setIsInitializing(false);
+        return { id: savedUserId, line_username: trimmedUsername };
+      } else {
+        return { id: null, line_username: trimmedUsername };
+      }
     } finally {
       const endTime = new Date().toISOString();
       console.log(`ユーザー初期化完了: "${trimmedUsername}" - ${endTime}`);
