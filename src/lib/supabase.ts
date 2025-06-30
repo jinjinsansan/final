@@ -9,7 +9,6 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 // 接続情報のデバッグ出力（本番環境では詳細を隠す）
 console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl}` : 'not set');
 console.log('Supabase Key:', supabaseAnonKey ? 'Key is set' : 'Key is not set');
-
 // Supabaseクライアントの作成（環境変数が設定されている場合のみ）
 export let supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
@@ -23,8 +22,8 @@ export let supabase = supabaseUrl && supabaseAnonKey
   
 // 管理者用Supabaseクライアント（サービスロールキーを使用）
 export let adminSupabase = supabaseUrl && supabaseAnonKey
+export let adminSupabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
         persistSession: false,
         autoRefreshToken: false
       }
@@ -34,6 +33,8 @@ export let adminSupabase = supabaseUrl && supabaseAnonKey
 // Supabase接続テスト関数
 export const testSupabaseConnection = async () => {
   console.log('Supabase接続をテスト中...');
+  console.log('URL:', supabaseUrl);
+  console.log('Key length:', supabaseAnonKey?.length || 0);
   console.log('URL:', supabaseUrl);
   console.log('Key length:', supabaseAnonKey?.length || 0);
   try {
@@ -60,6 +61,8 @@ export const testSupabaseConnection = async () => {
     try {
       // 軽量な接続テスト
       console.log('Supabase API接続テスト中...');
+      const apiUrl = `${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`;
+      console.log('API URL:', apiUrl);
       const apiUrl = `${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`;
       console.log('API URL:', apiUrl);
       const response = await fetch(`${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`, {

@@ -78,6 +78,9 @@ export const useSupabase = () => {
       console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
       // APIキーは安全のため最初の10文字だけ表示
       console.log('Supabase Key (first 10 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10) + '...');
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      // APIキーは安全のため最初の10文字だけ表示
+      console.log('Supabase Key (first 10 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10) + '...');
       const result = await testSupabaseConnection();
       
       if (!result.success) {
