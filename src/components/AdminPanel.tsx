@@ -39,7 +39,6 @@ interface User {
 
 const AdminPanel: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -361,46 +360,44 @@ const AdminPanel: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="overflow-x-auto pb-2">
-            <TabsList className="inline-flex w-auto min-w-full space-x-1">
-              <TabsTrigger value="search" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
-                <Search className="h-4 w-4" />
-                <span>検索・閲覧</span>
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
-                <Users className="h-4 w-4" />
-                <span>ユーザー管理</span>
-              </TabsTrigger>
-              <TabsTrigger value="counselors" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
-                <User className="h-4 w-4" />
-                <span>カウンセラー</span>
-              </TabsTrigger>
-              <TabsTrigger value="chat" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
-                <MessageCircle className="h-4 w-4" />
-                <span>チャット</span>
-              </TabsTrigger>
-              <TabsTrigger value="maintenance" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
-                <Settings className="h-4 w-4" />
-                <span>メンテナンス</span>
-              </TabsTrigger>
-              <TabsTrigger value="consent" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
-                <CheckCircle className="h-4 w-4" />
-                <span>同意履歴</span>
-              </TabsTrigger>
-              <TabsTrigger value="backup" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
-                <HardDrive className="h-4 w-4" />
-                <span>バックアップ</span>
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
-                <Shield className="h-4 w-4" />
-                <span>セキュリティ</span>
-              </TabsTrigger>
-              <TabsTrigger value="cleanup" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
-                <Database className="h-4 w-4" />
-                <span>データ整理</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-9 gap-1">
+            <TabsTrigger value="search" className="flex items-center space-x-2">
+              <Search className="h-4 w-4" />
+              <span>検索・閲覧</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center space-x-2">
+              <Users className="h-4 w-4" />
+              <span>ユーザー管理</span>
+            </TabsTrigger>
+            <TabsTrigger value="counselors" className="flex items-center space-x-2">
+              <User className="h-4 w-4" />
+              <span>カウンセラー</span>
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center space-x-2">
+              <MessageCircle className="h-4 w-4" />
+              <span>チャット</span>
+            </TabsTrigger>
+            <TabsTrigger value="maintenance" className="flex items-center space-x-2">
+              <Settings className="h-4 w-4" />
+              <span>メンテナンス</span>
+            </TabsTrigger>
+            <TabsTrigger value="consent" className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4" />
+              <span>同意履歴</span>
+            </TabsTrigger>
+            <TabsTrigger value="backup" className="flex items-center space-x-2">
+              <HardDrive className="h-4 w-4" />
+              <span>バックアップ</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center space-x-2">
+              <Shield className="h-4 w-4" />
+              <span>セキュリティ</span>
+            </TabsTrigger>
+            <TabsTrigger value="cleanup" className="flex items-center space-x-2">
+              <Database className="h-4 w-4" />
+              <span>データ整理</span>
+            </TabsTrigger>
+          </TabsList>
 
           <TabsContent value="search" className="space-y-6">
             <AdvancedSearchFilter 
