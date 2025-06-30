@@ -634,10 +634,10 @@ function App() {
               <div className="bg-green-50 rounded-lg p-3 border border-green-200">
                 <div className="flex items-center space-x-2"> 
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div> 
-                  <span className="text-green-800 font-jp-medium text-sm"> 
-                    {isLocalMode  
-                     ? 'ローカルモードで動作中（設定により）'  
-                     : !navigator.onLine 
+                  <span className="text-green-800 font-jp-medium text-sm">
+                    {isLocalMode
+                     ? 'ローカルモードで動作中（設定により）'
+                     : !navigator.onLine
                        ? 'オフラインモードで動作中（インターネット接続なし）'
                        : 'ローカルモードで動作中（Supabase接続できないため）'}
                   </span>
