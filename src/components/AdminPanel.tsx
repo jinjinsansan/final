@@ -54,6 +54,7 @@ const AdminPanel: React.FC = () => {
   const [savingMemo, setSavingMemo] = useState(false); 
   const [activeTab, setActiveTab] = useState('search'); 
   const [deleting, setDeleting] = useState(false);
+  const [syncInProgress, setSyncInProgress] = useState(false);
   // ステータス表示用の状態
   const [status, setStatus] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
 
@@ -97,7 +98,7 @@ const AdminPanel: React.FC = () => {
 
   const handleSyncAdminData = async () => {
     console.log('管理者用データを同期中...');
-    setIsSyncInProgress(true);
+    setSyncInProgress(true);
     setStatus({message: '管理者データを同期中...', type: 'info'});
     
     try {
@@ -130,7 +131,7 @@ const AdminPanel: React.FC = () => {
       console.error('管理者用データ同期エラー:', error);
       setStatus({message: '管理者データの同期中にエラーが発生しました', type: 'error'}); 
     } finally {
-      setIsSyncInProgress(false);
+      setSyncInProgress(false);
     }
   };
 
