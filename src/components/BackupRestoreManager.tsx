@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HardDrive, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Calendar, FileText, Database } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 interface BackupLog {
   id: string;
@@ -173,6 +174,7 @@ const BackupRestoreManager: React.FC = () => {
           await supabase
             .from('backup_logs')
             .insert([{
+              id: uuidv4(),
               id: uuidv4(),
               counselor_name: currentCounselor,
               backup_type: 'full',
@@ -355,6 +357,7 @@ const BackupRestoreManager: React.FC = () => {
               await supabase
                 .from('backup_logs')
                 .insert([{
+                  id: uuidv4(),
                   id: uuidv4(),
                   counselor_name: currentCounselor,
                   backup_type: 'restore',

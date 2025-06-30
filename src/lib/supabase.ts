@@ -200,7 +200,12 @@ export const userService = {
   // 新規ユーザーを作成
   createUser: async (lineUsername: string) => {
     try {
-      if (!supabase) return null;
+      if (!supabase) {
+        console.log('Supabase接続がないため、ユーザー作成をスキップします', new Date().toISOString());
+        return null;
+      }
+      
+      console.log(`ユーザー作成開始: ${lineUsername}`, new Date().toISOString());
       
       const { data, error } = await supabase
         .from('users')
@@ -208,8 +213,13 @@ export const userService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('ユーザー作成エラー:', error);
+        console.log(`ユーザー作成エラーの詳細:`, error.details || error.message || 'エラー詳細なし');
+        throw error;
+      }
       
+      console.log(`ユーザー作成成功: ${lineUsername}, ID: ${data?.id}`, new Date().toISOString());
       return data;
     } catch (error) {
       console.error('ユーザー作成エラー:', error);
@@ -953,7 +963,11 @@ export const syncService = {
   // 同意履歴をSupabaseに同期
   syncConsentHistories: async () => {
     try {
-      if (!supabase) return false;
+      if (!supabase) {
+        console.log('Supabase接続がないため、同意履歴同期をスキップします', new Date().toISOString());
+        return false;
+      }
+      
       console.log('同意履歴をSupabaseに同期開始');
       
       // ローカルストレージから同意履歴を取得
@@ -971,7 +985,7 @@ export const syncService = {
       
       console.log(`${histories.length}件の同意履歴を同期します`);
       
-      // 各履歴をSupabaseに保存
+      // 各履歴をSupabaseに保存 
       let successCount = 0;
       for (const history of histories) {
         try {
@@ -991,19 +1005,22 @@ export const syncService = {
           if (!existingHistory) {
             // 新しい履歴を作成
             const { error: insertError } = await supabase
-              .from('consent_histories')
+              .from('consent_histories') 
               .insert([{
                 line_username: history.line_username,
                 consent_date: history.consent_date,
                 consent_given: history.consent_given,
                 ip_address: history.ip_address || 'unknown',
                 user_agent: history.user_agent || navigator.userAgent
+                user_agent: history.user_agent || navigator.userAgent
               }]);
               
             if (insertError) {
               console.error(`同意履歴 ${history.line_username} の作成エラー:`, insertError);
+              console.log(`同意履歴作成エラーの詳細:`, insertError.details || insertError.message || 'エラー詳細なし');
             } else {
               successCount++;
+              console.log(`同意履歴を作成しました: ${history.line_username}`, new Date().toISOString());
             }
           }
         } catch (historyError) {

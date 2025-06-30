@@ -187,14 +187,14 @@ export const useSupabase = () => {
   const initializeUser = async (lineUsername: string) => {
     // 管理者モードの場合は初期化をスキップ
     if (isAdminMode) {
-      console.log('管理者モードのため、ユーザー初期化をスキップします - 管理者IDを返します', new Date().toISOString());
+      console.log('管理者モードのため、ユーザー初期化をスキップします', new Date().toISOString());
       setCurrentUser({ id: 'admin', line_username: 'admin' });
       setIsInitializing(false);
       return { id: 'admin', line_username: 'admin' };
     }
     
     if (!isConnected) {
-      console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします', new Date().toISOString());
+      console.log('Supabaseに接続されていないため、ユーザー初期化をスキップします (ローカルモード)', new Date().toISOString());
       const trimmedUsername = lineUsername.trim();
       
       // ローカルストレージからユーザーIDを取得（以前に同期したことがある場合）
@@ -227,7 +227,14 @@ export const useSupabase = () => {
     try {
       console.log('ユーザー初期化開始:', trimmedUsername);
       // 既存ユーザーを検索
-      let user = await userService.getUserByUsername(trimmedUsername);
+      let user;
+      try {
+        user = await userService.getUserByUsername(trimmedUsername);
+      } catch (searchError) {
+        console.error('ユーザー検索エラー:', searchError);
+        console.log('ユーザー検索に失敗しましたが、処理を続行します');
+      }
+      
       console.log('ユーザー検索結果:', user ? `ユーザーが見つかりました: ${user.id}` : 'ユーザーが見つかりませんでした - 新規作成を試みます', new Date().toISOString());
       
       // セキュリティイベントをログ

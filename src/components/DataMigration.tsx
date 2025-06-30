@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Save, ArrowUpDown } from 'lucide-react';
 import { userService, syncService } from '../lib/supabase';
-import { useSupabase } from '../hooks/useSupabase';
+import { useSupabase } from '../hooks/useSupabase'; 
 import { getCurrentUser } from '../lib/deviceAuth';
 import SyncStatusIndicator from './SyncStatusIndicator';
+
+// デバッグ用のログ関数
+const debugLog = (message: string, data?: any) => {
+  console.log(`[同期デバッグ] ${message}`, data ? data : '');
+};
 
 const DataMigration: React.FC = () => {
   const [localDataCount, setLocalDataCount] = useState(0);
@@ -20,6 +25,7 @@ const DataMigration: React.FC = () => {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true); 
   const [backupInProgress, setBackupInProgress] = useState<boolean>(false); 
   const [forceSyncInProgress, setForceSyncInProgress] = useState<boolean>(false); 
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   // 全体のデータ数を保持する状態
   const [totalLocalDataCount, setTotalLocalDataCount] = useState<number>(0);
@@ -121,7 +127,9 @@ const DataMigration: React.FC = () => {
   // 強制同期を実行する関数
   const handleForceSync = async () => {
     if (!isConnected || !currentUser) {
-      alert('Supabaseに接続されていないか、ユーザーが設定されていません。ローカルモードで動作中です。');
+      const errorMsg = 'Supabaseに接続されていないか、ユーザーが設定されていません。';
+      setDebugInfo(errorMsg);
+      alert(errorMsg + 'ローカルモードで動作中です。');
       return;
     }
     
@@ -132,13 +140,19 @@ const DataMigration: React.FC = () => {
     setForceSyncInProgress(true);
     setMigrationStatus('強制同期を実行中...');
     
+    // デバッグ情報を表示
+    debugLog('強制同期開始', { userId: currentUser.id, isConnected });
+    setDebugInfo(`強制同期開始: ユーザーID=${currentUser.id}, 接続状態=${isConnected}`);
+    
     try {
       if (syncService) {
         // ローカルデータをSupabaseに同期
         const success = await syncService.forceSync(currentUser.id);
         
         if (success) {
-          setMigrationStatus('強制同期が完了しました！');
+          const successMsg = '強制同期が完了しました！';
+          setMigrationStatus(successMsg);
+          setDebugInfo(debugInfo + '\n' + successMsg);
           
           // データ数を再読み込み
           await loadDataInfo();
@@ -146,13 +160,20 @@ const DataMigration: React.FC = () => {
           // 最終同期時間を更新
           const now = new Date().toISOString();
           localStorage.setItem('last_sync_time', now);
+          debugLog('同期成功', { time: now });
         } else {
-          setMigrationStatus('強制同期に失敗しました。もう一度お試しください。');
+          const errorMsg = '強制同期に失敗しました。もう一度お試しください。';
+          setMigrationStatus(errorMsg);
+          setDebugInfo(debugInfo + '\n' + errorMsg);
+          debugLog('同期失敗');
         }
       }
     } catch (error) {
       console.error('強制同期エラー:', error);
-      setMigrationStatus('強制同期中にエラーが発生しました: ' + (error instanceof Error ? error.message : String(error)));
+      const errorMsg = '強制同期中にエラーが発生しました: ' + (error instanceof Error ? error.message : String(error));
+      setMigrationStatus(errorMsg);
+      setDebugInfo(debugInfo + '\n' + errorMsg);
+      debugLog('同期エラー', error);
     } finally {
       setForceSyncInProgress(false);
     }
@@ -417,6 +438,16 @@ const DataMigration: React.FC = () => {
                 <span>管理者バックアップを作成</span>
               </button>
             </div>
+          </div>
+        )}
+        
+        {/* デバッグ情報表示 */}
+        {debugInfo && (
+          <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 className="font-jp-bold text-gray-900 mb-2 text-sm">デバッグ情報</h3>
+            <pre className="text-xs text-gray-700 whitespace-pre-wrap bg-gray-100 p-3 rounded overflow-auto max-h-40">
+              {debugInfo}
+            </pre>
           </div>
         )}
 
