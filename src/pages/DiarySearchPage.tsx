@@ -873,14 +873,11 @@ const DiarySearchPage: React.FC = () => {
               : !navigator.onLine
                 ? 'オフラインモードで動作中'
                 : `${currentUser?.lineUsername || 'ゲスト'}のデータ`
-            }
-          </span>
-                ? 'オフラインモード'
-                : `${currentUser?.lineUsername || 'ゲスト'}のデータ`
-            }
-              ? 'ローカル保存モード'
+          <span className="text-green-800 font-jp-medium text-sm whitespace-nowrap">
+            {import.meta.env.VITE_LOCAL_MODE === 'true'
+              ? 'ローカルモードで動作中'
               : !navigator.onLine
-                ? 'オフラインモード'
+                ? 'オフラインモードで動作中'
                 : `${currentUser?.lineUsername || 'ゲスト'}のデータ`
             }
           </span>
