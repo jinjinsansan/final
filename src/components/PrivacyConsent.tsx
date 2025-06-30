@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Shield, Eye, Lock, Database, AlertTriangle, Users, Clock, MessageCircle, Upload, RefreshCw, Download, CheckCircle, User } from 'lucide-react';
 import { logSecurityEvent } from '../lib/deviceAuth'; 
 import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 interface PrivacyConsentProps {
   onConsent: (accepted: boolean) => void;
@@ -30,7 +31,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onConsent }) => {
   const handleReject = () => {
     // 拒否履歴を記録
     const consentRecord = {
-      id: uuidv4(),
+      id: uuidv4(), // UUIDを生成
       line_username: 'declined_user_' + Date.now(),
       consent_given: false,
       consent_date: new Date().toISOString(),
