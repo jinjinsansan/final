@@ -1,4 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Save, ArrowUpDown } from 'lucide-react';
+import { userService, syncService } from '../lib/supabase';
+import { useSupabase } from '../hooks/useSupabase';
+import { getCurrentUser } from '../lib/deviceAuth';
+import SyncStatusIndicator from './SyncStatusIndicator';
+
+// デバッグ用のログ関数
+const debugLog = (message: string, data?: any) => {
+  console.log(`[同期デバッグ] ${message}`, data ? data : '');
+};
+
 const DataMigration: React.FC = () => {
   const [localDataCount, setLocalDataCount] = useState(0);
   const [supabaseDataCount, setSupabaseDataCount] = useState(0);
@@ -77,7 +88,7 @@ const DataMigration: React.FC = () => {
     
     try {
       const user = getCurrentUser();
-      console.log(`自動同期が${enabled ? '有効' : '無効'}になりました - ユーザー: ${user?.lineUsername || 'unknown'}`);
+      debugLog(`自動同期が${enabled ? '有効' : '無効'}になりました - ユーザー: ${user?.lineUsername || 'unknown'}`);
     } catch (error) {
       console.error('ログ記録エラー:', error);
     }
@@ -117,8 +128,6 @@ const DataMigration: React.FC = () => {
   const handleForceSync = async () => {
     if (!isConnected || !currentUser) {
       const errorMsg = 'Supabaseに接続されていないか、ユーザーが設定されていません。';
-      setDebugInfo(errorMsg);
-      alert(errorMsg + 'ローカルモードで動作中です。');
       setDebugInfo(errorMsg);
       alert(errorMsg + 'ローカルモードで動作中です。');
       return;
@@ -168,7 +177,7 @@ const DataMigration: React.FC = () => {
   // バックアップデータの作成
   const handleCreateBackup = () => {
     setBackupInProgress(true);
-    setMigrationStatus(null);
+    setMigrationStatus('');
     
     try {
       // ローカルストレージからデータを収集
@@ -204,7 +213,7 @@ const DataMigration: React.FC = () => {
       setMigrationStatus('バックアップが正常に作成されました！');
     } catch (error) {
       console.error('バックアップ作成エラー:', error); 
-      setMigrationStatus({message: 'バックアップの作成に失敗しました。', type: 'error'});
+      setMigrationStatus('バックアップの作成に失敗しました。');
     } finally {
       setBackupInProgress(false);
     }
@@ -426,7 +435,7 @@ const DataMigration: React.FC = () => {
             </div>
           </div>
         )}
-        
+
         {/* 進捗表示 */}
         {migrationStatus && (
           <div className={`rounded-lg p-4 border ${
