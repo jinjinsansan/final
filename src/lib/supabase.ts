@@ -4,12 +4,11 @@ import { v4 as uuidv4 } from 'uuid';
 // 環境変数からSupabase接続情報を取得
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
+// サービスロールキーは現在使用していないため、adminSupabaseの初期化に通常のキーを使用
 
 // 接続情報のデバッグ出力（本番環境では詳細を隠す）
 console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl}` : 'not set');
 console.log('Supabase Key:', supabaseAnonKey ? 'Key is set' : 'Key is not set');
-console.log('Supabase Service Role Key:', supabaseServiceRoleKey ? 'Service Role Key is set' : 'Service Role Key is not set');
 
 // Supabaseクライアントの作成（環境変数が設定されている場合のみ）
 export let supabase = supabaseUrl && supabaseAnonKey
@@ -23,8 +22,8 @@ export let supabase = supabaseUrl && supabaseAnonKey
   : null;
   
 // 管理者用Supabaseクライアント（サービスロールキーを使用）
-export let adminSupabase = supabaseUrl && supabaseServiceRoleKey
-  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+export let adminSupabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false
@@ -35,13 +34,15 @@ export let adminSupabase = supabaseUrl && supabaseServiceRoleKey
 // Supabase接続テスト関数
 export const testSupabaseConnection = async () => {
   console.log('Supabase接続をテスト中...');
+  console.log('URL:', supabaseUrl);
+  console.log('Key length:', supabaseAnonKey?.length || 0);
   try {
     if (!supabase) {
       console.log('Supabase設定が見つかりません');
       return {
         success: false,
         error: 'Supabase設定が見つかりません',
-        details: '環境変数が設定されていないか、無効です'
+        details: `環境変数が設定されていないか、無効です。URL: ${supabaseUrl ? 'セット済み' : '未設定'}, Key: ${supabaseAnonKey ? 'セット済み' : '未設定'}`
       };
     }
 
@@ -59,6 +60,8 @@ export const testSupabaseConnection = async () => {
     try {
       // 軽量な接続テスト
       console.log('Supabase API接続テスト中...');
+      const apiUrl = `${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`;
+      console.log('API URL:', apiUrl);
       const response = await fetch(`${supabaseUrl}/rest/v1/?apikey=${supabaseAnonKey}`, {
         method: 'HEAD',
         headers: {
@@ -71,7 +74,7 @@ export const testSupabaseConnection = async () => {
         console.log('Supabase API接続エラー:', response.status);
         return {
           success: false,
-          error: `Supabase API接続エラー: ${response.status}`,
+          error: `Supabase API接続エラー: ${response.status} ${response.statusText}`,
           details: '接続に失敗しました。環境変数を確認してください。'
         };
       }

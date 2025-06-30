@@ -67,7 +67,7 @@ export const useSupabase = () => {
       console.log('Supabase未設定 - ローカルモードで動作');
       setIsConnected(false);
       setIsInitializing(false);
-      setError('Supabase接続エラー: 設定が見つかりません');
+      setError('Supabase接続エラー: 環境変数が設定されていません。.envファイルを確認してください。');
       setLoading(false);
       return;
     }
@@ -75,6 +75,9 @@ export const useSupabase = () => {
     try {
       // 新しい接続テスト関数を使用
       console.log(`Checking Supabase connection... (attempt: ${retryCount + 1})`);
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      // APIキーは安全のため最初の10文字だけ表示
+      console.log('Supabase Key (first 10 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10) + '...');
       const result = await testSupabaseConnection();
       
       if (!result.success) {
