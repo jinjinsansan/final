@@ -65,9 +65,7 @@ export const useMaintenanceStatus = () => {
           method: 'GET', 
           headers: { 
             'Content-Type': 'application/json', 
-          }, 
-          // タイムアウト設定
-          signal: AbortSignal.timeout(3000) // 3秒でタイムアウト
+          }
         });
 
         if (response.ok) {
@@ -84,10 +82,7 @@ export const useMaintenanceStatus = () => {
           }
         }
       } catch (remoteError) {
-        console.log('リモート設定の取得に失敗しました（環境変数を使用）:', 
-          remoteError instanceof DOMException && remoteError.name === 'TimeoutError' 
-            ? 'タイムアウト' 
-            : remoteError);
+        console.log('リモート設定の取得に失敗しました（環境変数を使用）:', remoteError);
       }
 
       // 3. ローカル設定をチェック（開発・テスト用）

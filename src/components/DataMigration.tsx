@@ -161,7 +161,7 @@ const DataMigration: React.FC = () => {
   // バックアップデータの作成
   const handleCreateBackup = () => {
     setBackupInProgress(true);
-    setMigrationStatus('');
+    setMigrationStatus(null);
     
     try {
       // ローカルストレージからデータを収集
@@ -208,8 +208,10 @@ const DataMigration: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <Database className="w-8 h-8 text-blue-600" />
-            <h2 className="text-2xl font-jp-bold text-gray-900">データ管理</h2>
+            <div className="flex items-center space-x-3">
+              <Database className="w-8 h-8 text-blue-600" />
+              <h2 className="text-2xl font-jp-bold text-gray-900">データ管理</h2>
+            </div>
           </div>
           <button
             onClick={loadDataInfo}

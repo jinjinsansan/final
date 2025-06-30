@@ -113,11 +113,11 @@ const AdminPanel: React.FC = () => {
   const handleSyncAdminData = async () => {
     console.log('管理者用データを同期中...');
     setIsSyncInProgress(true);
-    setStatus({message: '管理者データを同期中...', type: 'info'}); 
+    setStatus({message: '管理者データを同期中...', type: 'info'});
     
     try {
       // 管理者モードでの同期を実行
-      const success = await syncService.syncAdminData();
+      const success = await syncService.adminSync();
       
       if (success) {
         console.log('管理者用データの同期が完了しました');
@@ -149,10 +149,10 @@ const AdminPanel: React.FC = () => {
 
   const handleViewEntry = (entry: JournalEntry) => { 
     setSelectedEntry(entry); 
-    setMemoText(entry.counselor_memo || ''); 
-    setIsVisibleToUser(entry.is_visible_to_user || false); 
-    setUrgencyLevel(entry.urgency_level || ''); 
-    setAssignedCounselor(entry.assigned_counselor || ''); 
+    setMemoText(entry.counselor_memo || '');
+    setIsVisibleToUser(!!entry.is_visible_to_user);
+    setUrgencyLevel(entry.urgency_level || '');
+    setAssignedCounselor(entry.assigned_counselor || '');
     setShowEntryDetails(true); 
   };
 
