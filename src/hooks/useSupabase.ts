@@ -145,12 +145,12 @@ export const useSupabase = () => {
   // 接続を再試行する関数
   const retryConnection = () => {
     if (retryCount < 5) {
-      console.log(`接続を再試行します... (${retryCount + 1}/5)`, new Date().toISOString());
+      console.log(`Supabase接続を再試行します... (${retryCount + 1}/5)`, new Date().toISOString());
       setRetryCount(prev => prev + 1);
       setError(null);
       checkConnection(false);
     } else {
-      setError('接続の再試行回数が上限に達しました。しばらく時間をおいてから再度お試しください。');
+      setError('Supabase接続の再試行回数が上限に達しました。ローカルモードで動作します。');
     }
   };
 

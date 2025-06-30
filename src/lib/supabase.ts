@@ -5,9 +5,13 @@ import { v4 as uuidv4 } from 'uuid';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+// サービスロールキー（管理者用）
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
+
 // 接続情報のデバッグ出力（本番環境では詳細を隠す）
 console.log('Supabase URL:', supabaseUrl ? `${supabaseUrl}` : 'not set');
 console.log('Supabase Key:', supabaseAnonKey ? 'Key is set' : 'Key is not set');
+console.log('Supabase Service Role Key:', supabaseServiceRoleKey ? 'Service Role Key is set' : 'Service Role Key is not set');
 
 // 環境変数が設定されているかチェック
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -26,8 +30,8 @@ export let supabase = supabaseUrl && supabaseAnonKey
   : null;
   
 // 管理者用Supabaseクライアント（同じキーを使用）
-export let adminSupabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+export let adminSupabase = supabaseUrl && supabaseServiceRoleKey
+  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false
