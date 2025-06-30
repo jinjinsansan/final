@@ -62,13 +62,16 @@ const AdminPanel: React.FC = () => {
   const loadEntries = async () => {
     console.log('日記データを読み込み中...');
     setLoading(true);
+    console.log('管理者用日記データを読み込み中...');
     try {
       // 管理者モードでは、まず管理者用のデータを同期
       await handleSyncAdminData();
 
       // 管理者用のデータを読み込み
       const adminEntries = localStorage.getItem('admin_journalEntries');
-      if (adminEntries) {
+      console.log('管理者用データの有無:', adminEntries ? 'あり' : 'なし');
+      
+      if (adminEntries && adminEntries !== '[]') {
         const parsedEntries = JSON.parse(adminEntries);
         console.log('管理者用データを読み込み:', parsedEntries.length, '件');
         
@@ -79,8 +82,26 @@ const AdminPanel: React.FC = () => {
         setFilteredEntries(parsedEntries);
       } else {
         console.log('管理者用データが見つかりません');
-        setEntries([]);
-        setFilteredEntries([]);
+        
+        // 管理者用データがない場合は、通常のデータを読み込む
+        const savedEntries = localStorage.getItem('journalEntries');
+        if (savedEntries) {
+          const parsedEntries = JSON.parse(savedEntries);
+          console.log('通常の日記データを読み込み:', parsedEntries.length, '件');
+          
+          // 日付順でソート（新しい順）
+          parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          setEntries(parsedEntries);
+          setFilteredEntries(parsedEntries);
+          
+          // 通常データを管理者用データとして保存
+          localStorage.setItem('admin_journalEntries', JSON.stringify(parsedEntries));
+        } else {
+          console.log('日記データが見つかりません');
+          setEntries([]);
+          setFilteredEntries([]);
+        }
       }
     } catch (error) {
       console.error('データ読み込みエラー:', error);
@@ -92,12 +113,24 @@ const AdminPanel: React.FC = () => {
   // 管理者用データを同期する関数
   const handleSyncAdminData = async () => {
     console.log('管理者用データを同期中...');
-    setIsSyncInProgress(true);
-    setStatus({message: '管理者データを同期中...', type: 'info'});
+    setIsSyncInProgress(true); 
+    setStatus({message: '管理者データを同期中...', type: 'info'}); 
     
     try {
-      // 管理者モードでの同期を実行
-      const success = await syncService.adminSync();
+      // 管理者モードでの同期を実行（ローカルモードでない場合のみ）
+      let success = false;
+      
+      if (supabase) {
+        success = await syncService.adminSync();
+      } else {
+        console.log('Supabase接続がないため、ローカルデータのみを使用します');
+        // ローカルデータを管理者用データとしてコピー
+        const savedEntries = localStorage.getItem('journalEntries');
+        if (savedEntries) {
+          localStorage.setItem('admin_journalEntries', savedEntries);
+          success = true;
+        }
+      }
       
       if (success) {
         console.log('管理者用データの同期が完了しました');
@@ -106,14 +139,19 @@ const AdminPanel: React.FC = () => {
         // 管理者用のデータを読み込み
         const adminEntries = localStorage.getItem('admin_journalEntries');
         if (adminEntries) {
-          const parsedEntries = JSON.parse(adminEntries);
-          console.log('管理者用データを読み込み:', parsedEntries.length, '件');
-          
-          // 日付順でソート（新しい順）
-          parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          
-          setEntries(parsedEntries);
-          setFilteredEntries(parsedEntries);
+          try {
+            const parsedEntries = JSON.parse(adminEntries);
+            console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+            
+            // 日付順でソート（新しい順）
+            parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            
+            setEntries(parsedEntries);
+            setFilteredEntries(parsedEntries);
+          } catch (parseError) {
+            console.error('管理者用データの解析エラー:', parseError);
+            setStatus({message: '管理者データの解析に失敗しました', type: 'error'});
+          }
         }
       } else {
         console.log('管理者用データの同期に失敗しました');
@@ -121,7 +159,11 @@ const AdminPanel: React.FC = () => {
       }
     } catch (error) {
       console.error('管理者用データ同期エラー:', error);
-      setStatus({message: '管理者データの同期中にエラーが発生しました', type: 'error'});
+      setStatus({
+        message: '管理者データの同期中にエラーが発生しました: ' + 
+          (error instanceof Error ? error.message : '不明なエラー'),
+        type: 'error'
+      });
     } finally {
       setIsSyncInProgress(false);
     }

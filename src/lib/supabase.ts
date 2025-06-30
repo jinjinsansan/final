@@ -626,6 +626,93 @@ export const syncService = {
     }
   },
   
+  // 管理者モードでの同期
+  adminSync: async () => {
+    try {
+      // 管理者用Supabaseクライアントの確認
+      if (!supabase) {
+        console.log('Supabaseクライアントが利用できないため、同期をスキップします');
+        return false;
+      }
+      
+      // 全ユーザーを取得
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('*');
+      
+      if (usersError) {
+        console.error('ユーザー取得エラー:', usersError);
+        return false;
+      }
+      
+      if (!users || users.length === 0) {
+        console.log('ユーザーが見つかりませんでした');
+        return false;
+      }
+      
+      console.log(`管理者同期: ${users.length}人のユーザーを同期します`);
+      
+      // 各ユーザーのデータを同期
+      const allEntries = [];
+      for (const user of users) {
+        try {
+          // ユーザーの日記データを取得
+          const { data: entries, error } = await supabase
+            .from('diary_entries')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          
+          if (error) {
+            console.error(`ユーザー ${user.id} の日記データ取得エラー:`, error);
+            continue;
+          }
+          
+          console.log(`ユーザー ${user.id} の日記データを取得: ${entries?.length || 0}件`);
+          
+          // 全エントリーに追加
+          if (entries && entries.length > 0) {
+            entries.forEach(entry => {
+              allEntries.push({
+                id: entry.id,
+                date: entry.date,
+                emotion: entry.emotion,
+                event: entry.event,
+                realization: entry.realization,
+                selfEsteemScore: entry.self_esteem_score,
+                worthlessnessScore: entry.worthlessness_score,
+                counselor_memo: entry.counselor_memo,
+                is_visible_to_user: entry.is_visible_to_user,
+                counselor_name: entry.counselor_name,
+                assigned_counselor: entry.assigned_counselor,
+                urgency_level: entry.urgency_level,
+                created_at: entry.created_at,
+                user: {
+                  line_username: user.line_username
+                }
+              });
+            });
+          }
+        } catch (userError) {
+          console.error(`ユーザー ${user.id} の同期エラー:`, userError);
+        }
+      }
+      
+      // 全エントリーを管理者用のキーに保存
+      if (allEntries.length > 0) {
+        console.log(`合計 ${allEntries.length} 件の日記エントリーを管理者用ストレージに保存します`);
+        localStorage.setItem('admin_journalEntries', JSON.stringify(allEntries));
+      } else {
+        console.log('保存するエントリーがありませんでした');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('管理者同期エラー:', error);
+      return false;
+    }
+  },
+  
   // ローカルデータをSupabaseに移行
   migrateLocalData: async (userId: string) => {
     try {
