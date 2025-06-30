@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Download, Search, Calendar, User, CheckCircle, XCircle, Filter, RotateCcw, FileText } from 'lucide-react';
-import { consentService, syncService } from '../lib/supabase';
+import { consentService, syncService, supabase } from '../lib/supabase';
 import { useSupabase } from '../hooks/useSupabase';
 
 interface ConsentHistory {
@@ -24,7 +24,7 @@ const ConsentHistoryManagement: React.FC = () => {
     end: ''
   });
 
-  const { isConnected, supabase } = useSupabase();
+  const { isConnected } = useSupabase();
 
   useEffect(() => {
     loadConsentHistories();

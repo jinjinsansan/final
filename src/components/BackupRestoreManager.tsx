@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { HardDrive, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Calendar, FileText, Database } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface BackupLog {

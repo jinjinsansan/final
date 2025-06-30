@@ -321,7 +321,6 @@ const AdminPanel: React.FC = () => {
 
   if (loading) {
     return renderLoading();
-    );
   }
 
   return (

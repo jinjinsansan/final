@@ -5,6 +5,9 @@ import { useSupabase } from '../hooks/useSupabase';
 import { getCurrentUser } from '../lib/deviceAuth';
 import SyncStatusIndicator from './SyncStatusIndicator';
 
+// デバッグ情報の状態
+const [debugInfo, setDebugInfo] = useState<string | null>(null);
+
 const DataMigration: React.FC = () => {
   const [localDataCount, setLocalDataCount] = useState(0);
   const [supabaseDataCount, setSupabaseDataCount] = useState(0);
@@ -22,11 +25,6 @@ const DataMigration: React.FC = () => {
   const [forceSyncInProgress, setForceSyncInProgress] = useState<boolean>(false); 
 
   // 全体のデータ数を保持する状態
-  const [totalLocalDataCount, setTotalLocalDataCount] = useState<number>(0);
-  const [totalSupabaseDataCount, setTotalSupabaseDataCount] = useState<number>(0);
-
-  const { isConnected, currentUser, isInitializing } = useSupabase();
-
   useEffect(() => {
     loadDataInfo();
     // 自動同期設定を読み込み
