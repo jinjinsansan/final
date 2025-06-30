@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Calendar, Search, MessageCircle, Settings, Users, AlertTriangle, Edit3, Trash2, Save, X, CheckCircle, Eye, EyeOff, User, Clock, Filter, Shield, Database, RefreshCw, Download, HardDrive } from 'lucide-react';
-import AdvancedSearchFilter from './AdvancedSearchFilter'; 
+import AdvancedSearchFilter from './AdvancedSearchFilter';
 import CounselorManagement from './CounselorManagement';
 import CounselorChat from './CounselorChat';
 import MaintenanceController from './MaintenanceController';
@@ -37,7 +37,9 @@ interface User {
   is_active: boolean;
 }
 
+const AdminPanel: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -52,7 +54,6 @@ interface User {
   const [savingMemo, setSavingMemo] = useState(false); 
   const [activeTab, setActiveTab] = useState('search'); 
   const [deleting, setDeleting] = useState(false); 
-  const [backupInProgress, setBackupInProgress] = useState(false); 
   const [syncInProgress, setIsSyncInProgress] = useState(false); 
 
   // ステータス表示用の状態
@@ -402,6 +403,7 @@ interface User {
             <AdvancedSearchFilter 
               entries={entries}
               onViewEntry={handleViewEntry}
+              onDeleteEntry={handleDeleteEntry}
             />
           </TabsContent>
 
@@ -436,11 +438,16 @@ interface User {
                     {users.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {user.name || 'Unknown'}
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100">
+                              <User className="w-5 h-5 text-blue-600" />
                             </div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.name || 'Unknown'}
+                              </div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -613,7 +620,7 @@ interface User {
                   value={memoText}
                   onChange={(e) => setMemoText(e.target.value)}
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="カウンセラーメモを入力してください..."
                 />
               </div>

@@ -7,7 +7,7 @@ export const useSupabase = () => {
   // 管理者モードフラグ - カウンセラーとしてログインしている場合はtrue
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(import.meta.env.VITE_LOCAL_MODE === 'true' ? false : true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{id: string, line_username: string} | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -15,7 +15,7 @@ export const useSupabase = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   
   // supabaseインスタンスを返す
-  const supabaseInstance = supabase;
+  // 重複を避けるため削除
 
   // オフライン状態の監視
   useEffect(() => {
@@ -188,9 +188,10 @@ export const useSupabase = () => {
     // 管理者モードの場合は初期化をスキップ
     if (isAdminMode) {
       console.log('管理者モードのため、ユーザー初期化をスキップします', new Date().toISOString());
-      setCurrentUser({ id: 'admin', line_username: 'admin' });
+      const adminUser = { id: 'admin', line_username: 'admin' };
+      setCurrentUser(adminUser);
       setIsInitializing(false);
-      return { id: 'admin', line_username: 'admin' };
+      return adminUser;
     }
     
     if (!isConnected) {
@@ -229,7 +230,11 @@ export const useSupabase = () => {
       // 既存ユーザーを検索
       let user;
       try {
-        user = await userService.getUserByUsername(trimmedUsername);
+        if (supabase) {
+          user = await userService.getUserByUsername(trimmedUsername);
+        } else {
+          console.log('Supabase接続がないため、ユーザー検索をスキップします');
+        }
       } catch (searchError) {
         console.error('ユーザー検索エラー:', searchError);
         console.log('ユーザー検索に失敗しましたが、処理を続行します');
@@ -239,8 +244,7 @@ export const useSupabase = () => {
       
       // セキュリティイベントをログ
       if (user) {
-        console.log(`Supabaseユーザーが見つかりました: "${trimmedUsername}" - ID: ${user.id}`);
-        console.log('ユーザーデータ:', user);
+        console.log(`Supabaseユーザーが見つかりました: "${trimmedUsername}" - ID: ${user.id || 'なし'}`);
         try {
           logSecurityEvent('supabase_user_found', trimmedUsername, 'Supabaseユーザーが見つかりました');
         } catch (logError) {
@@ -248,7 +252,7 @@ export const useSupabase = () => {
         }
         
         // ユーザーが見つかった場合は現在のユーザーとして設定
-        console.log('ユーザーを設定:', user);
+        console.log('ユーザーを設定:', user.id);
         setCurrentUser(user);
       } else {
         console.log(`Supabaseユーザーが見つかりません: "${trimmedUsername}" - 新規作成を試みます`);
@@ -263,8 +267,14 @@ export const useSupabase = () => {
       if (!user) {
         try {
            // 新規ユーザー作成
-           console.log(`新規ユーザー作成を試みます: "${trimmedUsername}" - ${new Date().toISOString()}`);
-           user = await userService.createUser(trimmedUsername);
+           if (supabase) {
+             console.log(`新規ユーザー作成を試みます: "${trimmedUsername}" - ${new Date().toISOString()}`);
+             user = await userService.createUser(trimmedUsername);
+           } else {
+             console.log('Supabase接続がないため、ユーザー作成をスキップします');
+             // ローカルモードでの仮ユーザー作成
+             user = { id: `local-${Date.now()}`, line_username: trimmedUsername };
+           }
            
            if (user) {
              setCurrentUser(user);
@@ -279,7 +289,7 @@ export const useSupabase = () => {
              
              // ローカルデータを移行
              try {
-              if (user.id) {
+              if (user.id && supabase) {
                 console.log(`ローカルデータの移行を開始: "${trimmedUsername}" - ID: ${user.id}`);
                 const migrationResult = await syncService.migrateLocalData(user.id);
                 console.log(`ローカルデータの移行結果: ${migrationResult ? '成功' : '失敗'} - "${trimmedUsername}"`);
@@ -293,7 +303,9 @@ export const useSupabase = () => {
            
            try {
              console.log('ユーザー作成後に再検索を試みます');
-             user = await userService.getUserByUsername(trimmedUsername);
+             if (supabase) {
+               user = await userService.getUserByUsername(trimmedUsername);
+             }
              console.log('再検索結果:', user ? 'ユーザーが見つかりました' : 'ユーザーが見つかりませんでした');
            } catch (searchError) {
              console.error('ユーザー再検索エラー:', searchError);
@@ -306,7 +318,7 @@ export const useSupabase = () => {
       } else {
         // 既存ユーザーの場合、Supabaseからローカルに同期
         try {
-          if (user.id) {
+          if (user.id && supabase) {
             console.log(`既存ユーザー: Supabaseからローカルへの同期を開始: "${trimmedUsername}" - ID: ${user.id}`);
             const syncResult = await syncService.syncToLocal(user.id);
             console.log(`Supabaseからローカルへの同期結果: ${syncResult ? '成功' : '失敗'} - "${trimmedUsername}"`);
@@ -444,8 +456,7 @@ export const useSupabase = () => {
     isConnected,
     isAdminMode,
     supabase,
-    currentUser,
-    supabase: supabaseInstance,
+    currentUser, 
     isInitializing,
     loading,
     error,

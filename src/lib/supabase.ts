@@ -423,7 +423,7 @@ export const chatService = {
 // 同意履歴サービス
 export const consentService = {
   // 全同意履歴を取得
-  getAllConsentHistories: async () => { 
+  getAllConsentHistories: async () => {
     try {
       console.log('全同意履歴を取得中...', supabase ? 'supabase利用可能' : 'supabase利用不可');
       if (!supabase) return [];
@@ -435,7 +435,7 @@ export const consentService = {
       
       if (error) {
         console.error('全同意履歴取得エラー:', error);
-        console.log('同意履歴取得エラー詳細:', error.message, error.details);
+        console.log('同意履歴取得エラー詳細:', error.message, error.details || 'エラー詳細なし');
         throw error;
       }
       
@@ -499,7 +499,7 @@ export const counselorService = {
 // 同期サービス
 export const syncService = {
   // 管理者モードでの同期
-  adminSync: async () => { 
+  adminSync: async () => {
     try {
       console.log('管理者同期を開始します - スマートフォンのデータも含めて同期します', new Date().toISOString());
       
@@ -555,7 +555,8 @@ export const syncService = {
       // 全ユーザーを取得
       let { data: users, error: usersError } = await supabase
         .from('users')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (usersError) {
         console.error('ユーザー取得エラー:', usersError);
@@ -565,18 +566,24 @@ export const syncService = {
       if (!users || users.length === 0) {
         console.log('Supabaseにユーザーが見つかりませんでした。ローカルユーザーを作成します。', new Date().toISOString());
         
-        // 再試行: 接続が不安定な場合に備えて再度ユーザー取得を試みる
+        // 再試行: 接続が不安定な場合に備えて再度ユーザー取得を試みる（最大3回）
         try {
-          console.log('ユーザー取得を再試行します...', new Date().toISOString());
-          const { data: retryUsers, error: retryError } = await supabase
-            .from('users')
-            .select('*');
-            
-          if (!retryError && retryUsers && retryUsers.length > 0) {
-            console.log(`再試行成功: ${retryUsers.length}人のユーザーを取得しました`, new Date().toISOString());
-            users = retryUsers;
-          } else {
-            console.log('再試行失敗: ユーザーが見つかりませんでした', new Date().toISOString());
+          for (let i = 0; i < 3; i++) {
+            console.log(`ユーザー取得を再試行します... (${i+1}/3)`, new Date().toISOString());
+            const { data: retryUsers, error: retryError } = await supabase
+              .from('users')
+              .select('*')
+              .order('created_at', { ascending: false });
+              
+            if (!retryError && retryUsers && retryUsers.length > 0) {
+              console.log(`再試行成功: ${retryUsers.length}人のユーザーを取得しました`, new Date().toISOString());
+              users = retryUsers;
+              break;
+            } else {
+              console.log(`再試行 ${i+1} 失敗: ユーザーが見つかりませんでした`, new Date().toISOString());
+              // 少し待機してから再試行
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           }
         } catch (retryError) {
           console.error('ユーザー取得再試行エラー:', retryError);
@@ -996,8 +1003,8 @@ export const syncService = {
                 line_username: history.line_username,
                 consent_date: history.consent_date,
                 consent_given: history.consent_given,
-                ip_address: history.ip_address || 'unknown',
-                user_agent: history.user_agent || navigator.userAgent
+                ip_address: history.ip_address || 'unknown', 
+                user_agent: history.user_agent || navigator.userAgent || 'unknown'
               }]);
               
             if (insertError) {
@@ -1080,7 +1087,7 @@ export const syncService = {
   // 強制同期を実行する関数
   forceSync: async (userId: string) => {
     try {
-      console.log(`強制同期を開始します - ユーザーID: ${userId} - スマートフォンのデータも含めて同期します`, new Date().toISOString());
+      console.log(`強制同期を開始します - ユーザーID: ${userId || 'なし'} - スマートフォンのデータも含めて同期します`, new Date().toISOString());
       
       if (!supabase) {
         console.log('Supabase接続がないため、強制同期をスキップします', new Date().toISOString());
@@ -1088,7 +1095,7 @@ export const syncService = {
       }
       
       if (!userId) {
-        console.log('ユーザーIDが指定されていないため、強制同期をスキップします', new Date().toISOString());
+        console.error('ユーザーIDが指定されていないため、強制同期をスキップします', new Date().toISOString());
         return false;
       }
       
@@ -1112,7 +1119,7 @@ export const syncService = {
       // ローカルストレージから日記データを取得
       const savedEntries = localStorage.getItem('journalEntries');
       if (!savedEntries) {
-        console.log('ローカルストレージに日記データがないため、強制同期をスキップします', new Date().toISOString());
+        console.log('ローカルストレージに日記データがないため、強制同期をスキップします');
         return false;
       }
       
@@ -1123,6 +1130,7 @@ export const syncService = {
       }
       
       console.log(`強制同期: ${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`);
+      console.log('同期対象データの例:', entries.length > 0 ? entries[0] : 'データなし');
       
       // 各エントリーをSupabaseに保存
       let successCount = 0;
@@ -1131,7 +1139,7 @@ export const syncService = {
       for (const entry of entries) {
         try {
           // 既存のエントリーをチェック
-          console.log(`エントリー ${entry.id} の同期を開始します`, new Date().toISOString());
+          console.log(`エントリー ${entry.id} の同期を開始します`);
           const { data: existingEntry, error: checkError } = await supabase
             .from('diary_entries')
             .select('id')
@@ -1140,7 +1148,7 @@ export const syncService = {
           
           if (checkError) {
             console.error(`エントリー ${entry.id} の確認エラー:`, checkError);
-            console.log(`確認エラーの詳細:`, checkError.details || checkError.message || 'エラー詳細なし');
+            console.log(`確認エラーの詳細:`, checkError.details || checkError.message || 'エラー詳細なし', checkError.code);
             errorCount++;
             continue;
           }
@@ -1150,6 +1158,7 @@ export const syncService = {
             const { error: updateError } = await supabase
               .from('diary_entries')
               .update({
+                user_id: userId,
                 date: entry.date,
                 emotion: entry.emotion,
                 event: entry.event || '(内容なし)',
@@ -1164,7 +1173,7 @@ export const syncService = {
               
             if (updateError) {
               console.error(`エントリー ${entry.id} の更新エラー:`, updateError);
-              console.log(`更新エラーの詳細:`, updateError.details || updateError.message || 'エラー詳細なし');
+              console.log(`更新エラーの詳細:`, updateError.details || updateError.message || 'エラー詳細なし', updateError.code);
               errorCount++;
             } else {
               successCount++;
@@ -1175,7 +1184,7 @@ export const syncService = {
             const { error: insertError } = await supabase
               .from('diary_entries')
               .insert([{
-                id: entry.id,
+                id: entry.id || uuidv4(),
                 user_id: userId,
                 date: entry.date,
                 emotion: entry.emotion || 'その他',
@@ -1190,7 +1199,7 @@ export const syncService = {
               
             if (insertError) {
               console.error(`エントリー ${entry.id} の作成エラー:`, insertError);
-              console.log(`作成エラーの詳細:`, insertError.details || insertError.message || 'エラー詳細なし');
+              console.log(`作成エラーの詳細:`, insertError.details || insertError.message || 'エラー詳細なし', insertError.code);
               errorCount++;
             } else {
               successCount++;
@@ -1230,16 +1239,25 @@ export const syncService = {
       }
       
       // 同期ログを記録
-      try {
-        await syncService.logSyncOperation(
-          userId,
-          'force',
-          successCount,
-          errorCount === 0,
-          errorCount > 0 ? `${errorCount}件のエントリーで同期エラーが発生しました` : undefined
-        );
-      } catch (logError) {
-        console.error('同期ログ記録エラー:', logError);
+      if (supabase) {
+        try {
+          // 同期ログを記録する関数を呼び出し
+          const { data, error } = await supabase.rpc('log_sync_operation', {
+            p_user_id: userId,
+            p_sync_type: 'force',
+            p_entries_count: successCount,
+            p_success: errorCount === 0,
+            p_error_message: errorCount > 0 ? `${errorCount}件のエントリーで同期エラーが発生しました` : null
+          });
+          
+          if (error) {
+            console.error('同期ログ記録エラー:', error);
+          } else {
+            console.log('同期ログを記録しました');
+          }
+        } catch (logError) {
+          console.error('同期ログ記録エラー:', logError);
+        }
       }
       
       console.log(`強制同期完了: 成功=${successCount}, 失敗=${errorCount}`);
@@ -1247,7 +1265,8 @@ export const syncService = {
       // 管理者同期も実行して、管理画面のデータを更新
       try {
         console.log('管理者同期も実行して管理画面のデータを更新します', new Date().toISOString());
-        const adminSyncResult = await syncService.adminSync();
+        await syncService.adminSync();
+        console.log('管理者同期が完了しました');
       } catch (adminSyncError) {
         console.error('管理者同期エラー:', adminSyncError);
       }
@@ -1255,6 +1274,7 @@ export const syncService = {
       return successCount > 0;
     } catch (error) {
       console.error('強制同期エラー:', error);
+      console.log('強制同期エラーの詳細:', error instanceof Error ? error.message : String(error));
       return false;
     }
   }
