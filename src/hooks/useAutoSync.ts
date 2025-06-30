@@ -171,13 +171,6 @@ export const useAutoSync = () => {
   // 自動同期実行
   const performAutoSync = async (userId: string) => {
     try {
-      // 管理者モードの場合は管理者同期を実行
-      const currentCounselor = localStorage.getItem('current_counselor');
-      if (currentCounselor) {
-        console.log('管理者モードで同期を実行します', new Date().toISOString());
-        await syncService.adminSync();
-      }
-      
       if (!userId || typeof userId !== 'string') {
         console.error('自動同期エラー: 無効なユーザーID:', userId);
         setStatus(prev => ({ 
@@ -198,6 +191,13 @@ export const useAutoSync = () => {
       
       let diarySync = false;
       let consentSync = false;
+
+      // 管理者モードの場合は管理者同期を実行
+      const currentCounselor = localStorage.getItem('current_counselor');
+      if (currentCounselor) {
+        console.log('管理者モードで同期を実行します', new Date().toISOString());
+        await syncService.adminSync();
+      }
 
       // 日記データの同期
       if (localEntries) {
@@ -264,41 +264,22 @@ export const useAutoSync = () => {
   // 自動同期の有効/無効切り替え
   const toggleAutoSync = async (enabled: boolean) => {
     localStorage.setItem('auto_sync_enabled', enabled.toString());
-    console.log('自動同期設定を変更:', enabled ? '有効' : '無効', new Date().toISOString());
+    console.log('自動同期設定を変更:', enabled ? '有効' : '無効');
     
-    let success = false;
     try {
       const user = getCurrentUser();
       logSecurityEvent('auto_sync_toggled', user?.lineUsername || 'system', `自動同期が${enabled ? '有効' : '無効'}になりました`);
+    } catch (error) {
+      console.error('セキュリティログ記録エラー:', error);
+    }
+
+    setStatus(prev => ({ ...prev, isAutoSyncEnabled: enabled }));
+
+    // 有効にした場合は即座に同期を実行
+    if (enabled && isConnected && currentUser) {
+      let success = false;
+      const currentCounselor = localStorage.getItem('current_counselor');
       
-      if (currentCounselor) {
-        console.log('管理者モードで強制同期を実行します', new Date().toISOString());
-        success = await syncService.adminSync();
-        
-        // 管理者同期が失敗した場合は、もう一度試行
-        if (!success) {
-          console.log('管理者同期に失敗しました。もう一度試行します。', new Date().toISOString());
-          // 少し待機してから再試行
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          success = await syncService.adminSync();
-        }
-        
-        console.log('管理者同期の最終結果:', success ? '成功' : '失敗');
-      } else {
-        // 通常ユーザーの場合は強制同期を実行
-        console.log('強制同期を実行します - ユーザーID: ' + currentUser.id, new Date().toISOString());
-        success = await syncService.forceSync(currentUser.id);
-        
-        // 強制同期が失敗した場合は、もう一度試行
-        if (!success) {
-          console.log('強制同期に失敗しました。もう一度試行します。', new Date().toISOString());
-          // 少し待機してから再試行
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          success = await syncService.forceSync(currentUser.id);
-        }
-        
-        console.log('強制同期の最終結果:', success ? '成功' : '失敗');
-      }
       if (currentCounselor) {
         console.log('管理者モードで強制同期を実行します', new Date().toISOString());
         await syncService.adminSync();
@@ -316,12 +297,40 @@ export const useAutoSync = () => {
         console.log('すべての同期処理が完了しました - ユーザーID: ' + currentUser.id, new Date().toISOString());
       }
       
-      // 最終同期時間を更新
-      const now = new Date().toISOString();
-      localStorage.setItem('last_sync_time', now);
-      setStatus(prev => ({ ...prev, lastSyncTime: now, syncError: null }));
+      try {
+        await performAutoSync(currentUser.id);
+      } catch (error) {
+        console.error('自動同期実行エラー:', error);
+      }
+    }
+  };
+
+  // 手動同期実行
+  const triggerManualSync = async () => {
+    setStatus(prev => ({ ...prev, syncInProgress: true, syncError: null }));
+    console.log('手動同期を開始します');
+
+    try {
+      if (!isConnected || !currentUser) {
+        throw new Error('接続またはユーザー情報が不足しています');
+      }
       
-      return true;
+      await performAutoSync(currentUser.id);
+      console.log('手動同期が完了しました - ユーザーID: ' + currentUser.id);
+      
+      try {
+        const user = getCurrentUser();
+        logSecurityEvent('manual_sync_completed', user?.lineUsername || 'system', '手動同期が完了しました');
+      } catch (error) {
+        console.error('セキュリティログ記録エラー:', error);
+      }
+      
+    } catch (error) {
+      console.error('手動同期エラー:', error);
+      setStatus(prev => ({ 
+        ...prev, 
+        syncError: error instanceof Error ? error.message : '手動同期に失敗しました'
+      }));
     } finally {
       setStatus(prev => ({ ...prev, syncInProgress: false }));
     }
