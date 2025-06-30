@@ -553,7 +553,7 @@ export const syncService = {
       }
       
       // 全ユーザーを取得
-      const { data: users, error: usersError } = await supabase
+      let { data: users, error: usersError } = await supabase
         .from('users')
         .select('*');
       
