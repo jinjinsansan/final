@@ -72,8 +72,24 @@ const AdminPanel: React.FC = () => {
       console.log('管理者用データの有無:', adminEntries ? 'あり' : 'なし');
       
       if (adminEntries && adminEntries !== '[]') {
-        const parsedEntries = JSON.parse(adminEntries);
+        let parsedEntries = JSON.parse(adminEntries);
         console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+        
+        // ユーザー名とタイムスタンプの修正
+        parsedEntries = parsedEntries.map((entry: any) => {
+          // ユーザー名が正しく設定されていない場合は修正
+          if (!entry.user || !entry.user.line_username) {
+            const lineUsername = localStorage.getItem('line-username') || 'にさんテスト用vivaldiさん';
+            entry.user = { line_username: lineUsername };
+          }
+          
+          // created_atが設定されていない場合は現在時刻を設定
+          if (!entry.created_at) {
+            entry.created_at = new Date().toISOString();
+          }
+          
+          return entry;
+        });
         
         // 日付順でソート（新しい順）
         parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -86,8 +102,22 @@ const AdminPanel: React.FC = () => {
         // 管理者用データがない場合は、通常のデータを読み込む
         const savedEntries = localStorage.getItem('journalEntries');
         if (savedEntries) {
-          const parsedEntries = JSON.parse(savedEntries);
+          let parsedEntries = JSON.parse(savedEntries);
           console.log('通常の日記データを読み込み:', parsedEntries.length, '件');
+          
+          // ユーザー名とタイムスタンプの修正
+          parsedEntries = parsedEntries.map((entry: any) => {
+            // ユーザー名を追加
+            const lineUsername = localStorage.getItem('line-username') || 'にさんテスト用vivaldiさん';
+            entry.user = { line_username: lineUsername };
+            
+            // created_atが設定されていない場合は現在時刻を設定
+            if (!entry.created_at) {
+              entry.created_at = new Date().toISOString();
+            }
+            
+            return entry;
+          });
           
           // 日付順でソート（新しい順）
           parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -481,6 +511,15 @@ const AdminPanel: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
+    // 無効な日付の場合は現在の日付を使用
+    if (isNaN(date.getTime())) {
+      console.warn('無効な日付:', dateString);
+      return new Date().toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
     return date.toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: 'short',
@@ -881,7 +920,7 @@ const AdminPanel: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                  )}
+                            {entry.user?.line_username || localStorage.getItem('line-username') || 'ゲスト'}
                 </div>
               </div>
             )}
