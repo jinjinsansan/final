@@ -146,24 +146,36 @@ const DataMigration: React.FC = () => {
   // 強制同期を実行する関数
   const handleForceSync = async () => {
     if (!isConnected || !currentUser) {
-      alert('Supabaseに接続されていないか、ユーザーが設定されていません。');
+      alert('Supabaseに接続されていないため、同期できません。インターネット接続を確認してください。');
       return;
     }
     
-    if (!window.confirm('強制同期を実行しますか？このプロセスでは、ローカルデータをSupabaseに強制的に同期します。')) {
+    if (!window.confirm('強制同期を実行しますか？このプロセスでは、ローカルデータをSupabaseに強制的に同期し、最新の状態に更新します。')) {
       return;
     }
     
     setForceSyncInProgress(true);
-    setMigrationStatus('強制同期を実行中...');
+    setMigrationStatus('強制同期を実行中...データの量によっては時間がかかる場合があります');
     
     try {
       if (syncService) {
-        // ローカルデータをSupabaseに同期
-        const success = await syncService.forceSync(currentUser.id);
+        // 管理者モードの場合は管理者同期を実行
+        const currentCounselor = localStorage.getItem('current_counselor');
+        let success = false;
+        
+        if (currentCounselor) {
+          console.log('管理者モードで強制同期を実行します', new Date().toISOString());
+          success = await syncService.adminSync();
+          console.log('管理者同期の結果:', success ? '成功' : '失敗');
+        } else {
+          // 通常ユーザーの場合は強制同期を実行
+          console.log('強制同期を実行します - ユーザーID: ' + currentUser.id, new Date().toISOString());
+          success = await syncService.forceSync(currentUser.id);
+          console.log('強制同期の結果:', success ? '成功' : '失敗');
+        }
         
         if (success) {
-          setMigrationStatus('強制同期が完了しました！');
+          setMigrationStatus('強制同期が完了しました！データが最新の状態に更新されました。');
           
           // データ数を再読み込み
           await loadDataInfo();
@@ -171,8 +183,13 @@ const DataMigration: React.FC = () => {
           // 最終同期時間を更新
           const now = new Date().toISOString();
           localStorage.setItem('last_sync_time', now);
+          
+          // 管理者モードの場合は管理画面を更新
+          if (currentCounselor) {
+            window.location.reload();
+          }
         } else {
-          setMigrationStatus('強制同期に失敗しました。もう一度お試しください。');
+          setMigrationStatus('強制同期に失敗しました。インターネット接続を確認して、もう一度お試しください。');
         }
       }
     } catch (error) {
@@ -252,7 +269,7 @@ const DataMigration: React.FC = () => {
           <div className="flex items-center space-x-3">
             <SyncStatusIndicator />
             {isInitializing && (
-              <span className="text-sm text-gray-500">初期化中...</span>
+              <span className="text-sm text-gray-500">初期化中...<div className="inline-block w-4 h-4 border-2 border-t-transparent border-gray-300 rounded-full animate-spin ml-1"></div></span>
             )}
           </div>
           <div>
@@ -388,16 +405,38 @@ const DataMigration: React.FC = () => {
             <div className="mt-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
               <div className="flex items-start space-x-3 mb-4">
                 <ArrowUpDown className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-jp-bold text-gray-900 mb-2">強制同期</h4>
-                  <p className="text-sm text-gray-700 font-jp-normal mb-4">同期が正常に動作していない場合、強制的にローカルデータをSupabaseに同期します。</p>
+                <div className="flex-1">
+                  <h4 className="font-jp-bold text-gray-900 mb-2">強制同期（データ修復）</h4>
+                  <p className="text-sm text-gray-700 font-jp-normal mb-4">
+                    同期が正常に動作していない場合や、スマートフォンで入力したデータが表示されない場合に使用します。
+                    強制的にすべてのデータを同期して最新の状態に更新します。
+                  </p>
                 </div>
               </div>
               <button
                 onClick={handleForceSync}
                 disabled={forceSyncInProgress || !isConnected}
                 className="flex items-center justify-center space-x-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-jp-medium transition-colors w-full"
-              >{forceSyncInProgress ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowUpDown className="w-4 h-4" />} <span>強制同期を実行</span></button>
+              >
+                {forceSyncInProgress ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>同期中...</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpDown className="w-4 h-4" />
+                    <span>強制同期を実行（データ修復）</span>
+                  </>
+                )}
+              </button>
+              {!isConnected && (
+                <div className="mt-2 bg-red-50 rounded-lg p-2 border border-red-200">
+                  <p className="text-xs text-red-700 text-center">
+                    インターネットに接続されていないため、同期できません
+                  </p>
+                </div>
+              )}
             </div>
             
             {/* データバックアップセクション */}

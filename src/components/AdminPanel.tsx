@@ -111,7 +111,7 @@ const AdminPanel: React.FC = () => {
   const handleSyncAdminData = async () => {
     console.log('管理者用データを同期中...');
     setIsSyncInProgress(true);
-    setStatus({message: '管理者データを同期中...', type: 'info'});
+    setStatus({message: '管理者データを同期中...（スマートフォンのデータも含めて同期します）', type: 'info'});
     
     try {
       // 管理者モードでの同期を実行
@@ -119,7 +119,7 @@ const AdminPanel: React.FC = () => {
       
       if (success) {
         console.log('管理者用データの同期が完了しました');
-        setStatus({message: '管理者データの同期が完了しました', type: 'success'});
+        setStatus({message: '管理者データの同期が完了しました。すべてのデバイスからのデータが表示されます。', type: 'success'});
         
         // 管理者用のデータを読み込み
         const adminEntries = localStorage.getItem('admin_journalEntries');
@@ -624,13 +624,22 @@ const AdminPanel: React.FC = () => {
           <h1 className="text-2xl font-jp-bold text-gray-900">管理画面</h1>
           <button
             onClick={handleSyncAdminData}
-            disabled={syncInProgress || loading}
+            disabled={syncInProgress || loading || !navigator.onLine}
             className="ml-auto flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-jp-medium transition-colors text-sm"
           >
             <RefreshCw className={`w-4 h-4 ${syncInProgress ? 'animate-spin' : ''}`} />
-            <span>データ同期</span>
+            <span>{syncInProgress ? '同期中...' : 'データ同期'}</span>
           </button>
         </div>
+        
+        {!navigator.onLine && (
+          <div className="mb-4 rounded-lg p-3 border bg-yellow-50 border-yellow-200 text-yellow-800">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="text-sm">オフラインモードです。インターネットに接続するとデータを同期できます。</span>
+            </div>
+          </div>
+        )}
         
         {/* ステータス表示 */}
         {status && (
