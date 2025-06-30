@@ -20,7 +20,6 @@ const BackupRestoreManager: React.FC = () => {
   const [status, setStatus] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
   const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
   const { isConnected, supabase } = useSupabase();
-  const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
 
   useEffect(() => {
     // カウンセラー名を取得
@@ -33,17 +32,19 @@ const BackupRestoreManager: React.FC = () => {
   }, []);
 
   const loadBackupLogs = async () => {
-      setLoading(true);
-      if (!isConnected || !supabase) {
-        console.log('Supabase接続がないため、バックアップログの読み込みをスキップします');
-        setStatus({
-          message: 'ローカルモードで動作中のため、バックアップログは利用できません',
-          type: 'info'
-        });
-        return;
-      }
-      
-      setLoading(true);
+    setLoading(true);
+    
+    if (!isConnected || !supabase) {
+      console.log('Supabase接続がないため、バックアップログの読み込みをスキップします');
+      setStatus({
+        message: 'ローカルモードで動作中のため、バックアップログは利用できません',
+        type: 'info'
+      });
+      setLoading(false);
+      return;
+    }
+    
+    try {
       const { data, error } = await supabase
         .from('backup_logs')
         .select('*')
@@ -61,10 +62,6 @@ const BackupRestoreManager: React.FC = () => {
       }
     } catch (error) {
       console.error('バックアップログ読み込みエラー:', error);
-      setStatus({
-        message: 'バックアップログの読み込みに失敗しました',
-        type: 'error'
-      });
       setStatus({
         message: 'バックアップログの読み込みに失敗しました',
         type: 'error'
@@ -415,30 +412,36 @@ const BackupRestoreManager: React.FC = () => {
             window.location.reload();
           }, 5000);
           
-        } catch (logError) {
-          console.error('バックアップログ記録エラー:', logError);
+        } catch (error) {
+          console.error('データ復元エラー:', error);
+          setStatus({
+            message: 'データの復元に失敗しました。有効なバックアップファイルか確認してください。',
+            type: 'error'
+          });
+          setRestoreInProgress(false);
         }
-      }
+      };
       
-      setStatus({
-        message: 'アプリ全体のバックアップが正常に作成されました！',
-        type: 'success'
-      });
+      fileReader.onerror = () => {
+        setStatus({
+          message: 'ファイルの読み込みに失敗しました。',
+          type: 'error'
+        });
+        setRestoreInProgress(false);
+      };
+      
+      fileReader.readAsText(backupFile);
+      
     } catch (error) {
-      console.error('バックアップ作成エラー:', error);
+      console.error('バックアップ復元エラー:', error);
       setStatus({
-        message: 'バックアップの作成中にエラーが発生しました。',
+        message: 'バックアップの復元に失敗しました。',
         type: 'error'
       });
-    } finally {
-      setBackupInProgress(false);
+      setRestoreInProgress(false);
     }
   };
 
-  // バックアップファイルの選択
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setBackupFile(e.target.files[0]);
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString('ja-JP');
@@ -675,8 +678,7 @@ const BackupRestoreManager: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          ) : null
-          )}
+          ) : null}
         </div>
       </div>
     </div>

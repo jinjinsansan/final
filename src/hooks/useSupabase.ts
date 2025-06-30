@@ -13,6 +13,9 @@ export const useSupabase = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(0);
   const [isInitializing, setIsInitializing] = useState(true);
+  
+  // supabaseインスタンスを返す
+  const supabaseInstance = supabase;
 
   // オフライン状態の監視
   useEffect(() => {
@@ -435,6 +438,7 @@ export const useSupabase = () => {
     isAdminMode,
     supabase,
     currentUser,
+    supabase: supabaseInstance,
     isInitializing,
     loading,
     error,
