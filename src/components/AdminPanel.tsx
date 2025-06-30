@@ -62,6 +62,9 @@ const AdminPanel: React.FC = () => {
   const loadEntries = async () => {
     console.log('日記データを読み込み中...');
     setLoading(true);
+    
+    const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
+    
     try {
       // 管理者モードでは、まず管理者用のデータを同期
       await handleSyncAdminData();
@@ -71,12 +74,27 @@ const AdminPanel: React.FC = () => {
       if (adminEntries) {
         const parsedEntries = JSON.parse(adminEntries);
         console.log('管理者用データを読み込み:', parsedEntries.length, '件');
+
+        // ユーザー名とタイムスタンプを修正
+        const fixedEntries = parsedEntries.map((entry: any) => {
+          // ユーザー名が設定されていない場合は現在のユーザー名を使用
+          if (!entry.user || !entry.user.line_username) {
+            entry.user = { line_username: lineUsername };
+          }
+          
+          // タイムスタンプが無効な場合は現在の時刻を使用
+          if (!entry.created_at || entry.created_at === 'Invalid Date') {
+            entry.created_at = new Date().toISOString();
+          }
+          
+          return entry;
+        });
         
         // 日付順でソート（新しい順）
-        parsedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        fixedEntries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
-        setEntries(parsedEntries);
-        setFilteredEntries(parsedEntries);
+        setEntries(fixedEntries);
+        setFilteredEntries(fixedEntries);
       } else {
         console.log('管理者用データが見つかりません');
         setEntries([]);
@@ -396,6 +414,14 @@ const AdminPanel: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
+    // 無効な日付の場合は現在の日付を使用
+    if (isNaN(date.getTime())) {
+      return new Date().toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
     return date.toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: 'short',
@@ -429,7 +455,7 @@ const AdminPanel: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-jp-semibold text-gray-900">
-                      {selectedEntry.user?.line_username || 'Unknown User'}
+                      {selectedEntry.user?.line_username || 'ゲスト'}
                     </h3>
                     <p className="text-gray-500 text-sm">
                       {formatDate(selectedEntry.date)}
@@ -703,7 +729,7 @@ const AdminPanel: React.FC = () => {
                                 {entry.emotion}
                               </span>
                               <span className="text-gray-900 font-jp-medium">
-                                {entry.user?.line_username || 'Unknown User'}
+                                {entry.user?.line_username || 'ゲスト'}
                               </span>
                               <span className="text-gray-500 text-sm">
                                 {formatDate(entry.date)}
