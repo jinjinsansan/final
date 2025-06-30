@@ -239,24 +239,18 @@ export const useSupabase = () => {
       console.log('ユーザー検索結果:', user ? `ユーザーが見つかりました: ${user.id}` : 'ユーザーが見つかりませんでした - 新規作成を試みます', new Date().toISOString());
       
       // セキュリティイベントをログ
-      if (user) {
-        console.log(`Supabaseユーザーが見つかりました: "${trimmedUsername}" - ID: ${user.id}`);
-          logSecurityEvent('supabase_user_found', trimmedUsername, 'Supabaseユーザーが見つかりました');
-        } catch (logError) {
-          console.error('セキュリティログ記録エラー:', logError);
-        }
+        
+        // セキュリティイベントをログに記録
+        logSecurityEvent('supabase_user_found', trimmedUsername, 'Supabaseユーザーが見つかりました');
         
         // ユーザーが見つかった場合は現在のユーザーとして設定
         console.log('ユーザーを設定:', user.id);
         setCurrentUser(user); 
       } else {
         console.log(`Supabaseユーザーが見つかりません: "${trimmedUsername}" - 新規作成を試みます`);
-        try {
-          logSecurityEvent('supabase_user_not_found', trimmedUsername, 'Supabaseユーザーが見つかりません');
-        } catch (logError) {
-          console.error('セキュリティログ記録エラー:', logError);
-          console.log('ログエラー:', logError);
-        }
+        
+        // セキュリティイベントをログに記録
+        logSecurityEvent('supabase_user_not_found', trimmedUsername, 'Supabaseユーザーが見つかりません');
       }
       
       if (!user) {

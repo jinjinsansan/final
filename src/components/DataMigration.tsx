@@ -3,11 +3,6 @@ import { Database, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shie
 import { userService, syncService } from '../lib/supabase';
 import { useSupabase } from '../hooks/useSupabase'; 
 import { getCurrentUser } from '../lib/deviceAuth';
-import SyncStatusIndicator from './SyncStatusIndicator';
-
-// デバッグ情報の状態
-const [debugInfo, setDebugInfo] = useState<string | null>(null);
-
 const DataMigration: React.FC = () => {
   const [localDataCount, setLocalDataCount] = useState(0);
   const [supabaseDataCount, setSupabaseDataCount] = useState(0);
@@ -23,6 +18,7 @@ const DataMigration: React.FC = () => {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true); 
   const [backupInProgress, setBackupInProgress] = useState<boolean>(false); 
   const [forceSyncInProgress, setForceSyncInProgress] = useState<boolean>(false); 
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   // 全体のデータ数を保持する状態
   useEffect(() => {
