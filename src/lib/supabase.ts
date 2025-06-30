@@ -998,6 +998,7 @@ export const syncService = {
                 consent_given: history.consent_given,
                 ip_address: history.ip_address || 'unknown',
                 user_agent: history.user_agent || navigator.userAgent
+                user_agent: history.user_agent || navigator.userAgent
               }]);
               
             if (insertError) {
