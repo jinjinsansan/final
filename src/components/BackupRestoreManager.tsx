@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HardDrive, Upload, Download, RefreshCw, CheckCircle, AlertTriangle, Shield, Info, Calendar, FileText, Database } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useSupabase } from '../hooks/useSupabase';
 
 interface BackupLog {
   id: string;
@@ -19,6 +19,8 @@ const BackupRestoreManager: React.FC = () => {
   const [backupFile, setBackupFile] = useState<File | null>(null);
   const [status, setStatus] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
   const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
+  const { isConnected, supabase } = useSupabase();
+  const [currentCounselor, setCurrentCounselor] = useState<string | null>(null);
 
   useEffect(() => {
     // カウンセラー名を取得
@@ -31,9 +33,16 @@ const BackupRestoreManager: React.FC = () => {
   }, []);
 
   const loadBackupLogs = async () => {
-    if (!supabase) return;
-    
-    try {
+      setLoading(true);
+      if (!isConnected || !supabase) {
+        console.log('Supabase接続がないため、バックアップログの読み込みをスキップします');
+        setStatus({
+          message: 'ローカルモードで動作中のため、バックアップログは利用できません',
+          type: 'info'
+        });
+        return;
+      }
+      
       setLoading(true);
       const { data, error } = await supabase
         .from('backup_logs')
@@ -56,6 +65,10 @@ const BackupRestoreManager: React.FC = () => {
         message: 'バックアップログの読み込みに失敗しました',
         type: 'error'
       });
+      setStatus({
+        message: 'バックアップログの読み込みに失敗しました',
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -68,7 +81,10 @@ const BackupRestoreManager: React.FC = () => {
     }
     
     setBackupInProgress(true);
-    setStatus({message: 'バックアップを作成中...', type: 'info'});
+    setStatus({
+      message: 'バックアップを作成中...',
+      type: 'info'
+    });
     
     try {
       // ローカルストレージからすべてのデータを収集
@@ -171,7 +187,7 @@ const BackupRestoreManager: React.FC = () => {
       localStorage.setItem('last_full_backup_time', new Date().toLocaleString('ja-JP'));
       
       // バックアップログをSupabaseに記録
-      if (supabase && currentCounselor) {
+      if (isConnected && supabase && currentCounselor) {
         try {
           await supabase
             .from('backup_logs')
@@ -192,12 +208,20 @@ const BackupRestoreManager: React.FC = () => {
         } catch (logError) {
           console.error('バックアップログ記録エラー:', logError);
         }
+      } else {
+        console.log('Supabase接続がないか、カウンセラー名が不明なため、バックアップログの記録をスキップします');
       }
       
-      setStatus({message: 'アプリ全体のバックアップが正常に作成されました！', type: 'success'});
+      setStatus({
+        message: 'アプリ全体のバックアップが正常に作成されました！',
+        type: 'success'
+      });
     } catch (error) {
       console.error('バックアップ作成エラー:', error);
-      setStatus({message: 'バックアップの作成中にエラーが発生しました。', type: 'error'});
+      setStatus({
+        message: 'バックアップの作成中にエラーが発生しました。',
+        type: 'error'
+      });
     } finally {
       setBackupInProgress(false);
     }
@@ -214,7 +238,10 @@ const BackupRestoreManager: React.FC = () => {
   // バックアップからの復元
   const handleRestoreBackup = async () => {
     if (!backupFile) {
-      setStatus({message: 'バックアップファイルを選択してください。', type: 'error'});
+      setStatus({
+        message: 'バックアップファイルを選択してください。',
+        type: 'error'
+      });
       return;
     }
     
@@ -223,7 +250,10 @@ const BackupRestoreManager: React.FC = () => {
     }
     
     setRestoreInProgress(true);
-    setStatus({message: '復元中...', type: 'info'});
+    setStatus({
+      message: '復元中...',
+      type: 'info'
+    });
     
     try {
       // ファイルを読み込み
@@ -254,7 +284,7 @@ const BackupRestoreManager: React.FC = () => {
           }
           
           // Supabaseデータの復元（接続されている場合）
-          if (supabase && backupObject.supabaseData) {
+          if (isConnected && supabase && backupObject.supabaseData) {
             // 注意: 実際の実装では、データの整合性を保つために
             // トランザクションやバッチ処理を使用することをお勧めします
             
@@ -332,16 +362,16 @@ const BackupRestoreManager: React.FC = () => {
                         user_id: entry.user_id,
                         date: entry.date,
                         emotion: entry.emotion,
-                        event: entry.event,
-                        realization: entry.realization,
+                        event: entry.event || '',
+                        realization: entry.realization || '',
                         self_esteem_score: entry.self_esteem_score,
                         worthlessness_score: entry.worthlessness_score,
                         created_at: entry.created_at,
-                        counselor_memo: entry.counselor_memo,
-                        is_visible_to_user: entry.is_visible_to_user,
-                        counselor_name: entry.counselor_name,
-                        assigned_counselor: entry.assigned_counselor,
-                        urgency_level: entry.urgency_level
+                        counselor_memo: entry.counselor_memo || '',
+                        is_visible_to_user: entry.is_visible_to_user || false,
+                        counselor_name: entry.counselor_name || '',
+                        assigned_counselor: entry.assigned_counselor || '',
+                        urgency_level: entry.urgency_level || ''
                       }]);
                   }
                 } catch (error) {
@@ -352,7 +382,7 @@ const BackupRestoreManager: React.FC = () => {
           }
           
           // 復元ログをSupabaseに記録
-          if (supabase && currentCounselor) {
+          if (isConnected && supabase && currentCounselor) {
             try {
               await supabase
                 .from('backup_logs')
@@ -375,34 +405,40 @@ const BackupRestoreManager: React.FC = () => {
             }
           }
           
-          setStatus({message: 'データが正常に復元されました！ページを再読み込みしてください。', type: 'success'});
+          setStatus({
+            message: 'データが正常に復元されました！ページを再読み込みしてください。',
+            type: 'success'
+          });
           
           // 5秒後に自動的にページを再読み込み
           setTimeout(() => {
             window.location.reload();
           }, 5000);
           
-        } catch (error) {
-          console.error('データ復元エラー:', error);
-          setStatus({message: 'データの復元に失敗しました。有効なバックアップファイルか確認してください。', type: 'error'});
-          setRestoreInProgress(false);
+        } catch (logError) {
+          console.error('バックアップログ記録エラー:', logError);
         }
-      };
+      }
       
-      fileReader.onerror = () => {
-        setStatus({message: 'ファイルの読み込みに失敗しました。', type: 'error'});
-        setRestoreInProgress(false);
-      };
-      
-      fileReader.readAsText(backupFile);
-      
+      setStatus({
+        message: 'アプリ全体のバックアップが正常に作成されました！',
+        type: 'success'
+      });
     } catch (error) {
-      console.error('バックアップ復元エラー:', error);
-      setStatus({message: 'バックアップの復元に失敗しました。', type: 'error'});
-      setRestoreInProgress(false);
+      console.error('バックアップ作成エラー:', error);
+      setStatus({
+        message: 'バックアップの作成中にエラーが発生しました。',
+        type: 'error'
+      });
+    } finally {
+      setBackupInProgress(false);
     }
   };
 
+  // バックアップファイルの選択
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setBackupFile(e.target.files[0]);
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString('ja-JP');
@@ -419,7 +455,10 @@ const BackupRestoreManager: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center space-x-3 mb-6">
           <HardDrive className="w-8 h-8 text-purple-600" />
-          <h2 className="text-xl font-jp-bold text-gray-900">アプリ全体のバックアップと復元</h2>
+          <h2 className="text-xl font-jp-bold text-gray-900">
+            アプリ全体のバックアップと復元
+            {!isConnected && <span className="ml-2 text-sm text-yellow-600">(ローカルモード)</span>}
+          </h2>
         </div>
         
         <div className="bg-purple-50 rounded-lg p-6 border border-purple-200 mb-6">
@@ -443,7 +482,7 @@ const BackupRestoreManager: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* バックアップ作成 */}
           <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-            <div className="flex items-center space-x-3 mb-4">
+            <div className="flex items-center space-x-3 mb-4 flex-wrap">
               <Download className="w-6 h-6 text-blue-600" />
               <h3 className="text-lg font-jp-bold text-gray-900">バックアップ作成</h3>
             </div>
@@ -470,10 +509,13 @@ const BackupRestoreManager: React.FC = () => {
           </div>
           
           {/* バックアップ復元 */}
-          <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-            <div className="flex items-center space-x-3 mb-4">
+          <div className={`${isConnected ? 'bg-green-50' : 'bg-gray-50'} rounded-lg p-6 border ${isConnected ? 'border-green-200' : 'border-gray-200'}`}>
+            <div className="flex items-center space-x-3 mb-4 flex-wrap">
               <Upload className="w-6 h-6 text-green-600" />
               <h3 className="text-lg font-jp-bold text-gray-900">バックアップ復元</h3>
+              {!isConnected && (
+                <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">ローカルモードでは制限あり</span>
+              )}
             </div>
             <p className="text-gray-700 font-jp-normal mb-4">
               以前作成したバックアップファイルからデータを復元します。現在のデータは上書きされます。
@@ -516,7 +558,7 @@ const BackupRestoreManager: React.FC = () => {
         </div>
         
         {/* ステータス表示 */}
-        {status && (
+        {status && status.message && (
           <div className={`rounded-lg p-4 border mb-6 ${
             status.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 
             status.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
@@ -536,7 +578,7 @@ const BackupRestoreManager: React.FC = () => {
         )}
         
         {/* バックアップ履歴 */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${!isConnected ? 'opacity-50' : ''}`}>
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="font-jp-bold text-gray-900">バックアップ履歴</h3>
@@ -549,13 +591,25 @@ const BackupRestoreManager: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {!isConnected && (
+            <div className="p-6 text-center">
+              <Database className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
+                ローカルモードで動作中
+              </h3>
+              <p className="text-gray-400 font-jp-normal">
+                Supabase接続時にバックアップ履歴が表示されます
+              </p>
+            </div>
+          )}
           
-          {loading ? (
+          {isConnected && loading ? (
             <div className="p-6 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600 font-jp-normal">読み込み中...</p>
             </div>
-          ) : backupLogs.length === 0 ? (
+          ) : isConnected && backupLogs.length === 0 ? (
             <div className="p-6 text-center">
               <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-jp-medium text-gray-500 mb-2">
@@ -565,7 +619,7 @@ const BackupRestoreManager: React.FC = () => {
                 バックアップを作成すると履歴が表示されます
               </p>
             </div>
-          ) : (
+          ) : isConnected && backupLogs.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
@@ -621,6 +675,7 @@ const BackupRestoreManager: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          ) : null
           )}
         </div>
       </div>
