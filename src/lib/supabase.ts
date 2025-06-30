@@ -995,8 +995,9 @@ export const syncService = {
               .insert([{
                 line_username: history.line_username,
                 consent_date: history.consent_date,
-                consent_type: history.consent_type || 'general',
-                consent_version: history.consent_version || '1.0'
+                consent_given: history.consent_given,
+                ip_address: history.ip_address || 'unknown',
+                user_agent: history.user_agent || navigator.userAgent
               }]);
               
             if (insertError) {
