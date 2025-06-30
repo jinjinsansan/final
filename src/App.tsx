@@ -628,12 +628,10 @@ function App() {
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   <span className="text-green-800 font-jp-medium text-sm">
                     {isLocalMode 
-                      ? 'ローカルモードで動作中（設定により）' 
-                      : 'ローカルモードで動作中（Supabase接続できないため）'}
-                  </span>
+                     ? 'ローカルモードで動作中（設定により）' 
+                     : 'ローカルモードで動作中（Supabase接続できないため）'}</span>
                 </div>
               </div>
-            )}
             )}
 
             {/* 同期ステータス表示 */}
