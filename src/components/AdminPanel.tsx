@@ -40,7 +40,6 @@ interface User {
 const AdminPanel: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
-  const [filteredEntries, setFilteredEntries] = useState<JournalEntry[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -363,7 +362,7 @@ const AdminPanel: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="overflow-x-auto pb-2">
-            <TabsList className="inline-flex w-auto min-w-full">
+            <TabsList className="inline-flex w-auto min-w-full space-x-1">
               <TabsTrigger value="search" className="flex items-center space-x-2 px-4 py-2 whitespace-nowrap">
                 <Search className="h-4 w-4" />
                 <span>検索・閲覧</span>
@@ -400,8 +399,6 @@ const AdminPanel: React.FC = () => {
                 <Database className="h-4 w-4" />
                 <span>データ整理</span>
               </TabsTrigger>
-            </TabsList>
-          </div>
             </TabsList>
           </div>
 
