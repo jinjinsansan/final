@@ -210,6 +210,9 @@ const DiaryPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 現在のユーザー名を取得
+    const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
+    
     // 基本的な入力バリデーション
     if (!formData.emotion) {
       alert('感情を選択してください。');
@@ -344,6 +347,27 @@ const DiaryPage: React.FC = () => {
         worthlessnessScore: 50,
         realization: ''
       });
+      
+      // 自動同期を強制的に実行（スマートフォンでの入力後にすぐに同期するため）
+      try {
+        console.log('日記保存後に強制同期を実行します');
+        
+        // 現在のユーザーIDを取得
+        const userId = localStorage.getItem('supabase_user_id');
+        
+        if (userId) {
+          // 強制同期を実行
+          const syncService = await import('../lib/supabase').then(module => module.syncService);
+          if (syncService && syncService.forceSync) {
+            await syncService.forceSync(userId);
+            console.log('強制同期が完了しました');
+          }
+        } else {
+          console.log('ユーザーIDが見つからないため、強制同期をスキップします');
+        }
+      } catch (syncError) {
+        console.error('強制同期エラー:', syncError);
+      }
       
       // 無価値感またはポジティブな感情を選んだ場合、次回のために今回のスコアを前日のスコアとして設定
       if (needsScores) {
@@ -1043,12 +1067,14 @@ const DiaryPage: React.FC = () => {
       <div className="fixed bottom-4 right-4 bg-green-100 border border-green-200 rounded-lg p-3 shadow-lg z-10">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-green-800 font-jp-medium text-sm">
-            {import.meta.env.VITE_LOCAL_MODE === 'true' 
-              ? 'ローカル保存モード' 
-              : !navigator.onLine 
-                ? 'オフラインモード' 
-                : 'データ保存中'}
+          <span className="text-green-800 font-jp-medium text-sm flex items-center">
+            {import.meta.env.VITE_LOCAL_MODE === 'true'
+              ? 'ローカル保存モード'
+              : !navigator.onLine
+                ? 'オフラインモード'
+                : saving 
+                  ? <>データ保存中<div className="ml-1 w-3 h-3 border-2 border-t-transparent border-green-500 rounded-full animate-spin"></div></>
+                  : `${localStorage.getItem('line-username') || 'ゲスト'}のデータ`}
           </span>
         </div>
       </div>

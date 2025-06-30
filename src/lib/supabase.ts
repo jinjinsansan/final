@@ -542,111 +542,44 @@ export const syncService = {
   // 管理者モードでの同期
   adminSync: async () => {
     try {
-      // 管理者用Supabaseクライアントの確認
+      console.log('管理者同期を開始します', new Date().toISOString());
+      
+      // Supabaseクライアントの確認
       if (!supabase) {
-        console.log('Supabase接続がないため、同期をスキップします');
-        return false;
-      }
-      
-      // 全ユーザーを取得
-      const { data: users, error: usersError } = await supabase
-        .from('users')
-        .select('*');
-      
-      if (usersError) {
-        console.error('ユーザー取得エラー:', usersError);
-        return false;
-      }
-      
-      if (!users || users.length === 0) {
-        console.log('ユーザーが見つかりませんでした');
-        return false;
-      }
-      
-      console.log(`管理者同期: ${users.length}人のユーザーを同期します`);
-      
-      // 各ユーザーのデータを同期
-      const allEntries = [];
-      for (const user of users) {
-        try {
-          // ユーザーの日記データを取得
-          const { data: entries, error } = await supabase
-            .from('diary_entries')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
+        console.log('Supabaseクライアントが利用できないため、同期をスキップします', new Date().toISOString());
+        
+        // オフラインの場合はローカルデータのみを使用
+        if (!navigator.onLine) {
+          console.log('オフラインモードのため、ローカルデータのみを使用します', new Date().toISOString());
           
-          if (error) {
-            console.error(`ユーザー ${user.id} の日記データ取得エラー:`, error);
-            continue;
+          // ローカルデータを取得
+          const savedEntries = localStorage.getItem('journalEntries');
+          if (savedEntries) {
+            try {
+              const entries = JSON.parse(savedEntries);
+              const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
+              
+              // 管理者用データ形式に変換
+              const adminEntries = entries.map((entry: any) => ({
+                ...entry,
+                user: { line_username: lineUsername },
+                created_at: entry.created_at || new Date().toISOString()
+              }));
+              
+              // 管理者用データとして保存
+              localStorage.setItem('admin_journalEntries', JSON.stringify(adminEntries));
+              console.log(`ローカルユーザー ${lineUsername} の ${entries.length} 件のデータを管理者用データとして保存しました`);
+              return true;
+            } catch (error) {
+              console.error('ローカルデータの解析エラー:', error);
+            }
           }
-          
-          console.log(`ユーザー ${user.id} の日記データを取得: ${entries?.length || 0}件`);
-          
-          // 全エントリーに追加
-          if (entries && entries.length > 0) {
-            entries.forEach(entry => {
-              // 日付文字列を正しく処理
-              const entryDate = entry.date ? new Date(entry.date) : new Date();
-              const formattedDate = !isNaN(entryDate.getTime()) 
-                ? entryDate.toISOString().split('T')[0] 
-                : new Date().toISOString().split('T')[0];
-                
-              // created_atが無効な場合は現在時刻を使用
-              const createdAt = entry.created_at && !isNaN(new Date(entry.created_at).getTime())
-                ? entry.created_at
-                : new Date().toISOString();
-                
-              allEntries.push({
-                id: entry.id,
-                date: formattedDate,
-                emotion: entry.emotion,
-                event: entry.event,
-                realization: entry.realization,
-                selfEsteemScore: entry.self_esteem_score,
-                worthlessnessScore: entry.worthlessness_score,
-                counselor_memo: entry.counselor_memo,
-                is_visible_to_user: entry.is_visible_to_user,
-                counselor_name: entry.counselor_name,
-                assigned_counselor: entry.assigned_counselor,
-                urgency_level: entry.urgency_level,
-                created_at: createdAt,
-                user: {
-                  line_username: user.line_username
-                }
-              });
-            });
-          }
-        } catch (userError) {
-          console.error(`ユーザー ${user.id} の同期エラー:`, userError);
         }
-      }
-      
-      // 全エントリーを管理者用のキーに保存
-      if (allEntries.length > 0) {
-        console.log(`合計 ${allEntries.length} 件の日記エントリーを管理者用ストレージに保存します`);
-        localStorage.setItem('admin_journalEntries', JSON.stringify(allEntries));
-      } else {
-        console.log('保存するエントリーがありませんでした');
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('管理者同期エラー:', error);
-      return false;
-    }
-  },
-  
-  // 管理者モードでの同期
-  adminSync: async () => {
-    try {
-      // 管理者用Supabaseクライアントの確認
-      if (!supabase) {
-        console.log('Supabaseクライアントが利用できないため、同期をスキップします');
+        
         return false;
       }
       
-      console.log('管理者同期: Supabaseからデータを取得中...');
+      console.log('管理者同期: Supabaseからデータを取得中...', new Date().toISOString());
       
       // 全ユーザーを取得
       const { data: users, error: usersError } = await supabase
@@ -659,10 +592,10 @@ export const syncService = {
       }
       
       if (!users || users.length === 0) {
-        console.log('Supabaseにユーザーが見つかりませんでした。ローカルユーザーを作成します。');
+        console.log('Supabaseにユーザーが見つかりませんでした。ローカルユーザーを作成します。', new Date().toISOString());
         
         // ローカルユーザーを作成
-        const lineUsername = localStorage.getItem('line-username') || 'にさんテスト用vivaldiさん';
+        const lineUsername = localStorage.getItem('line-username') || 'ゲスト';
         const localUser = {
           id: 'local-user-' + Date.now(),
           line_username: lineUsername,
@@ -684,7 +617,7 @@ export const syncService = {
             
             // 管理者用データとして保存
             localStorage.setItem('admin_journalEntries', JSON.stringify(adminEntries));
-            console.log(`ローカルユーザー ${lineUsername} の ${entries.length} 件のデータを管理者用データとして保存しました`);
+            console.log(`ローカルユーザー ${lineUsername} の ${entries.length} 件のデータを管理者用データとして保存しました`, new Date().toISOString());
             return true;
           } catch (error) {
             console.error('ローカルデータの解析エラー:', error);
@@ -696,7 +629,7 @@ export const syncService = {
         }
       }
       
-      console.log(`管理者同期: ${users.length}人のユーザーを同期します`);
+      console.log(`管理者同期: ${users.length}人のユーザーを同期します`, new Date().toISOString());
       
       // 各ユーザーのデータを同期
       const allEntries = [];
@@ -710,11 +643,11 @@ export const syncService = {
             .order('created_at', { ascending: false });
           
           if (error) {
-            console.error(`ユーザー ${user.id} の日記データ取得エラー:`, error);
+            console.error(`ユーザー ${user.id} (${user.line_username}) の日記データ取得エラー:`, error);
             continue;
           }
           
-          console.log(`ユーザー ${user.id} の日記データを取得: ${entries?.length || 0}件`);
+          console.log(`ユーザー ${user.id} (${user.line_username}) の日記データを取得: ${entries?.length || 0}件`, new Date().toISOString());
           
           // 全エントリーに追加
           if (entries && entries.length > 0) {
@@ -723,8 +656,8 @@ export const syncService = {
                 id: entry.id,
                 date: entry.date,
                 emotion: entry.emotion,
-                event: entry.event,
-                realization: entry.realization,
+                event: entry.event || '',
+                realization: entry.realization || '',
                 selfEsteemScore: entry.self_esteem_score,
                 worthlessnessScore: entry.worthlessness_score,
                 counselor_memo: entry.counselor_memo || '',
@@ -740,19 +673,19 @@ export const syncService = {
             });
           }
         } catch (userError) {
-          console.error(`ユーザー ${user.id} の同期エラー:`, userError);
+          console.error(`ユーザー ${user.id} (${user.line_username}) の同期エラー:`, userError);
         }
       }
       
       // 全エントリーを管理者用のキーに保存
       if (allEntries.length > 0) {
-        console.log(`合計 ${allEntries.length} 件の日記エントリーを管理者用ストレージに保存します`);
+        console.log(`合計 ${allEntries.length} 件の日記エントリーを管理者用ストレージに保存します`, new Date().toISOString());
         localStorage.setItem('admin_journalEntries', JSON.stringify(allEntries));
+        return true;
       } else {
-        console.log('保存するエントリーがありませんでした');
+        console.log('保存するエントリーがありませんでした', new Date().toISOString());
+        return false;
       }
-      
-      return true;
     } catch (error) {
       console.error('管理者同期エラー:', error);
       return false;
@@ -1151,16 +1084,32 @@ export const syncService = {
   // 強制同期を実行する関数
   forceSync: async (userId: string) => {
     try {
-      if (!supabase) return false;
+      console.log(`強制同期を開始します - ユーザーID: ${userId}`, new Date().toISOString());
+      
+      if (!supabase) {
+        console.log('Supabase接続がないため、強制同期をスキップします', new Date().toISOString());
+        return false;
+      }
+      
+      if (!navigator.onLine) {
+        console.log('オフラインモードのため、強制同期をスキップします', new Date().toISOString());
+        return false;
+      }
       
       // ローカルストレージから日記データを取得
       const savedEntries = localStorage.getItem('journalEntries');
-      if (!savedEntries) return false;
+      if (!savedEntries) {
+        console.log('ローカルデータがないため、強制同期をスキップします', new Date().toISOString());
+        return false;
+      }
       
       const entries = JSON.parse(savedEntries);
-      if (!entries || entries.length === 0) return false;
+      if (!entries || entries.length === 0) {
+        console.log('日記エントリーが空のため、強制同期をスキップします', new Date().toISOString());
+        return false;
+      }
       
-      console.log(`強制同期: ${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`);
+      console.log(`強制同期: ${entries.length}件の日記エントリーを同期します - ユーザーID: ${userId}`, new Date().toISOString());
       
       // 各エントリーをSupabaseに保存
       let successCount = 0;
@@ -1176,7 +1125,7 @@ export const syncService = {
             .maybeSingle();
           
           if (checkError) {
-            console.error(`エントリー ${entry.id} の確認エラー:`, checkError);
+            console.error(`エントリー ${entry.id} の確認エラー:`, checkError, new Date().toISOString());
             errorCount++;
             continue;
           }
@@ -1189,7 +1138,7 @@ export const syncService = {
                 date: entry.date,
                 emotion: entry.emotion,
                 event: entry.event,
-                realization: entry.realization,
+                realization: entry.realization || '',
                 self_esteem_score: entry.selfEsteemScore || 0,
                 worthlessness_score: entry.worthlessnessScore || 0,
                 counselor_memo: entry.counselor_memo,
@@ -1199,7 +1148,7 @@ export const syncService = {
               .eq('id', entry.id);
               
             if (updateError) {
-              console.error(`エントリー ${entry.id} の更新エラー:`, updateError);
+              console.error(`エントリー ${entry.id} の更新エラー:`, updateError, new Date().toISOString());
               errorCount++;
             } else {
               successCount++;
@@ -1213,8 +1162,8 @@ export const syncService = {
                 user_id: userId,
                 date: entry.date,
                 emotion: entry.emotion,
-                event: entry.event,
-                realization: entry.realization,
+                event: entry.event || '',
+                realization: entry.realization || '',
                 self_esteem_score: entry.selfEsteemScore || 0,
                 worthlessness_score: entry.worthlessnessScore || 0,
                 counselor_memo: entry.counselor_memo,
@@ -1223,19 +1172,44 @@ export const syncService = {
               }]);
               
             if (insertError) {
-              console.error(`エントリー ${entry.id} の作成エラー:`, insertError);
+              console.error(`エントリー ${entry.id} の作成エラー:`, insertError, new Date().toISOString());
               errorCount++;
             } else {
               successCount++;
             }
           }
         } catch (entryError) {
-          console.error(`エントリー ${entry.id} の処理中にエラーが発生:`, entryError);
+          console.error(`エントリー ${entry.id} の処理中にエラーが発生:`, entryError, new Date().toISOString());
           errorCount++;
         }
       }
       
-      console.log(`強制同期完了: 成功=${successCount}, 失敗=${errorCount}`);
+      // 同期ログを記録（可能な場合）
+      try {
+        await syncService.logSyncOperation(
+          userId,
+          'force',
+          successCount,
+          errorCount === 0,
+          errorCount > 0 ? `${errorCount}件のエントリーで同期エラーが発生しました` : undefined
+        );
+      } catch (logError) {
+        console.error('同期ログ記録エラー:', logError);
+      }
+      
+      console.log(`強制同期完了: 成功=${successCount}, 失敗=${errorCount}`, new Date().toISOString());
+      
+      // 最終同期時間を更新
+      localStorage.setItem('last_sync_time', new Date().toISOString());
+      
+      // 管理者同期も実行して、管理画面のデータを更新
+      try {
+        console.log('管理者同期も実行して管理画面のデータを更新します', new Date().toISOString());
+        await syncService.adminSync();
+      } catch (adminSyncError) {
+        console.error('管理者同期エラー:', adminSyncError);
+      }
+      
       return successCount > 0;
     } catch (error) {
       console.error('強制同期エラー:', error);

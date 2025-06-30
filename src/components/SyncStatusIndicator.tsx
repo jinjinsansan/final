@@ -66,9 +66,19 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
   
   const getStatusText = () => {
     if (autoSync.syncInProgress) return '同期中...';
-    if (!isConnected) return navigator.onLine ? 'ローカルモード' : 'オフラインモード';
+    if (!isConnected) return navigator.onLine ? 'ローカルモード' : 'オフライン';
     if (!autoSync.isAutoSyncEnabled) return '自動同期オフ';
-    return '同期済み';
+    
+    // 最終同期時間から6時間以上経過している場合は警告表示
+    const lastSyncTime = localStorage.getItem('last_sync_time') || '';
+    if (lastSyncTime) {
+      const diffHours = dayjs().diff(dayjs(lastSyncTime), 'hour');
+      if (diffHours > 6) {
+        return '同期が必要';
+      }
+    }
+    
+    return '同期済';
   };
   
   const handleClick = () => {
@@ -81,6 +91,7 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
       onClick={handleClick}
       disabled={!isConnected || autoSync.syncInProgress || !autoSync.currentUser}
       className={`flex items-center space-x-2 px-3 py-1 rounded-lg border ${getStatusColor()} transition-colors ${className} ${isConnected && !autoSync.syncInProgress && autoSync.currentUser ? 'hover:bg-opacity-80 cursor-pointer' : 'cursor-default'}`}
+      title={isConnected && !autoSync.syncInProgress && autoSync.currentUser ? "クリックして手動同期" : ""}
     >
       {getStatusIcon()}
       <div className="flex flex-col items-start">
@@ -92,7 +103,7 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ className = '
           </div>
         ) : (
           <div className="flex items-center space-x-1 text-xs opacity-80"> 
-            <span>{!isConnected ? 'オフライン中' : '同期履歴なし'}</span> 
+            <span>{!isConnected ? (navigator.onLine ? 'ローカルモード' : 'オフライン中') : '同期履歴なし'}</span> 
           </div>
         )}
       </div>
